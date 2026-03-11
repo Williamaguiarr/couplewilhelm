@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
@@ -225,6 +230,8 @@ const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [filterImovel, setFilterImovel] = useState("all");
+  const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
+  const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
@@ -277,9 +284,15 @@ const Reservas: React.FC = () => {
     const imovelNome = filterImovel !== "all"
       ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
       : "Todos os imóveis";
-    const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    const periodoLabel = filterDe && filterAte
+      ? `${format(filterDe, "dd/MM/yyyy")} a ${format(filterAte, "dd/MM/yyyy")}`
+      : filterDe
+        ? `A partir de ${format(filterDe, "dd/MM/yyyy")}`
+        : filterAte
+          ? `Até ${format(filterAte, "dd/MM/yyyy")}`
+          : "Todos os períodos";
     doc.text(`Imóvel: ${imovelNome}`, pageW - 14, 23, { align: "right" });
-    doc.text(`Período de referência: ${mesAno}`, pageW - 14, 29, { align: "right" });
+    doc.text(`Período: ${periodoLabel}`, pageW - 14, 29, { align: "right" });
     doc.text(
       `Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
       pageW - 14, 35, { align: "right" }
@@ -524,10 +537,23 @@ const Reservas: React.FC = () => {
     setDeleteId(null);
   };
 
-  const filteredReservas =
-    filterImovel === "all"
-      ? reservas
-      : reservas.filter((r) => r.imovel_id === filterImovel);
+  const filteredReservas = reservas.filter((r) => {
+    const matchImovel = filterImovel === "all" || r.imovel_id === filterImovel;
+
+    let matchPeriodo = true;
+    if (filterDe || filterAte) {
+      const dataFim = parseISO(r.data_fim + "T12:00:00");
+      if (filterDe && filterAte) {
+        matchPeriodo = isWithinInterval(dataFim, { start: filterDe, end: filterAte });
+      } else if (filterDe) {
+        matchPeriodo = dataFim >= filterDe;
+      } else if (filterAte) {
+        matchPeriodo = dataFim <= filterAte;
+      }
+    }
+
+    return matchImovel && matchPeriodo;
+  });
 
   return (
     <PageTransition>
@@ -567,22 +593,104 @@ const Reservas: React.FC = () => {
           </div>
         </div>
 
-        {/* Filtro */}
-        <div className="flex items-center gap-3">
-          <Label className="text-muted-foreground text-sm">Filtrar por imóvel:</Label>
-          <Select value={filterImovel} onValueChange={setFilterImovel}>
-            <SelectTrigger className="w-56 bg-card border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-foreground">Todos os imóveis</SelectItem>
-              {imoveis.map((i) => (
-                <SelectItem key={i.id} value={i.id} className="text-foreground">
-                  {i.nome_imovel}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filtros */}
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex flex-wrap items-end gap-4">
+            {/* Filtro por imóvel */}
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Imóvel</Label>
+              <Select value={filterImovel} onValueChange={setFilterImovel}>
+                <SelectTrigger className="w-52 bg-background border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="all" className="text-foreground">Todos os imóveis</SelectItem>
+                  {imoveis.map((i) => (
+                    <SelectItem key={i.id} value={i.id} className="text-foreground">
+                      {i.nome_imovel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro De */}
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">De</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-40 justify-start text-left font-normal bg-background border-border",
+                      !filterDe && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4 opacity-60" />
+                    {filterDe ? format(filterDe, "dd/MM/yyyy") : "Início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filterDe}
+                    onSelect={setFilterDe}
+                    initialFocus
+                    locale={ptBR}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Filtro Até */}
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Até</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-40 justify-start text-left font-normal bg-background border-border",
+                      !filterAte && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4 opacity-60" />
+                    {filterAte ? format(filterAte, "dd/MM/yyyy") : "Fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filterAte}
+                    onSelect={setFilterAte}
+                    initialFocus
+                    locale={ptBR}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Limpar filtros de data */}
+            {(filterDe || filterAte) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setFilterDe(undefined); setFilterAte(undefined); }}
+                className="text-muted-foreground hover:text-foreground gap-1.5 self-end"
+              >
+                <X className="h-3.5 w-3.5" /> Limpar período
+              </Button>
+            )}
+
+            {/* Contador de resultados */}
+            <div className="ml-auto self-end">
+              <span className="text-xs text-muted-foreground">
+                {filteredReservas.length} reserva{filteredReservas.length !== 1 ? "s" : ""} encontrada{filteredReservas.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-lg overflow-hidden">
