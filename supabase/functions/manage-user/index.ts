@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const { action, userId, nome, email, password } = body;
 
     if (action === "update") {
-      // Update auth user
+      // Update auth user (only if email or password actually changed)
       const authUpdate: Record<string, unknown> = {};
       if (email) authUpdate.email = email;
       if (password) authUpdate.password = password;
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update profile
+      // Update profile (always update nome; update email only if provided)
       const profileUpdate: Record<string, unknown> = {};
       if (nome !== undefined) profileUpdate.nome = nome;
       if (email !== undefined) profileUpdate.email = email;
