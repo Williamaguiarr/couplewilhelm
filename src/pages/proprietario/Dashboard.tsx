@@ -94,19 +94,35 @@ const ProprietarioDashboard: React.FC = () => {
   const { user } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
+  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
 
+  // Filtros
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [despesasAberto, setDespesasAberto] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      // Busca os imóveis do proprietário
+      const { data: imoveisData } = await supabase
+        .from("imoveis")
+        .select("id, nome_imovel")
+        .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
+
+      setImoveis(imoveisData || []);
+
+      // Se o proprietário tiver apenas um imóvel, pré-seleciona ele
+      if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
+        setFilterImovel(imoveisData[0].id);
+      }
+
       const [{ data: resData }, { data: despData }] = await Promise.all([
         supabase
           .from("reservas")
