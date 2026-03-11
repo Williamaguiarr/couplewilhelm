@@ -11,6 +11,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2 } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 
@@ -50,21 +60,35 @@ const fmt = (v: number | null) =>
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
     : "—";
 
+const emptyForm = {
+  imovel_id: "",
+  data_inicio: "",
+  data_fim: "",
+  valor_bruto: "",
+  valor_liquido_proprietario: "",
+  observacoes: "",
+};
+
 const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [filterImovel, setFilterImovel] = useState("all");
   const [loading, setLoading] = useState(true);
+
+  // Nova reserva
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    imovel_id: "",
-    data_inicio: "",
-    data_fim: "",
-    valor_bruto: "",
-    valor_liquido_proprietario: "",
-    observacoes: "",
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  // Editar reserva
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingReserva, setEditingReserva] = useState<Reserva | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Excluir reserva
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -107,21 +131,67 @@ const Reservas: React.FC = () => {
     } else {
       toast({ title: "Reserva cadastrada!" });
       setOpen(false);
-      setForm({ imovel_id: "", data_inicio: "", data_fim: "", valor_bruto: "", valor_liquido_proprietario: "", observacoes: "" });
+      setForm(emptyForm);
       fetchData();
     }
 
     setSubmitting(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("reservas").delete().eq("id", id);
+  const openEdit = (r: Reserva) => {
+    setEditingReserva(r);
+    setEditForm({
+      imovel_id: r.imovel_id,
+      data_inicio: r.data_inicio,
+      data_fim: r.data_fim,
+      valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
+      valor_liquido_proprietario: r.valor_liquido_proprietario != null ? String(r.valor_liquido_proprietario) : "",
+      observacoes: r.observacoes || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReserva) return;
+    setEditSubmitting(true);
+
+    const { error } = await supabase
+      .from("reservas")
+      .update({
+        imovel_id: editForm.imovel_id,
+        data_inicio: editForm.data_inicio,
+        data_fim: editForm.data_fim,
+        valor_bruto: editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null,
+        valor_liquido_proprietario: editForm.valor_liquido_proprietario
+          ? parseFloat(editForm.valor_liquido_proprietario)
+          : null,
+        observacoes: editForm.observacoes || null,
+      })
+      .eq("id", editingReserva.id);
+
+    if (error) {
+      toast({ title: "Erro ao editar reserva", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Reserva atualizada!" });
+      setEditOpen(false);
+      setEditingReserva(null);
+      fetchData();
+    }
+
+    setEditSubmitting(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("reservas").delete().eq("id", deleteId);
     if (error) {
       toast({ title: "Erro ao excluir reserva", variant: "destructive" });
     } else {
       toast({ title: "Reserva excluída" });
       fetchData();
     }
+    setDeleteId(null);
   };
 
   const filteredReservas =
@@ -223,7 +293,7 @@ const Reservas: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-out</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Bruto</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Líquido</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -234,8 +304,11 @@ const Reservas: React.FC = () => {
                     <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
                     <TableCell className="text-primary font-medium">{fmt(r.valor_liquido_proprietario)}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)} className="h-8 w-8 hover:text-destructive">
+                    <TableCell className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="h-8 w-8 hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
@@ -246,6 +319,74 @@ const Reservas: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Dialog Editar Reserva */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Imóvel</Label>
+              <Select value={editForm.imovel_id} onValueChange={(v) => setEditForm({ ...editForm, imovel_id: v })}>
+                <SelectTrigger className="bg-background border-border"><SelectValue placeholder="Selecione o imóvel" /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {imoveis.map((i) => (
+                    <SelectItem key={i.id} value={i.id} className="text-foreground">{i.nome_imovel}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Check-in</Label>
+                <Input type="date" value={editForm.data_inicio} onChange={(e) => setEditForm({ ...editForm, data_inicio: e.target.value })} required className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Check-out</Label>
+                <Input type="date" value={editForm.data_fim} onChange={(e) => setEditForm({ ...editForm, data_fim: e.target.value })} required className="bg-background" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
+                <Input type="number" step="0.01" value={editForm.valor_bruto} onChange={(e) => setEditForm({ ...editForm, valor_bruto: e.target.value })} placeholder="0,00" className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
+                <Input type="number" step="0.01" value={editForm.valor_liquido_proprietario} onChange={(e) => setEditForm({ ...editForm, valor_liquido_proprietario: e.target.value })} placeholder="0,00" className="bg-background" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Observações</Label>
+              <Input value={editForm.observacoes} onChange={(e) => setEditForm({ ...editForm, observacoes: e.target.value })} placeholder="Opcional" className="bg-background" />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">Cancelar</Button>
+              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id} className="flex-1">{editSubmitting ? "Salvando..." : "Salvar alterações"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog Excluir Reserva */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Excluir reserva?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Esta ação não pode ser desfeita. A reserva será removida permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageTransition>
   );
 };
