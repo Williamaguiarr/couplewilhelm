@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      despesas_extras: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          imovel_id: string
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          imovel_id: string
+          tipo?: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          imovel_id?: string
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "despesas_extras_imovel_id_fkey"
+            columns: ["imovel_id"]
+            isOneToOne: false
+            referencedRelation: "imoveis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       imoveis: {
         Row: {
           created_at: string | null
