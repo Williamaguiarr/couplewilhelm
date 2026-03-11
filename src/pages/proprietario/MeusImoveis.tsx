@@ -24,7 +24,7 @@ const MeusImoveis: React.FC = () => {
       const { data } = await supabase
         .from("imoveis")
         .select("id, nome_imovel, endereco")
-        .eq("proprietario_id", user.id);
+        .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
       if (data && data.length > 0) {
         // Contar reservas por imóvel
