@@ -165,18 +165,6 @@ const ProprietarioDashboard: React.FC = () => {
     [reservas]
   );
 
-  const getReservasForDay = useCallback(
-    (day: Date) =>
-      reservas.filter((r) => {
-        const inicio = new Date(r.data_inicio + "T12:00:00");
-        const fim = new Date(r.data_fim + "T12:00:00");
-        const d = new Date(day);
-        d.setHours(12, 0, 0, 0);
-        return d >= inicio && d <= fim;
-      }),
-    [reservas]
-  );
-
   const handleDayClick = (day: Date) => {
     if (getReservasForDay(day).length > 0) {
       setSelectedDay(day);
