@@ -187,7 +187,12 @@ const ProprietarioDashboard: React.FC = () => {
 
   const selectedReservas = selectedDay ? getReservasForDay(selectedDay) : [];
 
+  // Filtrar reservas por período e por imóvel (se selecionado)
   const reservasFiltradas = reservas.filter((r) => {
+    // Filtro por imóvel
+    if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
+    
+    // Filtro por período
     if (!filterDe && !filterAte) return true;
     const dataFim = parseISO(r.data_fim + "T12:00:00");
     if (filterDe && filterAte)
@@ -198,6 +203,10 @@ const ProprietarioDashboard: React.FC = () => {
   });
 
   const despesasFiltradas = despesas.filter((d) => {
+    // Filtro por imóvel
+    if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
+    
+    // Filtro por período
     if (!filterDe && !filterAte) return true;
     const data = parseISO(d.data + "T12:00:00");
     if (filterDe && filterAte)
@@ -206,6 +215,32 @@ const ProprietarioDashboard: React.FC = () => {
     if (filterAte) return data <= filterAte;
     return true;
   });
+
+  // Calcular métricas apenas para o imóvel selecionado
+  const reservasImovelSelecionado = filterImovel === "todos" 
+    ? reservas 
+    : reservas.filter(r => r.imovel_id === filterImovel);
+
+  const receitaMesAtual = reservasImovelSelecionado
+    .filter((r) => {
+      const fim = new Date(r.data_fim + "T12:00:00");
+      return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
+    })
+    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+
+  const previsaoFutura = reservasImovelSelecionado
+    .filter((r) => {
+      const fim = new Date(r.data_fim + "T12:00:00");
+      return (
+        fim > new Date() &&
+        !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
+      );
+    })
+    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+
+  const occupiedDays = reservasImovelSelecionado.flatMap((r) =>
+    getDaysBetween(r.data_inicio, r.data_fim)
+  );
 
   const totais = reservasFiltradas.reduce(
     (acc, r) => {
