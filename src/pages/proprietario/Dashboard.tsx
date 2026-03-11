@@ -12,6 +12,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,6 +34,7 @@ import {
   ChevronDown,
   ChevronUp,
   AlertCircle,
+  Building2,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { ptBR } from "date-fns/locale";
@@ -94,19 +102,35 @@ const ProprietarioDashboard: React.FC = () => {
   const { user } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
+  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
 
+  // Filtros
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [despesasAberto, setDespesasAberto] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      // Busca os imóveis do proprietário
+      const { data: imoveisData } = await supabase
+        .from("imoveis")
+        .select("id, nome_imovel")
+        .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
+
+      setImoveis(imoveisData || []);
+
+      // Se o proprietário tiver apenas um imóvel, pré-seleciona ele
+      if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
+        setFilterImovel(imoveisData[0].id);
+      }
+
       const [{ data: resData }, { data: despData }] = await Promise.all([
         supabase
           .from("reservas")
@@ -129,27 +153,6 @@ const ProprietarioDashboard: React.FC = () => {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const receitaMesAtual = reservas
-    .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
-      return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
-    })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
-
-  const previsaoFutura = reservas
-    .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
-      return (
-        fim > new Date() &&
-        !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
-      );
-    })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
-
-  const occupiedDays = reservas.flatMap((r) =>
-    getDaysBetween(r.data_inicio, r.data_fim)
-  );
-
   const getReservasForDay = useCallback(
     (day: Date) =>
       reservas.filter((r) => {
@@ -171,7 +174,12 @@ const ProprietarioDashboard: React.FC = () => {
 
   const selectedReservas = selectedDay ? getReservasForDay(selectedDay) : [];
 
+  // Filtrar reservas por período e por imóvel (se selecionado)
   const reservasFiltradas = reservas.filter((r) => {
+    // Filtro por imóvel
+    if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
+    
+    // Filtro por período
     if (!filterDe && !filterAte) return true;
     const dataFim = parseISO(r.data_fim + "T12:00:00");
     if (filterDe && filterAte)
@@ -182,6 +190,10 @@ const ProprietarioDashboard: React.FC = () => {
   });
 
   const despesasFiltradas = despesas.filter((d) => {
+    // Filtro por imóvel
+    if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
+    
+    // Filtro por período
     if (!filterDe && !filterAte) return true;
     const data = parseISO(d.data + "T12:00:00");
     if (filterDe && filterAte)
@@ -190,6 +202,32 @@ const ProprietarioDashboard: React.FC = () => {
     if (filterAte) return data <= filterAte;
     return true;
   });
+
+  // Calcular métricas apenas para o imóvel selecionado
+  const reservasImovelSelecionado = filterImovel === "todos" 
+    ? reservas 
+    : reservas.filter(r => r.imovel_id === filterImovel);
+
+  const receitaMesAtual = reservasImovelSelecionado
+    .filter((r) => {
+      const fim = new Date(r.data_fim + "T12:00:00");
+      return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
+    })
+    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+
+  const previsaoFutura = reservasImovelSelecionado
+    .filter((r) => {
+      const fim = new Date(r.data_fim + "T12:00:00");
+      return (
+        fim > new Date() &&
+        !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
+      );
+    })
+    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+
+  const occupiedDays = reservasImovelSelecionado.flatMap((r) =>
+    getDaysBetween(r.data_inicio, r.data_fim)
+  );
 
   const totais = reservasFiltradas.reduce(
     (acc, r) => {
@@ -251,13 +289,34 @@ const ProprietarioDashboard: React.FC = () => {
             <div className="border-t border-border">
               {/* Filters */}
               <div className="px-5 py-3 flex flex-wrap items-end gap-3 border-b border-border">
+                {/* Filtro por Imóvel - só aparece se tiver mais de 1 imóvel */}
+                {imoveis.length > 1 && (
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                      <Building2 className="h-3 w-3" /> Imóvel
+                    </Label>
+                    <Select value={filterImovel} onValueChange={setFilterImovel}>
+                      <SelectTrigger className="w-44 h-8 text-xs bg-transparent border-border">
+                        <SelectValue placeholder="Todos os imóveis" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        <SelectItem value="todos" className="text-xs">Todos os imóveis</SelectItem>
+                        {imoveis.map((imovel) => (
+                          <SelectItem key={imovel.id} value={imovel.id} className="text-xs">
+                            {imovel.nome_imovel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <DateFilter label="De" value={filterDe} onChange={setFilterDe} />
                 <DateFilter label="Até" value={filterAte} onChange={setFilterAte} />
-                {(filterDe || filterAte) && (
+                {(filterDe || filterAte || filterImovel !== "todos") && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setFilterDe(undefined); setFilterAte(undefined); }}
+                    onClick={() => { setFilterDe(undefined); setFilterAte(undefined); setFilterImovel("todos"); }}
                     className="text-muted-foreground hover:text-foreground gap-1.5 h-8 self-end"
                   >
                     <X className="h-3 w-3" /> Limpar
