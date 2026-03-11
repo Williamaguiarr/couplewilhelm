@@ -289,13 +289,34 @@ const ProprietarioDashboard: React.FC = () => {
             <div className="border-t border-border">
               {/* Filters */}
               <div className="px-5 py-3 flex flex-wrap items-end gap-3 border-b border-border">
+                {/* Filtro por Imóvel - só aparece se tiver mais de 1 imóvel */}
+                {imoveis.length > 1 && (
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                      <Building2 className="h-3 w-3" /> Imóvel
+                    </Label>
+                    <Select value={filterImovel} onValueChange={setFilterImovel}>
+                      <SelectTrigger className="w-44 h-8 text-xs bg-transparent border-border">
+                        <SelectValue placeholder="Todos os imóveis" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        <SelectItem value="todos" className="text-xs">Todos os imóveis</SelectItem>
+                        {imoveis.map((imovel) => (
+                          <SelectItem key={imovel.id} value={imovel.id} className="text-xs">
+                            {imovel.nome_imovel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <DateFilter label="De" value={filterDe} onChange={setFilterDe} />
                 <DateFilter label="Até" value={filterAte} onChange={setFilterAte} />
-                {(filterDe || filterAte) && (
+                {(filterDe || filterAte || filterImovel !== "todos") && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setFilterDe(undefined); setFilterAte(undefined); }}
+                    onClick={() => { setFilterDe(undefined); setFilterAte(undefined); setFilterImovel("todos"); }}
                     className="text-muted-foreground hover:text-foreground gap-1.5 h-8 self-end"
                   >
                     <X className="h-3 w-3" /> Limpar
