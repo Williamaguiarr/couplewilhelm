@@ -35,7 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 
@@ -237,6 +239,100 @@ const Reservas: React.FC = () => {
 
   const { toast } = useToast();
 
+  const gerarPDF = () => {
+    const doc = new jsPDF();
+    const now = new Date();
+    const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Relatório de Reservas", 14, 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`, 14, 28);
+
+    const imovelNome = filterImovel !== "all"
+      ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
+      : "Todos os imóveis";
+    doc.text(`Imóvel: ${imovelNome}`, 14, 34);
+
+    // Totals summary
+    let totalBruto = 0, totalLimpeza = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
+    filteredReservas.forEach((r) => {
+      const bruto = r.valor_bruto || 0;
+      const limpeza = r.taxa_limpeza || 0;
+      const liquido = bruto - limpeza;
+      const comissao = liquido * 0.25;
+      const proprietario = liquido - comissao;
+      totalBruto += bruto;
+      totalLimpeza += limpeza;
+      totalLiquido += liquido;
+      totalComissao += comissao;
+      totalProprietario += proprietario;
+    });
+
+    const fmtPDF = (v: number) =>
+      v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+    // Summary box
+    doc.setFillColor(245, 245, 245);
+    doc.rect(14, 40, 182, 40, "F");
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    const summaryY = 50;
+    doc.text(`Total Bruto: ${fmtPDF(totalBruto)}`, 20, summaryY);
+    doc.text(`Taxa de Limpeza: ${fmtPDF(totalLimpeza)}`, 80, summaryY);
+    doc.text(`Valor Líquido: ${fmtPDF(totalLiquido)}`, 20, summaryY + 10);
+    doc.text(`Comissão CW (25%): ${fmtPDF(totalComissao)}`, 80, summaryY + 10);
+    doc.setFontSize(10);
+    doc.setTextColor(30, 30, 30);
+    doc.text(`Repasse Total aos Proprietários: ${fmtPDF(totalProprietario)}`, 20, summaryY + 22);
+
+    // Table
+    const tableData = filteredReservas.map((r) => {
+      const bruto = r.valor_bruto || 0;
+      const limpeza = r.taxa_limpeza || 0;
+      const liquido = bruto - limpeza;
+      const comissao = liquido * 0.25;
+      const proprietario = liquido - comissao;
+      return [
+        r.imovel?.nome_imovel || "—",
+        new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
+        new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
+        fmtPDF(bruto),
+        fmtPDF(limpeza),
+        fmtPDF(comissao),
+        fmtPDF(proprietario),
+        r.observacoes || "",
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 88,
+      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão CW", "Proprietário", "Obs."]],
+      body: tableData,
+      headStyles: { fillColor: [40, 40, 40], textColor: 255, fontSize: 8, fontStyle: "bold" },
+      bodyStyles: { fontSize: 8, textColor: [50, 50, 50] },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 18 },
+        2: { cellWidth: 18 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 24 },
+        6: { cellWidth: 24 },
+        7: { cellWidth: "auto" },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    doc.save(`relatorio-reservas-${now.toISOString().split("T")[0]}.pdf`);
+    toast({ title: "PDF gerado com sucesso!" });
+  };
+
   const fetchData = async () => {
     const [{ data: reservasData }, { data: imoveisData }] = await Promise.all([
       supabase
@@ -361,7 +457,11 @@ const Reservas: React.FC = () => {
             <h1 className="font-display text-3xl text-foreground tracking-wide">Reservas</h1>
             <p className="text-muted-foreground mt-1">Gerencie as reservas de todos os imóveis</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={gerarPDF} disabled={filteredReservas.length === 0} className="gap-2">
+              <FileText className="h-4 w-4" /> Gerar PDF
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" /> Nova Reserva
@@ -384,6 +484,7 @@ const Reservas: React.FC = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Filtro */}
