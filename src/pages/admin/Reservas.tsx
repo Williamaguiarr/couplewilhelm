@@ -230,6 +230,8 @@ const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [filterImovel, setFilterImovel] = useState("all");
+  const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
+  const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
