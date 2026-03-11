@@ -42,49 +42,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfileAndRole = async (userId: string) => {
-    try {
+  // Busca profile e role separadamente do listener
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const fetch = async () => {
       const [{ data: profileData }, { data: roleData }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).single(),
-        supabase.from("user_roles").select("role").eq("user_id", userId).single(),
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("user_roles").select("role").eq("user_id", user.id).single(),
       ]);
 
+      if (cancelled) return;
       if (profileData) setProfile(profileData);
       if (roleData) setRole(roleData.role as AppRole);
-    } catch {
-      // Falha silenciosa — loading será finalizado pelo caller
-    }
-  };
+      setLoading(false);
+    };
+
+    fetch();
+
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
-    let mounted = true;
-
+    // Listener síncrono — sem async/await
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
-
+      (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user) {
-          await fetchProfileAndRole(currentSession.user.id);
-        } else {
+        if (!currentSession?.user) {
           setProfile(null);
           setRole(null);
+          setLoading(false);
         }
-
-        if (mounted) setLoading(false);
+        // Se há user, o useEffect acima cuida do fetch e seta loading=false
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (!existingSession && mounted) setLoading(false);
+    // Verifica sessão inicial
+    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      if (!existing) {
+        setLoading(false);
+      }
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
