@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ["Playfair Display", "Georgia", "serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -80,10 +84,19 @@ export default {
             height: "0",
           },
         },
+        "page-enter": {
+          from: { opacity: "0", transform: "translateY(12px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "page-enter": "page-enter 0.35s ease-out forwards",
+      },
+      boxShadow: {
+        luxury:
+          "0 8px 30px -8px hsl(60 10% 58% / 0.12), 0 2px 8px -2px hsl(211 71% 5% / 0.4)",
       },
     },
   },
