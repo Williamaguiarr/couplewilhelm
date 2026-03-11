@@ -21,6 +21,7 @@ export type Database = {
           id: string
           nome_imovel: string
           proprietario_id: string | null
+          proprietario_id_2: string | null
         }
         Insert: {
           created_at?: string | null
@@ -28,6 +29,7 @@ export type Database = {
           id?: string
           nome_imovel: string
           proprietario_id?: string | null
+          proprietario_id_2?: string | null
         }
         Update: {
           created_at?: string | null
@@ -35,8 +37,16 @@ export type Database = {
           id?: string
           nome_imovel?: string
           proprietario_id?: string | null
+          proprietario_id_2?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "imoveis_proprietario_id_2_fkey"
+            columns: ["proprietario_id_2"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "imoveis_proprietario_id_fkey"
             columns: ["proprietario_id"]
