@@ -109,8 +109,9 @@ const ReservaFormFields = ({
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
 }) => {
-  const comissao = calcComissao(form.valor_liquido);
-  const valorProprietario = calcValorProprietario(form.valor_liquido, form.taxa_limpeza);
+  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza);
+  const comissao = calcComissao(valorLiquido);
+  const valorProprietario = calcValorProprietario(valorLiquido);
 
   return (
     <>
@@ -167,21 +168,6 @@ const ReservaFormFields = ({
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.valor_liquido}
-            onChange={(e) => setForm({ ...form, valor_liquido: e.target.value })}
-            placeholder="0,00"
-            className="bg-background"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
           <Label className="text-muted-foreground">Taxa de Limpeza (R$)</Label>
           <Input
             type="number"
@@ -193,10 +179,19 @@ const ReservaFormFields = ({
             className="bg-background"
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
+          <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
+            {valorLiquido != null ? fmt(valorLiquido) : "—"}
+          </div>
+        </div>
         <div className="space-y-2">
           <Label className="text-muted-foreground">Comissão CW (25% sobre líquido)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
-            {form.valor_liquido ? fmt(comissao) : "—"}
+            {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
         </div>
       </div>
