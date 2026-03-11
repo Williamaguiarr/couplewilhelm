@@ -75,6 +75,7 @@ export type Database = {
           id: string
           imovel_id: string
           observacoes: string | null
+          taxa_limpeza: number | null
           valor_bruto: number | null
           valor_liquido_proprietario: number | null
         }
@@ -85,6 +86,7 @@ export type Database = {
           id?: string
           imovel_id: string
           observacoes?: string | null
+          taxa_limpeza?: number | null
           valor_bruto?: number | null
           valor_liquido_proprietario?: number | null
         }
@@ -95,6 +97,7 @@ export type Database = {
           id?: string
           imovel_id?: string
           observacoes?: string | null
+          taxa_limpeza?: number | null
           valor_bruto?: number | null
           valor_liquido_proprietario?: number | null
         }
