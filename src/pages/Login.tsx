@@ -118,9 +118,9 @@ const Login: React.FC = () => {
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 tracking-wider font-medium mt-2"
-              disabled={loading}
+              disabled={submitting}
             >
-              {loading ? (
+              {submitting ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-primary-foreground/50 border-t-primary-foreground rounded-full animate-spin" />
                   Entrando...
