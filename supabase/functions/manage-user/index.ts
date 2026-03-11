@@ -56,25 +56,37 @@ Deno.serve(async (req) => {
     const { action, userId, nome, email, password } = body;
 
     if (action === "update") {
-      // Update auth user (only if email or password actually changed)
-      const authUpdate: Record<string, unknown> = {};
-      if (email) authUpdate.email = email;
-      if (password) authUpdate.password = password;
+      // Build auth payload only when there's something to change
+      const authPayload: Record<string, unknown> = {};
+      if (email) authPayload.email = email;
+      if (password) authPayload.password = password;
 
-      if (Object.keys(authUpdate).length > 0) {
-        const { error: authError } = await adminClient.auth.admin.updateUserById(
-          userId,
-          authUpdate
+      if (Object.keys(authPayload).length > 0) {
+        // Use GoTrue REST API directly to avoid the SDK scan bug with NULL fields
+        const gotrueRes = await fetch(
+          `${supabaseUrl}/auth/v1/admin/users/${userId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": serviceRoleKey,
+              "Authorization": `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify(authPayload),
+          }
         );
-        if (authError) {
-          return new Response(JSON.stringify({ error: authError.message }), {
+
+        if (!gotrueRes.ok) {
+          const errBody = await gotrueRes.json().catch(() => ({}));
+          const msg = errBody?.msg || errBody?.message || "Erro ao atualizar credenciais";
+          return new Response(JSON.stringify({ error: msg }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
       }
 
-      // Update profile (always update nome; update email only if provided)
+      // Update profile
       const profileUpdate: Record<string, unknown> = {};
       if (nome !== undefined) profileUpdate.nome = nome;
       if (email !== undefined) profileUpdate.email = email;
