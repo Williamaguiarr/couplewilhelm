@@ -290,12 +290,10 @@ const Reservas: React.FC = () => {
   const openEdit = (r: Reserva) => {
     setEditingReserva(r);
     // Reverse-calc valor_liquido from stored valor_liquido_proprietario
-    // stored = liquido - limpeza - comissao => liquido = stored + limpeza + comissao
-    const bruto = r.valor_bruto ?? 0;
+    // stored = liquido - limpeza - comissao (25% do liquido) => liquido = (stored + limpeza) / 0.75
     const limpeza = r.taxa_limpeza ?? 0;
-    const comissao = bruto * COMISSAO_RATE;
     const liquidoRecalc = r.valor_liquido_proprietario != null
-      ? r.valor_liquido_proprietario + limpeza + comissao
+      ? (r.valor_liquido_proprietario + limpeza) / 0.75
       : null;
 
     setEditForm({
