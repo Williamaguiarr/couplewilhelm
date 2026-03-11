@@ -11,6 +11,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Building2, Pencil } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 
@@ -50,11 +60,9 @@ const Imoveis: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    nome_imovel: "",
-    endereco: "",
-    proprietario_id: "",
-  });
+  const [form, setForm] = useState({ nome_imovel: "", endereco: "", proprietario_id: "" });
+  const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -131,6 +139,22 @@ const Imoveis: React.FC = () => {
     setSubmitting(false);
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteSubmitting(true);
+
+    const { error } = await supabase.from("imoveis").delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast({ title: "Erro ao excluir imóvel", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Imóvel excluído.", description: `${deleteTarget.nome_imovel} foi removido.` });
+      setDeleteTarget(null);
+      fetchData();
+    }
+
+    setDeleteSubmitting(false);
+  };
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -199,7 +223,7 @@ const Imoveis: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Endereço</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-12"></TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -209,9 +233,14 @@ const Imoveis: React.FC = () => {
                     <TableCell className="text-muted-foreground">{imovel.endereco || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{imovel.proprietario?.nome || imovel.proprietario?.email || "—"}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(imovel)} className="h-8 w-8 hover:text-primary">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(imovel)} className="h-8 w-8 hover:text-primary">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(imovel)} className="h-8 w-8 hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -220,6 +249,32 @@ const Imoveis: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* DELETE CONFIRMATION */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-foreground">
+              Excluir imóvel?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Você está prestes a excluir <strong className="text-foreground">{deleteTarget?.nome_imovel}</strong>. As reservas vinculadas também serão removidas. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-border text-foreground hover:bg-muted/30">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteSubmitting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageTransition>
   );
 };
