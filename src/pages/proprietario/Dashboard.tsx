@@ -3,7 +3,6 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
@@ -73,7 +72,6 @@ const ProprietarioDashboard: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
 
-  // Filtro de período do extrato
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
   const [extratoAberto, setExtratoAberto] = useState(true);
@@ -92,7 +90,6 @@ const ProprietarioDashboard: React.FC = () => {
     fetchReservas();
   }, [user]);
 
-  // Métricas
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -114,7 +111,6 @@ const ProprietarioDashboard: React.FC = () => {
     })
     .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
 
-  // Calendário
   const occupiedDays = reservas.flatMap((r) =>
     getDaysBetween(r.data_inicio, r.data_fim)
   );
@@ -140,7 +136,6 @@ const ProprietarioDashboard: React.FC = () => {
 
   const selectedReservas = selectedDay ? getReservasForDay(selectedDay) : [];
 
-  // Extrato filtrado por período
   const reservasFiltradas = reservas.filter((r) => {
     if (!filterDe && !filterAte) return true;
     const dataFim = parseISO(r.data_fim + "T12:00:00");
@@ -151,7 +146,6 @@ const ProprietarioDashboard: React.FC = () => {
     return true;
   });
 
-  // Totalizadores do extrato
   const totais = reservasFiltradas.reduce(
     (acc, r) => {
       const f = calcFinanceiro(r);
@@ -167,69 +161,39 @@ const ProprietarioDashboard: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
-        <div>
-          <h1 className="font-display text-3xl text-foreground tracking-wide">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Sua visão financeira em{" "}
+      <div className="space-y-6 max-w-5xl">
+
+        {/* Header */}
+        <div className="pb-2 border-b border-border">
+          <h1 className="font-display text-2xl text-foreground tracking-wide">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             {now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
           </p>
         </div>
 
-        {/* Cards de métricas */}
+        {/* Metric cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
-                Receita do Mês Atual
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="h-8 w-36 bg-muted animate-pulse rounded" />
-              ) : (
-                <>
-                  <p className="font-display text-3xl text-foreground">{fmt(receitaMesAtual)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Reservas com checkout neste mês</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
-                Previsão Meses Seguintes
-              </CardTitle>
-              <CalendarCheck className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="h-8 w-36 bg-muted animate-pulse rounded" />
-              ) : (
-                <>
-                  <p className="font-display text-3xl text-foreground">{fmt(previsaoFutura)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Reservas futuras confirmadas</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <MetricCard
+            label="Receita do Mês"
+            sub="Checkouts neste mês"
+            value={loading ? null : fmt(receitaMesAtual)}
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
+          <MetricCard
+            label="Previsão Futura"
+            sub="Reservas confirmadas"
+            value={loading ? null : fmt(previsaoFutura)}
+            icon={<CalendarCheck className="h-4 w-4" />}
+          />
         </div>
 
-        {/* ── Extrato Financeiro ── */}
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          {/* Cabeçalho colapsável */}
+        {/* Extrato */}
+        <section className="border border-border rounded-lg overflow-hidden">
           <button
             onClick={() => setExtratoAberto((v) => !v)}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/20 transition-colors"
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
           >
-            <div className="text-left">
-              <h2 className="font-display text-lg text-foreground">Extrato Financeiro</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Detalhamento por reserva: bruto, limpeza, comissão CW e seu repasse
-              </p>
-            </div>
+            <span className="font-display text-base text-foreground tracking-wide">Extrato Financeiro</span>
             {extratoAberto
               ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
               : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -237,72 +201,19 @@ const ProprietarioDashboard: React.FC = () => {
 
           {extratoAberto && (
             <div className="border-t border-border">
-              {/* Filtros de período */}
-              <div className="px-6 py-4 flex flex-wrap items-end gap-4 bg-muted/10 border-b border-border">
-                <div className="space-y-1.5">
-                  <Label className="text-muted-foreground text-xs uppercase tracking-wide">De</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-38 justify-start text-left font-normal bg-background border-border text-sm h-9",
-                          !filterDe && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarDays className="mr-2 h-3.5 w-3.5 opacity-60" />
-                        {filterDe ? format(filterDe, "dd/MM/yyyy") : "Início"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={filterDe}
-                        onSelect={setFilterDe}
-                        initialFocus
-                        locale={ptBR}
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-muted-foreground text-xs uppercase tracking-wide">Até</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-38 justify-start text-left font-normal bg-background border-border text-sm h-9",
-                          !filterAte && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarDays className="mr-2 h-3.5 w-3.5 opacity-60" />
-                        {filterAte ? format(filterAte, "dd/MM/yyyy") : "Fim"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={filterAte}
-                        onSelect={setFilterAte}
-                        initialFocus
-                        locale={ptBR}
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+              {/* Filters */}
+              <div className="px-5 py-3 flex flex-wrap items-end gap-3 border-b border-border">
+                <DateFilter label="De" value={filterDe} onChange={setFilterDe} />
+                <DateFilter label="Até" value={filterAte} onChange={setFilterAte} />
 
                 {(filterDe || filterAte) && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => { setFilterDe(undefined); setFilterAte(undefined); }}
-                    className="text-muted-foreground hover:text-foreground gap-1.5 self-end h-9"
+                    className="text-muted-foreground hover:text-foreground gap-1.5 h-8 self-end"
                   >
-                    <X className="h-3.5 w-3.5" /> Limpar
+                    <X className="h-3 w-3" /> Limpar
                   </Button>
                 )}
 
@@ -311,10 +222,10 @@ const ProprietarioDashboard: React.FC = () => {
                 </span>
               </div>
 
-              {/* Tabela */}
+              {/* Table */}
               {loading ? (
-                <div className="p-8 flex justify-center">
-                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <div className="p-10 flex justify-center">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : reservasFiltradas.length === 0 ? (
                 <div className="p-10 text-center">
@@ -325,55 +236,50 @@ const ProprietarioDashboard: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Imóvel</TableHead>
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Check-in</TableHead>
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Check-out</TableHead>
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Valor Bruto</TableHead>
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Tx. Limpeza</TableHead>
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Comissão CW</TableHead>
-                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Seu Repasse</TableHead>
+                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Comissão CW", "Repasse"].map((h, i) => (
+                          <TableHead
+                            key={h}
+                            className={cn(
+                              "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
+                              i > 2 && "text-right"
+                            )}
+                          >
+                            {h}
+                          </TableHead>
+                        ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {reservasFiltradas.map((r) => {
                         const f = calcFinanceiro(r);
                         return (
-                          <TableRow key={r.id} className="border-border hover:bg-muted/30">
-                            <TableCell className="text-foreground font-medium">
+                          <TableRow key={r.id} className="border-border hover:bg-muted/20">
+                            <TableCell className="text-foreground font-medium text-sm py-3">
                               {r.imovel?.nome_imovel ?? "—"}
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
+                            <TableCell className="text-muted-foreground text-sm py-3">
                               {new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
+                            <TableCell className="text-muted-foreground text-sm py-3">
                               {new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right">{fmt(f.bruto)}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right">{fmt(f.limpeza)}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right">{fmt(f.comissao)}</TableCell>
-                            <TableCell className="text-primary font-semibold text-sm text-right">{fmt(f.proprietario)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.bruto)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.limpeza)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.comissao)}</TableCell>
+                            <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(f.proprietario)}</TableCell>
                           </TableRow>
                         );
                       })}
                     </TableBody>
                   </Table>
 
-                  {/* Rodapé com totais */}
-                  <div className="border-t border-border bg-muted/20 px-4 py-3 grid grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Bruto</p>
-                      <p className="font-display text-sm text-foreground">{fmt(totais.bruto)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Limpeza</p>
-                      <p className="font-display text-sm text-foreground">{fmt(totais.limpeza)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Comissão CW</p>
-                      <p className="font-display text-sm text-foreground">{fmt(totais.comissao)}</p>
-                    </div>
-                    <div className="text-center border-l border-border">
-                      <p className="text-xs text-primary uppercase tracking-wide mb-1">Seu Total</p>
+                  {/* Totals footer */}
+                  <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-8">
+                    <TotalItem label="Bruto" value={fmt(totais.bruto)} />
+                    <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
+                    <TotalItem label="Comissão" value={fmt(totais.comissao)} />
+                    <div className="pl-8 border-l border-border">
+                      <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Total</p>
                       <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
                     </div>
                   </div>
@@ -381,14 +287,16 @@ const ProprietarioDashboard: React.FC = () => {
               )}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Calendário */}
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-display text-lg text-foreground mb-1">Calendário de Ocupação</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Dias marcados em dourado indicam período de reserva. Clique para ver detalhes.
-          </p>
+        {/* Calendar */}
+        <section className="border border-border rounded-lg p-5">
+          <div className="mb-5">
+            <h2 className="font-display text-base text-foreground tracking-wide">Calendário de Ocupação</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Dias em dourado indicam período de reserva — clique para detalhes
+            </p>
+          </div>
 
           <div className="flex justify-center">
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -429,11 +337,11 @@ const ProprietarioDashboard: React.FC = () => {
 
               {selectedDay && selectedReservas.length > 0 && (
                 <PopoverContent
-                  className="bg-card border border-primary/30 shadow-luxury w-80 p-4"
+                  className="bg-card border border-border shadow-luxury w-72 p-4"
                   align="center"
                 >
                   <div className="space-y-3">
-                    <p className="font-display text-sm text-primary tracking-wide">
+                    <p className="font-display text-xs text-primary tracking-widest uppercase">
                       {selectedDay.toLocaleDateString("pt-BR", {
                         weekday: "long",
                         day: "numeric",
@@ -443,11 +351,11 @@ const ProprietarioDashboard: React.FC = () => {
                     {selectedReservas.map((r) => {
                       const f = calcFinanceiro(r);
                       return (
-                        <div key={r.id} className="border-t border-border pt-3 space-y-2">
+                        <div key={r.id} className="border-t border-border pt-3 space-y-3">
                           <p className="text-foreground font-medium text-sm">
                             {r.imovel?.nome_imovel}
                           </p>
-                          <div className="text-xs text-muted-foreground space-y-0.5">
+                          <div className="text-xs text-muted-foreground space-y-1">
                             <div className="flex justify-between">
                               <span>Check-in</span>
                               <span>{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</span>
@@ -457,27 +365,15 @@ const ProprietarioDashboard: React.FC = () => {
                               <span>{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</span>
                             </div>
                           </div>
-                          {/* Detalhamento financeiro */}
-                          <div className="bg-muted/30 rounded-md p-2.5 space-y-1.5 text-xs">
-                            <div className="flex justify-between text-muted-foreground">
-                              <span>Valor bruto</span>
-                              <span>{fmt(f.bruto)}</span>
+                          <div className="bg-muted/20 rounded p-2.5 space-y-1.5 text-xs">
+                            <FinRow label="Valor bruto" value={fmt(f.bruto)} />
+                            <FinRow label="Taxa de limpeza" value={`- ${fmt(f.limpeza)}`} />
+                            <div className="border-t border-border pt-1.5">
+                              <FinRow label="Valor líquido" value={fmt(f.bruto - f.limpeza)} />
                             </div>
-                            <div className="flex justify-between text-muted-foreground">
-                              <span>Taxa de limpeza</span>
-                              <span>- {fmt(f.limpeza)}</span>
-                            </div>
-                            <div className="flex justify-between text-muted-foreground border-t border-border pt-1.5">
-                              <span>Valor líquido</span>
-                              <span>{fmt(f.bruto - f.limpeza)}</span>
-                            </div>
-                            <div className="flex justify-between text-muted-foreground">
-                              <span>Comissão CW (25%)</span>
-                              <span>- {fmt(f.comissao)}</span>
-                            </div>
-                            <div className="flex justify-between font-semibold text-primary border-t border-border pt-1.5">
-                              <span>Seu repasse</span>
-                              <span>{fmt(f.proprietario)}</span>
+                            <FinRow label="Comissão CW (25%)" value={`- ${fmt(f.comissao)}`} />
+                            <div className="border-t border-border pt-1.5">
+                              <FinRow label="Seu repasse" value={fmt(f.proprietario)} highlight />
                             </div>
                           </div>
                           {r.observacoes && (
@@ -491,10 +387,82 @@ const ProprietarioDashboard: React.FC = () => {
               )}
             </Popover>
           </div>
-        </div>
+        </section>
       </div>
     </PageTransition>
   );
 };
+
+/* ── Sub-components ─────────────────────────────────── */
+
+const MetricCard: React.FC<{
+  label: string;
+  sub: string;
+  value: string | null;
+  icon: React.ReactNode;
+}> = ({ label, sub, value, icon }) => (
+  <div className="border border-border rounded-lg px-5 py-4 flex items-start justify-between group hover:border-primary/30 transition-colors">
+    <div>
+      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
+      {value === null ? (
+        <div className="h-7 w-32 bg-muted animate-pulse rounded" />
+      ) : (
+        <p className="font-display text-2xl text-foreground">{value}</p>
+      )}
+      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+    </div>
+    <span className="text-primary opacity-50 group-hover:opacity-80 transition-opacity mt-0.5">
+      {icon}
+    </span>
+  </div>
+);
+
+const DateFilter: React.FC<{
+  label: string;
+  value: Date | undefined;
+  onChange: (d: Date | undefined) => void;
+}> = ({ label, value, onChange }) => (
+  <div className="space-y-1">
+    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">{label}</Label>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-36 justify-start text-left font-normal bg-transparent border-border text-xs h-8",
+            !value && "text-muted-foreground"
+          )}
+        >
+          <CalendarDays className="mr-2 h-3 w-3 opacity-50" />
+          {value ? format(value, "dd/MM/yyyy") : "Selecionar"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          initialFocus
+          locale={ptBR}
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  </div>
+);
+
+const TotalItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="text-right">
+    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">{label}</p>
+    <p className="text-sm text-foreground">{value}</p>
+  </div>
+);
+
+const FinRow: React.FC<{ label: string; value: string; highlight?: boolean }> = ({ label, value, highlight }) => (
+  <div className={cn("flex justify-between", highlight ? "text-primary font-semibold" : "text-muted-foreground")}>
+    <span>{label}</span>
+    <span>{value}</span>
+  </div>
+);
 
 export default ProprietarioDashboard;
