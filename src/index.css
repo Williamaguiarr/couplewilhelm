@@ -11,38 +11,38 @@
 
 @layer base {
   :root {
-    /* Core luxury palette */
-    --background: 211 71% 11%;        /* #0A192F azul-marinho profundo */
-    --foreground: 40 27% 94%;         /* #F0EDE8 branco creme */
+    /* Core — fundo branco creme, texto escuro */
+    --background: 40 30% 97%;         /* quase branco com leve warmth */
+    --foreground: 211 71% 11%;        /* azul-marinho profundo para texto */
 
-    --card: 211 65% 14%;              /* #0D2137 azul cards */
-    --card-foreground: 40 27% 94%;
+    --card: 0 0% 100%;                /* branco puro para cards */
+    --card-foreground: 211 71% 11%;
 
-    --popover: 211 65% 14%;
-    --popover-foreground: 40 27% 94%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 211 71% 11%;
 
-    --primary: 60 10% 58%;            /* #A3A38B dourado/khaki da logo */
-    --primary-foreground: 211 71% 11%;
+    --primary: 60 10% 44%;            /* dourado/khaki um pouco mais escuro no claro */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 211 55% 18%;
-    --secondary-foreground: 40 27% 94%;
+    --secondary: 211 30% 93%;         /* azul bem claro */
+    --secondary-foreground: 211 71% 15%;
 
-    --muted: 211 50% 16%;             /* #1A3050 azul acinzentado */
-    --muted-foreground: 210 20% 55%;
+    --muted: 210 20% 95%;             /* cinza azulado suave */
+    --muted-foreground: 211 25% 40%;
 
-    --accent: 211 50% 20%;
-    --accent-foreground: 40 27% 94%;
+    --accent: 210 25% 93%;
+    --accent-foreground: 211 71% 11%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 40 27% 94%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 60 10% 58% / 0.15;      /* borda dourada sutil */
-    --input: 211 50% 16%;
-    --ring: 60 10% 58%;
+    --border: 211 20% 88%;            /* borda cinza-azulada discreta */
+    --input: 210 20% 95%;
+    --ring: 60 10% 44%;
 
     --radius: 0.5rem;
 
-    /* Sidebar luxury */
+    /* Sidebar mantém o azul-marinho da identidade */
     --sidebar-background: 211 75% 9%;
     --sidebar-foreground: 40 27% 80%;
     --sidebar-primary: 60 10% 58%;
@@ -98,8 +98,8 @@
    =================================================== */
 @layer utilities {
   .shadow-luxury {
-    box-shadow: 0 8px 30px -8px hsl(60 10% 58% / 0.12),
-                0 2px 8px -2px hsl(211 71% 5% / 0.4);
+    box-shadow: 0 4px 24px -4px hsl(211 71% 11% / 0.08),
+                0 1px 6px -1px hsl(211 71% 11% / 0.06);
   }
 }
 
@@ -107,30 +107,30 @@
    CALENDÁRIO CUSTOMIZADO (react-day-picker)
    =================================================== */
 .rdp-day-occupied {
-  background-color: hsl(60 10% 58% / 0.25) !important;
-  color: hsl(60 10% 68%) !important;
+  background-color: hsl(60 10% 44% / 0.18) !important;
+  color: hsl(60 10% 30%) !important;
   font-weight: 500;
   border-radius: 4px;
 }
 
 .rdp-day-occupied:hover {
-  background-color: hsl(60 10% 58% / 0.4) !important;
+  background-color: hsl(60 10% 44% / 0.32) !important;
   cursor: pointer;
 }
 
 /* Esconder botões padrão do react-day-picker e usar nossos estilos */
 .rdp {
-  --rdp-accent-color: hsl(60 10% 58%);
-  --rdp-background-color: hsl(60 10% 58% / 0.15);
-  --rdp-accent-color-dark: hsl(60 10% 58%);
-  --rdp-background-color-dark: hsl(60 10% 58% / 0.15);
-  --rdp-outline: 2px solid hsl(60 10% 58%);
-  --rdp-outline-selected: 2px solid hsl(60 10% 58%);
+  --rdp-accent-color: hsl(60 10% 44%);
+  --rdp-background-color: hsl(60 10% 44% / 0.12);
+  --rdp-accent-color-dark: hsl(60 10% 44%);
+  --rdp-background-color-dark: hsl(60 10% 44% / 0.12);
+  --rdp-outline: 2px solid hsl(60 10% 44%);
+  --rdp-outline-selected: 2px solid hsl(60 10% 44%);
   margin: 0;
 }
 
 /* ===================================================
-   SCROLLBAR LUXURY
+   SCROLLBAR
    =================================================== */
 ::-webkit-scrollbar {
   width: 6px;
@@ -138,22 +138,23 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(211 71% 11%);
+  background: hsl(210 20% 95%);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(60 10% 58% / 0.3);
+  background: hsl(211 20% 75%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(60 10% 58% / 0.5);
+  background: hsl(60 10% 44% / 0.6);
 }
 
 /* ===================================================
-   INPUT DATE — Cor no dark mode
+   INPUT DATE
    =================================================== */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.7) sepia(0.3) saturate(0.8) hue-rotate(20deg);
+  filter: none;
   cursor: pointer;
+  opacity: 0.5;
 }
