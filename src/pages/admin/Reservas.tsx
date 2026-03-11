@@ -103,8 +103,8 @@ const ReservaFormFields = ({
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
 }) => {
-  const comissao = calcComissao(form.valor_bruto);
-  const valorProprietario = calcValorProprietario(form.valor_liquido, form.taxa_limpeza, form.valor_bruto);
+  const comissao = calcComissao(form.valor_liquido);
+  const valorProprietario = calcValorProprietario(form.valor_liquido, form.taxa_limpeza);
 
   return (
     <>
