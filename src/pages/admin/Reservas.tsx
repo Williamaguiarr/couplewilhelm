@@ -63,22 +63,20 @@ const fmt = (v: number | null) =>
 
 const COMISSAO_RATE = 0.25;
 
-const calcComissao = (valorBruto: string | number | null): number => {
-  const v = typeof valorBruto === "string" ? parseFloat(valorBruto) : valorBruto;
+const calcComissao = (valorLiquido: string | number | null): number => {
+  const v = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
   if (!v || isNaN(v)) return 0;
   return v * COMISSAO_RATE;
 };
 
 const calcValorProprietario = (
   valorLiquido: string | number | null,
-  taxaLimpeza: string | number | null,
-  valorBruto: string | number | null
+  taxaLimpeza: string | number | null
 ): number | null => {
   const liq = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
   const taxa = typeof taxaLimpeza === "string" ? parseFloat(taxaLimpeza) : taxaLimpeza;
-  const bruto = typeof valorBruto === "string" ? parseFloat(valorBruto) : valorBruto;
   if (liq == null || isNaN(liq)) return null;
-  const comissao = (bruto && !isNaN(bruto)) ? bruto * COMISSAO_RATE : 0;
+  const comissao = liq * COMISSAO_RATE;
   const limpeza = (taxa && !isNaN(taxa)) ? taxa : 0;
   return liq - limpeza - comissao;
 };
