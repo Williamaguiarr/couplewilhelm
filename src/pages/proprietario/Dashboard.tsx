@@ -19,7 +19,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TrendingUp, CalendarCheck, CalendarDays, X, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  TrendingUp,
+  CalendarCheck,
+  CalendarDays,
+  X,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+} from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { ptBR } from "date-fns/locale";
 import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
@@ -34,6 +42,16 @@ interface Reserva {
   taxa_limpeza: number | null;
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
+  imovel?: { nome_imovel: string };
+}
+
+interface DespesaExtra {
+  id: string;
+  imovel_id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  tipo: string;
   imovel?: { nome_imovel: string };
 }
 
@@ -64,9 +82,18 @@ const calcFinanceiro = (r: Reserva) => {
   return { bruto, limpeza, liquido, comissao, proprietario };
 };
 
+const TIPO_LABELS: Record<string, string> = {
+  manutencao: "Manutenção",
+  amenities: "Amenities",
+  limpeza_extra: "Limpeza Extra",
+  reparo: "Reparo",
+  outros: "Outros",
+};
+
 const ProprietarioDashboard: React.FC = () => {
   const { user } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
@@ -75,19 +102,27 @@ const ProprietarioDashboard: React.FC = () => {
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
   const [extratoAberto, setExtratoAberto] = useState(true);
+  const [despesasAberto, setDespesasAberto] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    const fetchReservas = async () => {
-      const { data } = await supabase
-        .from("reservas")
-        .select("*, imoveis(nome_imovel)")
-        .order("data_inicio", { ascending: false });
+    const fetchData = async () => {
+      const [{ data: resData }, { data: despData }] = await Promise.all([
+        supabase
+          .from("reservas")
+          .select("*, imoveis(nome_imovel)")
+          .order("data_inicio", { ascending: false }),
+        supabase
+          .from("despesas_extras" as any)
+          .select("*, imoveis(nome_imovel)")
+          .order("data", { ascending: false }),
+      ]);
 
-      setReservas((data || []).map((r: any) => ({ ...r, imovel: r.imoveis })));
+      setReservas((resData || []).map((r: any) => ({ ...r, imovel: r.imoveis })));
+      setDespesas((despData || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
       setLoading(false);
     };
-    fetchReservas();
+    fetchData();
   }, [user]);
 
   const now = new Date();
@@ -146,6 +181,16 @@ const ProprietarioDashboard: React.FC = () => {
     return true;
   });
 
+  const despesasFiltradas = despesas.filter((d) => {
+    if (!filterDe && !filterAte) return true;
+    const data = parseISO(d.data + "T12:00:00");
+    if (filterDe && filterAte)
+      return isWithinInterval(data, { start: filterDe, end: filterAte });
+    if (filterDe) return data >= filterDe;
+    if (filterAte) return data <= filterAte;
+    return true;
+  });
+
   const totais = reservasFiltradas.reduce(
     (acc, r) => {
       const f = calcFinanceiro(r);
@@ -158,6 +203,9 @@ const ProprietarioDashboard: React.FC = () => {
     },
     { bruto: 0, limpeza: 0, comissao: 0, proprietario: 0 }
   );
+
+  const totalDespesas = despesasFiltradas.reduce((acc, d) => acc + d.valor, 0);
+  const totalLiquido = totais.proprietario - totalDespesas;
 
   return (
     <PageTransition>
@@ -205,7 +253,6 @@ const ProprietarioDashboard: React.FC = () => {
               <div className="px-5 py-3 flex flex-wrap items-end gap-3 border-b border-border">
                 <DateFilter label="De" value={filterDe} onChange={setFilterDe} />
                 <DateFilter label="Até" value={filterAte} onChange={setFilterAte} />
-
                 {(filterDe || filterAte) && (
                   <Button
                     variant="ghost"
@@ -216,7 +263,6 @@ const ProprietarioDashboard: React.FC = () => {
                     <X className="h-3 w-3" /> Limpar
                   </Button>
                 )}
-
                 <span className="ml-auto self-end text-xs text-muted-foreground">
                   {reservasFiltradas.length} reserva{reservasFiltradas.length !== 1 ? "s" : ""}
                 </span>
@@ -279,7 +325,7 @@ const ProprietarioDashboard: React.FC = () => {
                     <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
                     <TotalItem label="Comissão" value={fmt(totais.comissao)} />
                     <div className="pl-8 border-l border-border">
-                      <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Total</p>
+                      <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Repasse</p>
                       <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
                     </div>
                   </div>
@@ -288,6 +334,107 @@ const ProprietarioDashboard: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* Despesas Extras */}
+        <section className="border border-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setDespesasAberto((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-display text-base text-foreground tracking-wide">Despesas Extras</span>
+              {despesasFiltradas.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-destructive/70 font-medium">
+                  <AlertCircle className="h-3 w-3" />
+                  {despesasFiltradas.length} item{despesasFiltradas.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            {despesasAberto
+              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+
+          {despesasAberto && (
+            <div className="border-t border-border">
+              {loading ? (
+                <div className="p-10 flex justify-center">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : despesasFiltradas.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground text-sm">Nenhuma despesa extra no período selecionado</p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        {["Imóvel", "Descrição", "Tipo", "Data", "Valor"].map((h, i) => (
+                          <TableHead
+                            key={h}
+                            className={cn(
+                              "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
+                              i === 4 && "text-right"
+                            )}
+                          >
+                            {h}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {despesasFiltradas.map((d) => (
+                        <TableRow key={d.id} className="border-border hover:bg-muted/20">
+                          <TableCell className="text-foreground font-medium text-sm py-3">
+                            {d.imovel?.nome_imovel ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3">{d.descricao}</TableCell>
+                          <TableCell className="py-3">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-destructive/10 text-destructive/80 border border-destructive/20">
+                              {TIPO_LABELS[d.tipo] ?? d.tipo}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3">
+                            {new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell className="text-destructive text-sm text-right font-semibold py-3">
+                            - {fmt(d.valor)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  <div className="border-t border-border px-5 py-3 flex items-center justify-end">
+                    <div className="text-right">
+                      <p className="text-[10px] text-destructive/70 uppercase tracking-widest mb-0.5">Total Despesas</p>
+                      <p className="font-display text-base text-destructive font-semibold">- {fmt(totalDespesas)}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* Resumo Líquido Final */}
+        {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
+          <div className="border border-primary/20 rounded-lg px-5 py-4 bg-primary/5 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Líquido Final do Período</p>
+              <p className="text-xs text-muted-foreground">Repasse − Despesas Extras</p>
+            </div>
+            <div className="text-right">
+              <p className={cn(
+                "font-display text-2xl font-semibold",
+                totalLiquido >= 0 ? "text-primary" : "text-destructive"
+              )}>
+                {fmt(totalLiquido)}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Calendar */}
         <section className="border border-border rounded-lg p-5">
