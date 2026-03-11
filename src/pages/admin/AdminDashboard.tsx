@@ -1,8 +1,73 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Building2, CalendarDays, TrendingUp, DollarSign, Percent, UserCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Users,
+  Building2,
+  CalendarDays,
+  TrendingUp,
+  DollarSign,
+  Percent,
+  UserCheck,
+  Plus,
+  Trash2,
+  Receipt,
+} from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
+import { cn } from "@/lib/utils";
+
+interface Imovel {
+  id: string;
+  nome_imovel: string;
+}
+
+interface DespesaExtra {
+  id: string;
+  imovel_id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  tipo: string;
+  imovel?: { nome_imovel: string };
+}
+
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const TIPOS = [
+  { value: "manutencao", label: "Manutenção" },
+  { value: "amenities", label: "Amenities" },
+  { value: "limpeza_extra", label: "Limpeza Extra" },
+  { value: "reparo", label: "Reparo" },
+  { value: "outros", label: "Outros" },
+];
+
+const tipoLabel = (v: string) => TIPOS.find((t) => t.value === v)?.label ?? v;
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -20,162 +85,159 @@ const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  // Despesas extras
+  const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
+  const [imoveis, setImoveis] = useState<Imovel[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    imovel_id: "",
+    descricao: "",
+    valor: "",
+    data: new Date().toISOString().split("T")[0],
+    tipo: "manutencao",
+  });
+
   useEffect(() => {
-    const fetchStats = async () => {
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString()
-        .split("T")[0];
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-        .toISOString()
-        .split("T")[0];
-
-      const [
-        { count: propCount },
-        { count: imovelCount },
-        { count: reservaCount },
-        { data: reservasMes },
-        { data: reservasDetalhadas },
-      ] = await Promise.all([
-        supabase
-          .from("user_roles")
-          .select("*", { count: "exact", head: true })
-          .eq("role", "proprietario"),
-        supabase.from("imoveis").select("*", { count: "exact", head: true }),
-        supabase.from("reservas").select("*", { count: "exact", head: true }),
-        supabase
-          .from("reservas")
-          .select("valor_liquido_proprietario")
-          .gte("data_fim", firstDay)
-          .lte("data_fim", lastDay),
-        supabase
-          .from("reservas")
-          .select("valor_bruto, taxa_limpeza")
-          .gte("data_fim", firstDay)
-          .lte("data_fim", lastDay),
-      ]);
-
-      const receitaMes = (reservasMes || []).reduce(
-        (acc, r) => acc + (r.valor_liquido_proprietario || 0),
-        0
-      );
-
-      // Calcular valores financeiros detalhados
-      const totais = (reservasDetalhadas || []).reduce(
-        (acc, r) => {
-          const valorBruto = r.valor_bruto || 0;
-          const taxaLimpeza = r.taxa_limpeza || 0;
-          const valorLiquido = valorBruto - taxaLimpeza;
-          const comissaoCW = valorLiquido * 0.25;
-          const valorProprietario = valorLiquido - comissaoCW;
-
-          return {
-            valorBruto: acc.valorBruto + valorBruto,
-            taxaLimpeza: acc.taxaLimpeza + taxaLimpeza,
-            valorLiquido: acc.valorLiquido + valorLiquido,
-            comissaoCW: acc.comissaoCW + comissaoCW,
-            valorProprietario: acc.valorProprietario + valorProprietario,
-          };
-        },
-        { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
-      );
-
-      setStats({
-        totalProprietarios: propCount || 0,
-        totalImoveis: imovelCount || 0,
-        totalReservas: reservaCount || 0,
-        receitaMes,
-      });
-      setFinanceiro(totais);
-      setLoading(false);
-    };
-
     fetchStats();
+    fetchDespesas();
+    fetchImoveis();
   }, []);
 
+  const fetchStats = async () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      .toISOString()
+      .split("T")[0];
+
+    const [
+      { count: propCount },
+      { count: imovelCount },
+      { count: reservaCount },
+      { data: reservasMes },
+      { data: reservasDetalhadas },
+    ] = await Promise.all([
+      supabase
+        .from("user_roles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "proprietario"),
+      supabase.from("imoveis").select("*", { count: "exact", head: true }),
+      supabase.from("reservas").select("*", { count: "exact", head: true }),
+      supabase
+        .from("reservas")
+        .select("valor_liquido_proprietario")
+        .gte("data_fim", firstDay)
+        .lte("data_fim", lastDay),
+      supabase
+        .from("reservas")
+        .select("valor_bruto, taxa_limpeza")
+        .gte("data_fim", firstDay)
+        .lte("data_fim", lastDay),
+    ]);
+
+    const receitaMes = (reservasMes || []).reduce(
+      (acc, r) => acc + (r.valor_liquido_proprietario || 0),
+      0
+    );
+
+    const totais = (reservasDetalhadas || []).reduce(
+      (acc, r) => {
+        const valorBruto = r.valor_bruto || 0;
+        const taxaLimpeza = r.taxa_limpeza || 0;
+        const valorLiquido = valorBruto - taxaLimpeza;
+        const comissaoCW = valorLiquido * 0.25;
+        const valorProprietario = valorLiquido - comissaoCW;
+        return {
+          valorBruto: acc.valorBruto + valorBruto,
+          taxaLimpeza: acc.taxaLimpeza + taxaLimpeza,
+          valorLiquido: acc.valorLiquido + valorLiquido,
+          comissaoCW: acc.comissaoCW + comissaoCW,
+          valorProprietario: acc.valorProprietario + valorProprietario,
+        };
+      },
+      { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
+    );
+
+    setStats({
+      totalProprietarios: propCount || 0,
+      totalImoveis: imovelCount || 0,
+      totalReservas: reservaCount || 0,
+      receitaMes,
+    });
+    setFinanceiro(totais);
+    setLoading(false);
+  };
+
+  const fetchDespesas = async () => {
+    const { data } = await supabase
+      .from("despesas_extras" as any)
+      .select("*, imoveis(nome_imovel)")
+      .order("data", { ascending: false });
+    setDespesas((data || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
+  };
+
+  const fetchImoveis = async () => {
+    const { data } = await supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel");
+    setImoveis(data || []);
+  };
+
+  const handleSave = async () => {
+    if (!form.imovel_id || !form.descricao || !form.valor) return;
+    setSaving(true);
+    await supabase.from("despesas_extras" as any).insert({
+      imovel_id: form.imovel_id,
+      descricao: form.descricao,
+      valor: parseFloat(form.valor.replace(",", ".")),
+      data: form.data,
+      tipo: form.tipo,
+    });
+    setForm({ imovel_id: "", descricao: "", valor: "", data: new Date().toISOString().split("T")[0], tipo: "manutencao" });
+    setDialogOpen(false);
+    setSaving(false);
+    fetchDespesas();
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("despesas_extras" as any).delete().eq("id", id);
+    fetchDespesas();
+  };
+
   const cards = [
-    {
-      title: "Proprietários",
-      value: stats.totalProprietarios,
-      icon: Users,
-      format: "number",
-    },
-    {
-      title: "Imóveis",
-      value: stats.totalImoveis,
-      icon: Building2,
-      format: "number",
-    },
-    {
-      title: "Reservas",
-      value: stats.totalReservas,
-      icon: CalendarDays,
-      format: "number",
-    },
-    {
-      title: "Repasse a Proprietários",
-      value: stats.receitaMes,
-      icon: TrendingUp,
-      format: "currency",
-    },
+    { title: "Proprietários", value: stats.totalProprietarios, icon: Users, format: "number" },
+    { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
+    { title: "Reservas", value: stats.totalReservas, icon: CalendarDays, format: "number" },
+    { title: "Repasse a Proprietários", value: stats.receitaMes, icon: TrendingUp, format: "currency" },
   ];
 
   const financeiroCards = [
-    {
-      title: "Valor Bruto",
-      value: financeiro.valorBruto,
-      icon: DollarSign,
-      description: "Total sem deduções",
-    },
-    {
-      title: "Taxa Limpeza",
-      value: financeiro.taxaLimpeza,
-      icon: Percent,
-      description: "Dedução do bruto",
-    },
-    {
-      title: "Valor Líquido",
-      value: financeiro.valorLiquido,
-      icon: DollarSign,
-      description: "Bruto - Limpeza",
-    },
-    {
-      title: "Comissão CW",
-      value: financeiro.comissaoCW,
-      icon: Percent,
-      description: "25% sobre líquido",
-    },
-    {
-      title: "Proprietário",
-      value: financeiro.valorProprietario,
-      icon: UserCheck,
-      description: "Líquido - Comissão",
-    },
+    { title: "Valor Bruto", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
+    { title: "Taxa Limpeza", value: financeiro.taxaLimpeza, icon: Percent, description: "Dedução do bruto" },
+    { title: "Valor Líquido", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
+    { title: "Comissão CW", value: financeiro.comissaoCW, icon: Percent, description: "25% sobre líquido" },
+    { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
   ];
 
   const formatValue = (value: number, format: string) => {
-    if (format === "currency") {
-      return new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(value);
-    }
+    if (format === "currency") return fmt(value);
     return value.toString();
   };
 
   return (
     <PageTransition>
       <div className="space-y-8">
+        {/* Header */}
         <div>
-          <h1 className="font-display text-3xl text-foreground tracking-wide">
-            Visão Geral
-          </h1>
+          <h1 className="font-display text-3xl text-foreground tracking-wide">Visão Geral</h1>
           <p className="text-muted-foreground mt-1">
             Resumo do mês de{" "}
             {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
           </p>
         </div>
 
+        {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card) => (
             <Card
@@ -201,6 +263,7 @@ const AdminDashboard: React.FC = () => {
           ))}
         </div>
 
+        {/* Financeiro */}
         <div>
           <h2 className="font-display text-xl text-foreground tracking-wide mb-4">
             Detalhamento Financeiro
@@ -223,7 +286,7 @@ const AdminDashboard: React.FC = () => {
                   ) : (
                     <div className="space-y-1">
                       <p className="font-display text-xl text-foreground">
-                        {formatValue(card.value, "currency")}
+                        {fmt(card.value)}
                       </p>
                       <p className="text-xs text-muted-foreground">{card.description}</p>
                     </div>
@@ -234,15 +297,182 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-display text-lg text-foreground mb-2">
-            Acesso Rápido
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Use o menu lateral para gerenciar proprietários, imóveis e reservas.
-          </p>
+        {/* Despesas Extras */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-display text-xl text-foreground tracking-wide">Despesas Extras</h2>
+              <p className="text-muted-foreground text-sm mt-0.5">
+                Manutenções, amenities e outros custos vinculados aos imóveis
+              </p>
+            </div>
+            <Button
+              onClick={() => setDialogOpen(true)}
+              size="sm"
+              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Nova Despesa
+            </Button>
+          </div>
+
+          <div className="border border-border rounded-lg overflow-hidden">
+            {despesas.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
+                <Receipt className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Nenhuma despesa extra registrada</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border hover:bg-transparent">
+                    {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
+                      <TableHead
+                        key={i}
+                        className={cn(
+                          "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
+                          i === 4 && "text-right",
+                          i === 5 && "w-10"
+                        )}
+                      >
+                        {h}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {despesas.map((d) => (
+                    <TableRow key={d.id} className="border-border hover:bg-muted/20">
+                      <TableCell className="text-foreground font-medium text-sm py-3">
+                        {d.imovel?.nome_imovel ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm py-3">
+                        {d.descricao}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-primary/10 text-primary border border-primary/20">
+                          {tipoLabel(d.tipo)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm py-3">
+                        {new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-foreground text-sm text-right font-semibold py-3">
+                        {fmt(d.valor)}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <button
+                          onClick={() => handleDelete(d.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          {despesas.length > 0 && (
+            <div className="mt-2 flex justify-end">
+              <p className="text-xs text-muted-foreground">
+                Total:{" "}
+                <span className="text-foreground font-semibold">
+                  {fmt(despesas.reduce((acc, d) => acc + d.valor, 0))}
+                </span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Dialog Nova Despesa */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-card border-border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-foreground tracking-wide">
+              Nova Despesa Extra
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Imóvel</Label>
+              <Select value={form.imovel_id} onValueChange={(v) => setForm((f) => ({ ...f, imovel_id: v }))}>
+                <SelectTrigger className="bg-background border-border">
+                  <SelectValue placeholder="Selecionar imóvel…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {imoveis.map((im) => (
+                    <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Descrição</Label>
+              <Input
+                value={form.descricao}
+                onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
+                placeholder="Ex: Troca de torneira, kit amenities…"
+                className="bg-background border-border"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Tipo</Label>
+                <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIPOS.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Data</Label>
+                <Input
+                  type="date"
+                  value={form.data}
+                  onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
+                  className="bg-background border-border"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Valor (R$)</Label>
+              <Input
+                value={form.valor}
+                onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
+                placeholder="0,00"
+                className="bg-background border-border"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-border">
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving || !form.imovel_id || !form.descricao || !form.valor}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {saving ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 };
