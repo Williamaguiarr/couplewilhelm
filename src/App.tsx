@@ -28,6 +28,7 @@ const App = () => (
           <Routes>
             {/* Rota pública */}
             <Route path="/login" element={<Login />} />
+            <Route path="/setup" element={<Setup />} />
 
             {/* Redirecionar raiz para login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
