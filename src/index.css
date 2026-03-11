@@ -98,8 +98,8 @@
    =================================================== */
 @layer utilities {
   .shadow-luxury {
-    box-shadow: 0 8px 30px -8px hsl(60 10% 58% / 0.12),
-                0 2px 8px -2px hsl(211 71% 5% / 0.4);
+    box-shadow: 0 4px 24px -4px hsl(211 71% 11% / 0.08),
+                0 1px 6px -1px hsl(211 71% 11% / 0.06);
   }
 }
 
@@ -107,30 +107,30 @@
    CALENDÁRIO CUSTOMIZADO (react-day-picker)
    =================================================== */
 .rdp-day-occupied {
-  background-color: hsl(60 10% 58% / 0.25) !important;
-  color: hsl(60 10% 68%) !important;
+  background-color: hsl(60 10% 44% / 0.18) !important;
+  color: hsl(60 10% 30%) !important;
   font-weight: 500;
   border-radius: 4px;
 }
 
 .rdp-day-occupied:hover {
-  background-color: hsl(60 10% 58% / 0.4) !important;
+  background-color: hsl(60 10% 44% / 0.32) !important;
   cursor: pointer;
 }
 
 /* Esconder botões padrão do react-day-picker e usar nossos estilos */
 .rdp {
-  --rdp-accent-color: hsl(60 10% 58%);
-  --rdp-background-color: hsl(60 10% 58% / 0.15);
-  --rdp-accent-color-dark: hsl(60 10% 58%);
-  --rdp-background-color-dark: hsl(60 10% 58% / 0.15);
-  --rdp-outline: 2px solid hsl(60 10% 58%);
-  --rdp-outline-selected: 2px solid hsl(60 10% 58%);
+  --rdp-accent-color: hsl(60 10% 44%);
+  --rdp-background-color: hsl(60 10% 44% / 0.12);
+  --rdp-accent-color-dark: hsl(60 10% 44%);
+  --rdp-background-color-dark: hsl(60 10% 44% / 0.12);
+  --rdp-outline: 2px solid hsl(60 10% 44%);
+  --rdp-outline-selected: 2px solid hsl(60 10% 44%);
   margin: 0;
 }
 
 /* ===================================================
-   SCROLLBAR LUXURY
+   SCROLLBAR
    =================================================== */
 ::-webkit-scrollbar {
   width: 6px;
@@ -138,22 +138,23 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(211 71% 11%);
+  background: hsl(210 20% 95%);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(60 10% 58% / 0.3);
+  background: hsl(211 20% 75%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(60 10% 58% / 0.5);
+  background: hsl(60 10% 44% / 0.6);
 }
 
 /* ===================================================
-   INPUT DATE — Cor no dark mode
+   INPUT DATE
    =================================================== */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.7) sepia(0.3) saturate(0.8) hue-rotate(20deg);
+  filter: none;
   cursor: pointer;
+  opacity: 0.5;
 }
