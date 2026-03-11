@@ -12,10 +12,10 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { role, loading: authLoading } = useAuth();
+  const { role } = useAuth();
 
   // Redirecionar quando o role estiver disponível
   React.useEffect(() => {
@@ -23,16 +23,9 @@ const Login: React.FC = () => {
     else if (role === "proprietario") navigate("/dashboard", { replace: true });
   }, [role, navigate]);
 
-  // Se authLoading terminar sem role, libera o botão
-  React.useEffect(() => {
-    if (!authLoading && !role) {
-      setLoading(false);
-    }
-  }, [authLoading, role]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -42,9 +35,9 @@ const Login: React.FC = () => {
 
     if (signInError) {
       setError("E-mail ou senha inválidos. Tente novamente.");
-      setLoading(false);
+      setSubmitting(false);
     }
-    // Se OK, loading fica true até role chegar e useEffect redirecionar
+    // Se OK, submitting fica true enquanto o role chega e o useEffect redireciona
   };
 
   return (
@@ -125,9 +118,9 @@ const Login: React.FC = () => {
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 tracking-wider font-medium mt-2"
-              disabled={loading}
+              disabled={submitting}
             >
-              {loading ? (
+              {submitting ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-primary-foreground/50 border-t-primary-foreground rounded-full animate-spin" />
                   Entrando...
