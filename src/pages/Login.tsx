@@ -15,13 +15,20 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, loading: authLoading } = useAuth();
 
-  // Se já logado, redirecionar
+  // Redirecionar quando o role estiver disponível
   React.useEffect(() => {
     if (role === "admin") navigate("/admin", { replace: true });
     else if (role === "proprietario") navigate("/dashboard", { replace: true });
   }, [role, navigate]);
+
+  // Se authLoading terminar sem role, libera o botão
+  React.useEffect(() => {
+    if (!authLoading && !role) {
+      setLoading(false);
+    }
+  }, [authLoading, role]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +44,7 @@ const Login: React.FC = () => {
       setError("E-mail ou senha inválidos. Tente novamente.");
       setLoading(false);
     }
-    // loading fica true até o useEffect de role redirecionar
+    // Se OK, loading fica true até role chegar e useEffect redirecionar
   };
 
   return (
