@@ -284,9 +284,15 @@ const Reservas: React.FC = () => {
     const imovelNome = filterImovel !== "all"
       ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
       : "Todos os imóveis";
-    const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    const periodoLabel = filterDe && filterAte
+      ? `${format(filterDe, "dd/MM/yyyy")} a ${format(filterAte, "dd/MM/yyyy")}`
+      : filterDe
+        ? `A partir de ${format(filterDe, "dd/MM/yyyy")}`
+        : filterAte
+          ? `Até ${format(filterAte, "dd/MM/yyyy")}`
+          : "Todos os períodos";
     doc.text(`Imóvel: ${imovelNome}`, pageW - 14, 23, { align: "right" });
-    doc.text(`Período de referência: ${mesAno}`, pageW - 14, 29, { align: "right" });
+    doc.text(`Período: ${periodoLabel}`, pageW - 14, 29, { align: "right" });
     doc.text(
       `Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
       pageW - 14, 35, { align: "right" }
