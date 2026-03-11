@@ -56,10 +56,7 @@ const Login: React.FC = () => {
             alt="Couple Wilhelm"
             className="h-16 w-auto object-contain mb-4"
           />
-          <h1 className="font-display text-2xl tracking-[0.3em] text-primary uppercase">
-            Couple Wilhelm
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1 tracking-wider">
+          <p className="text-muted-foreground text-sm tracking-wider">
             Gestão de Aluguéis
           </p>
         </div>
