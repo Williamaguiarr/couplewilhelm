@@ -153,25 +153,16 @@ const ProprietarioDashboard: React.FC = () => {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const receitaMesAtual = reservas
-    .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
-      return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
-    })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
-
-  const previsaoFutura = reservas
-    .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
-      return (
-        fim > new Date() &&
-        !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
-      );
-    })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
-
-  const occupiedDays = reservas.flatMap((r) =>
-    getDaysBetween(r.data_inicio, r.data_fim)
+  const getReservasForDay = useCallback(
+    (day: Date) =>
+      reservas.filter((r) => {
+        const inicio = new Date(r.data_inicio + "T12:00:00");
+        const fim = new Date(r.data_fim + "T12:00:00");
+        const d = new Date(day);
+        d.setHours(12, 0, 0, 0);
+        return d >= inicio && d <= fim;
+      }),
+    [reservas]
   );
 
   const getReservasForDay = useCallback(
