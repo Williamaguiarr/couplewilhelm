@@ -484,6 +484,7 @@ const Reservas: React.FC = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Filtro */}
