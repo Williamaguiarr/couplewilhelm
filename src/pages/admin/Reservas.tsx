@@ -45,6 +45,7 @@ interface Reserva {
   data_fim: string;
   valor_bruto: number | null;
   valor_liquido_proprietario: number | null;
+  taxa_limpeza: number | null;
   observacoes: string | null;
   imovel_id: string;
   imovel?: { nome_imovel: string };
@@ -60,33 +61,179 @@ const fmt = (v: number | null) =>
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
     : "—";
 
+const COMISSAO_RATE = 0.25;
+
+const calcComissao = (valorBruto: string | number | null): number => {
+  const v = typeof valorBruto === "string" ? parseFloat(valorBruto) : valorBruto;
+  if (!v || isNaN(v)) return 0;
+  return v * COMISSAO_RATE;
+};
+
+const calcValorProprietario = (
+  valorLiquido: string | number | null,
+  taxaLimpeza: string | number | null,
+  valorBruto: string | number | null
+): number | null => {
+  const liq = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
+  const taxa = typeof taxaLimpeza === "string" ? parseFloat(taxaLimpeza) : taxaLimpeza;
+  const bruto = typeof valorBruto === "string" ? parseFloat(valorBruto) : valorBruto;
+  if (liq == null || isNaN(liq)) return null;
+  const comissao = (bruto && !isNaN(bruto)) ? bruto * COMISSAO_RATE : 0;
+  const limpeza = (taxa && !isNaN(taxa)) ? taxa : 0;
+  return liq - limpeza - comissao;
+};
+
 const emptyForm = {
   imovel_id: "",
   data_inicio: "",
   data_fim: "",
   valor_bruto: "",
-  valor_liquido_proprietario: "",
+  valor_liquido: "",
+  taxa_limpeza: "",
   observacoes: "",
 };
 
+type FormState = typeof emptyForm;
+
+// ─── Reusable form fields ───────────────────────────────────────────────────
+const ReservaFormFields = ({
+  form,
+  setForm,
+  imoveis,
+}: {
+  form: FormState;
+  setForm: (f: FormState) => void;
+  imoveis: Imovel[];
+}) => {
+  const comissao = calcComissao(form.valor_bruto);
+  const valorProprietario = calcValorProprietario(form.valor_liquido, form.taxa_limpeza, form.valor_bruto);
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Imóvel</Label>
+        <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}>
+          <SelectTrigger className="bg-background border-border">
+            <SelectValue placeholder="Selecione o imóvel" />
+          </SelectTrigger>
+          <SelectContent className="bg-card border-border">
+            {imoveis.map((i) => (
+              <SelectItem key={i.id} value={i.id} className="text-foreground">
+                {i.nome_imovel}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Check-in</Label>
+          <Input
+            type="date"
+            value={form.data_inicio}
+            onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
+            required
+            className="bg-background"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Check-out</Label>
+          <Input
+            type="date"
+            value={form.data_fim}
+            onChange={(e) => setForm({ ...form, data_fim: e.target.value })}
+            required
+            className="bg-background"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.valor_bruto}
+            onChange={(e) => setForm({ ...form, valor_bruto: e.target.value })}
+            placeholder="0,00"
+            className="bg-background"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.valor_liquido}
+            onChange={(e) => setForm({ ...form, valor_liquido: e.target.value })}
+            placeholder="0,00"
+            className="bg-background"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Taxa de Limpeza (R$)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.taxa_limpeza}
+            onChange={(e) => setForm({ ...form, taxa_limpeza: e.target.value })}
+            placeholder="0,00"
+            className="bg-background"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Comissão CW (25%)</Label>
+          <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
+            {form.valor_bruto ? fmt(comissao) : "—"}
+          </div>
+        </div>
+      </div>
+
+      {/* Valor do Proprietário calculado */}
+      <div className="rounded-md border border-border bg-muted/20 px-4 py-3 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground font-medium">Valor do Proprietário</span>
+        <span className="text-primary font-semibold text-base">
+          {valorProprietario != null ? fmt(valorProprietario) : "—"}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Observações</Label>
+        <Input
+          value={form.observacoes}
+          onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+          placeholder="Opcional"
+          className="bg-background"
+        />
+      </div>
+    </>
+  );
+};
+
+// ─── Main component ─────────────────────────────────────────────────────────
 const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [filterImovel, setFilterImovel] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  // Nova reserva
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
-  // Editar reserva
   const [editOpen, setEditOpen] = useState(false);
   const [editingReserva, setEditingReserva] = useState<Reserva | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
-  // Excluir reserva
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { toast } = useToast();
@@ -115,14 +262,18 @@ const Reservas: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
 
+    const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
+    const valorLiquido = form.valor_liquido ? parseFloat(form.valor_liquido) : null;
+    const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
+    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza, valorBruto);
+
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
       data_inicio: form.data_inicio,
       data_fim: form.data_fim,
-      valor_bruto: form.valor_bruto ? parseFloat(form.valor_bruto) : null,
-      valor_liquido_proprietario: form.valor_liquido_proprietario
-        ? parseFloat(form.valor_liquido_proprietario)
-        : null,
+      valor_bruto: valorBruto,
+      valor_liquido_proprietario: valorProprietario,
+      taxa_limpeza: taxaLimpeza,
       observacoes: form.observacoes || null,
     });
 
@@ -140,12 +291,22 @@ const Reservas: React.FC = () => {
 
   const openEdit = (r: Reserva) => {
     setEditingReserva(r);
+    // Reverse-calc valor_liquido from stored valor_liquido_proprietario
+    // stored = liquido - limpeza - comissao => liquido = stored + limpeza + comissao
+    const bruto = r.valor_bruto ?? 0;
+    const limpeza = r.taxa_limpeza ?? 0;
+    const comissao = bruto * COMISSAO_RATE;
+    const liquidoRecalc = r.valor_liquido_proprietario != null
+      ? r.valor_liquido_proprietario + limpeza + comissao
+      : null;
+
     setEditForm({
       imovel_id: r.imovel_id,
       data_inicio: r.data_inicio,
       data_fim: r.data_fim,
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
-      valor_liquido_proprietario: r.valor_liquido_proprietario != null ? String(r.valor_liquido_proprietario) : "",
+      valor_liquido: liquidoRecalc != null ? String(liquidoRecalc) : "",
+      taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
       observacoes: r.observacoes || "",
     });
     setEditOpen(true);
@@ -156,16 +317,20 @@ const Reservas: React.FC = () => {
     if (!editingReserva) return;
     setEditSubmitting(true);
 
+    const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
+    const valorLiquido = editForm.valor_liquido ? parseFloat(editForm.valor_liquido) : null;
+    const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
+    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza, valorBruto);
+
     const { error } = await supabase
       .from("reservas")
       .update({
         imovel_id: editForm.imovel_id,
         data_inicio: editForm.data_inicio,
         data_fim: editForm.data_fim,
-        valor_bruto: editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null,
-        valor_liquido_proprietario: editForm.valor_liquido_proprietario
-          ? parseFloat(editForm.valor_liquido_proprietario)
-          : null,
+        valor_bruto: valorBruto,
+        valor_liquido_proprietario: valorProprietario,
+        taxa_limpeza: taxaLimpeza,
         observacoes: editForm.observacoes || null,
       })
       .eq("id", editingReserva.id);
@@ -209,51 +374,23 @@ const Reservas: React.FC = () => {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Reserva</Button>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" /> Nova Reserva
+              </Button>
             </DialogTrigger>
             <DialogContent className="bg-card border-border max-w-lg">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">Cadastrar Reserva</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSave} className="space-y-4 mt-2">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Imóvel</Label>
-                  <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}>
-                    <SelectTrigger className="bg-background border-border"><SelectValue placeholder="Selecione o imóvel" /></SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {imoveis.map((i) => (
-                        <SelectItem key={i.id} value={i.id} className="text-foreground">{i.nome_imovel}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Check-in</Label>
-                    <Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} required className="bg-background" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Check-out</Label>
-                    <Input type="date" value={form.data_fim} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} required className="bg-background" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
-                    <Input type="number" step="0.01" value={form.valor_bruto} onChange={(e) => setForm({ ...form, valor_bruto: e.target.value })} placeholder="0,00" className="bg-background" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
-                    <Input type="number" step="0.01" value={form.valor_liquido_proprietario} onChange={(e) => setForm({ ...form, valor_liquido_proprietario: e.target.value })} placeholder="0,00" className="bg-background" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Observações</Label>
-                  <Input value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} placeholder="Opcional" className="bg-background" />
-                </div>
+                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} />
                 <div className="flex gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancelar</Button>
-                  <Button type="submit" disabled={submitting || !form.imovel_id} className="flex-1">{submitting ? "Salvando..." : "Salvar"}</Button>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={submitting || !form.imovel_id} className="flex-1">
+                    {submitting ? "Salvando..." : "Salvar"}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
@@ -270,7 +407,9 @@ const Reservas: React.FC = () => {
             <SelectContent className="bg-card border-border">
               <SelectItem value="all" className="text-foreground">Todos os imóveis</SelectItem>
               {imoveis.map((i) => (
-                <SelectItem key={i.id} value={i.id} className="text-foreground">{i.nome_imovel}</SelectItem>
+                <SelectItem key={i.id} value={i.id} className="text-foreground">
+                  {i.nome_imovel}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -278,7 +417,9 @@ const Reservas: React.FC = () => {
 
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           {loading ? (
-            <div className="p-8 flex justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+            <div className="p-8 flex justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
           ) : filteredReservas.length === 0 ? (
             <div className="p-12 flex flex-col items-center gap-3 text-center">
               <CalendarDays className="h-10 w-10 text-muted-foreground opacity-40" />
@@ -292,28 +433,35 @@ const Reservas: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-in</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-out</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Bruto</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Líquido</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Tx. Limpeza</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão CW</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReservas.map((r) => (
-                  <TableRow key={r.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="text-foreground font-medium">{r.imovel?.nome_imovel || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
-                    <TableCell className="text-primary font-medium">{fmt(r.valor_liquido_proprietario)}</TableCell>
-                    <TableCell className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="h-8 w-8 hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredReservas.map((r) => {
+                  const comissao = r.valor_bruto ? r.valor_bruto * COMISSAO_RATE : null;
+                  return (
+                    <TableRow key={r.id} className="border-border hover:bg-muted/30">
+                      <TableCell className="text-foreground font-medium">{r.imovel?.nome_imovel || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
+                      <TableCell className="text-muted-foreground">{fmt(r.taxa_limpeza)}</TableCell>
+                      <TableCell className="text-muted-foreground">{fmt(comissao)}</TableCell>
+                      <TableCell className="text-primary font-semibold">{fmt(r.valor_liquido_proprietario)}</TableCell>
+                      <TableCell className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="h-8 w-8 hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -327,44 +475,14 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Imóvel</Label>
-              <Select value={editForm.imovel_id} onValueChange={(v) => setEditForm({ ...editForm, imovel_id: v })}>
-                <SelectTrigger className="bg-background border-border"><SelectValue placeholder="Selecione o imóvel" /></SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  {imoveis.map((i) => (
-                    <SelectItem key={i.id} value={i.id} className="text-foreground">{i.nome_imovel}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Check-in</Label>
-                <Input type="date" value={editForm.data_inicio} onChange={(e) => setEditForm({ ...editForm, data_inicio: e.target.value })} required className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Check-out</Label>
-                <Input type="date" value={editForm.data_fim} onChange={(e) => setEditForm({ ...editForm, data_fim: e.target.value })} required className="bg-background" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
-                <Input type="number" step="0.01" value={editForm.valor_bruto} onChange={(e) => setEditForm({ ...editForm, valor_bruto: e.target.value })} placeholder="0,00" className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
-                <Input type="number" step="0.01" value={editForm.valor_liquido_proprietario} onChange={(e) => setEditForm({ ...editForm, valor_liquido_proprietario: e.target.value })} placeholder="0,00" className="bg-background" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">Observações</Label>
-              <Input value={editForm.observacoes} onChange={(e) => setEditForm({ ...editForm, observacoes: e.target.value })} placeholder="Opcional" className="bg-background" />
-            </div>
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} />
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">Cancelar</Button>
-              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id} className="flex-1">{editSubmitting ? "Salvando..." : "Salvar alterações"}</Button>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id} className="flex-1">
+                {editSubmitting ? "Salvando..." : "Salvar alterações"}
+              </Button>
             </div>
           </form>
         </DialogContent>
