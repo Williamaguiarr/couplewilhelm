@@ -263,7 +263,7 @@ const Reservas: React.FC = () => {
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
     const valorLiquido = form.valor_liquido ? parseFloat(form.valor_liquido) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
-    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza, valorBruto);
+    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
