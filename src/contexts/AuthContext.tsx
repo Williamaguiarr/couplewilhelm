@@ -43,19 +43,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchProfileAndRole = async (userId: string) => {
-    const [{ data: profileData }, { data: roleData }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).single(),
-      supabase.from("user_roles").select("role").eq("user_id", userId).single(),
-    ]);
+    try {
+      const [{ data: profileData }, { data: roleData }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", userId).single(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).single(),
+      ]);
 
-    if (profileData) setProfile(profileData);
-    if (roleData) setRole(roleData.role as AppRole);
+      if (profileData) setProfile(profileData);
+      if (roleData) setRole(roleData.role as AppRole);
+    } catch {
+      // Falha silenciosa — loading será finalizado pelo caller
+    }
   };
 
   useEffect(() => {
-    // Configurar listener ANTES de getSession
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        if (!mounted) return;
+
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
@@ -65,15 +72,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           setRole(null);
         }
-        setLoading(false);
+
+        if (mounted) setLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (!existingSession) setLoading(false);
+      if (!existingSession && mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
