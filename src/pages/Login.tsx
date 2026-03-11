@@ -36,11 +36,8 @@ const Login: React.FC = () => {
     if (signInError) {
       setError("E-mail ou senha inválidos. Tente novamente.");
       setLoading(false);
-      return;
     }
-
-    // O AuthContext cuidará do redirecionamento via useEffect acima
-    setLoading(false);
+    // loading fica true até o useEffect de role redirecionar
   };
 
   return (
