@@ -430,13 +430,9 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredReservas.map((r) => {
-                  // Comissão = 25% do valor líquido
-                  // liquido = (proprietario + limpeza) / 0.75
-                  // comissao = liquido * 0.25 = (proprietario + limpeza) / 3
-                  const limpeza = r.taxa_limpeza ?? 0;
-                  const comissao = r.valor_liquido_proprietario != null
-                    ? (r.valor_liquido_proprietario + limpeza) / 3
-                    : null;
+                  // Valor Líquido = Bruto - Limpeza; Comissão CW = Líquido * 25%
+                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza);
+                  const comissao = calcComissao(valorLiquido);
                   return (
                     <TableRow key={r.id} className="border-border hover:bg-muted/30">
                       <TableCell className="text-foreground font-medium">{r.imovel?.nome_imovel || "—"}</TableCell>
