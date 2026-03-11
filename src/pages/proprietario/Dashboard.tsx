@@ -9,9 +9,22 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { TrendingUp, CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TrendingUp, CalendarCheck, CalendarDays, X, ChevronDown, ChevronUp } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { ptBR } from "date-fns/locale";
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Reserva {
   id: string;
@@ -19,15 +32,17 @@ interface Reserva {
   data_inicio: string;
   data_fim: string;
   valor_bruto: number | null;
+  taxa_limpeza: number | null;
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
   imovel?: { nome_imovel: string };
 }
 
-const fmt = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+const fmt = (v: number | null) =>
+  v != null
+    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
+    : "—";
 
-// Gerar todos os dias entre duas datas (inclusive)
 const getDaysBetween = (start: string, end: string): Date[] => {
   const days: Date[] = [];
   const current = new Date(start + "T12:00:00");
@@ -39,6 +54,17 @@ const getDaysBetween = (start: string, end: string): Date[] => {
   return days;
 };
 
+const COMISSAO = 0.25;
+
+const calcFinanceiro = (r: Reserva) => {
+  const bruto = r.valor_bruto ?? 0;
+  const limpeza = r.taxa_limpeza ?? 0;
+  const liquido = bruto - limpeza;
+  const comissao = liquido * COMISSAO;
+  const proprietario = liquido - comissao;
+  return { bruto, limpeza, liquido, comissao, proprietario };
+};
+
 const ProprietarioDashboard: React.FC = () => {
   const { user } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
@@ -47,13 +73,18 @@ const ProprietarioDashboard: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
 
+  // Filtro de período do extrato
+  const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
+  const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [extratoAberto, setExtratoAberto] = useState(true);
+
   useEffect(() => {
     if (!user) return;
     const fetchReservas = async () => {
       const { data } = await supabase
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
-        .order("data_inicio", { ascending: true });
+        .order("data_inicio", { ascending: false });
 
       setReservas((data || []).map((r: any) => ({ ...r, imovel: r.imoveis })));
       setLoading(false);
@@ -61,7 +92,7 @@ const ProprietarioDashboard: React.FC = () => {
     fetchReservas();
   }, [user]);
 
-  // Calcular métricas
+  // Métricas
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -71,7 +102,7 @@ const ProprietarioDashboard: React.FC = () => {
       const fim = new Date(r.data_fim + "T12:00:00");
       return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
     })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario || 0), 0);
+    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
 
   const previsaoFutura = reservas
     .filter((r) => {
@@ -81,36 +112,58 @@ const ProprietarioDashboard: React.FC = () => {
         !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
       );
     })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario || 0), 0);
+    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
 
-  // Dias ocupados para o calendário
+  // Calendário
   const occupiedDays = reservas.flatMap((r) =>
     getDaysBetween(r.data_inicio, r.data_fim)
   );
 
-  // Encontrar reservas para um dia específico
   const getReservasForDay = useCallback(
-    (day: Date) => {
-      return reservas.filter((r) => {
+    (day: Date) =>
+      reservas.filter((r) => {
         const inicio = new Date(r.data_inicio + "T12:00:00");
         const fim = new Date(r.data_fim + "T12:00:00");
         const d = new Date(day);
         d.setHours(12, 0, 0, 0);
         return d >= inicio && d <= fim;
-      });
-    },
+      }),
     [reservas]
   );
 
   const handleDayClick = (day: Date) => {
-    const reservasDay = getReservasForDay(day);
-    if (reservasDay.length > 0) {
+    if (getReservasForDay(day).length > 0) {
       setSelectedDay(day);
       setPopoverOpen(true);
     }
   };
 
   const selectedReservas = selectedDay ? getReservasForDay(selectedDay) : [];
+
+  // Extrato filtrado por período
+  const reservasFiltradas = reservas.filter((r) => {
+    if (!filterDe && !filterAte) return true;
+    const dataFim = parseISO(r.data_fim + "T12:00:00");
+    if (filterDe && filterAte)
+      return isWithinInterval(dataFim, { start: filterDe, end: filterAte });
+    if (filterDe) return dataFim >= filterDe;
+    if (filterAte) return dataFim <= filterAte;
+    return true;
+  });
+
+  // Totalizadores do extrato
+  const totais = reservasFiltradas.reduce(
+    (acc, r) => {
+      const f = calcFinanceiro(r);
+      return {
+        bruto: acc.bruto + f.bruto,
+        limpeza: acc.limpeza + f.limpeza,
+        comissao: acc.comissao + f.comissao,
+        proprietario: acc.proprietario + f.proprietario,
+      };
+    },
+    { bruto: 0, limpeza: 0, comissao: 0, proprietario: 0 }
+  );
 
   return (
     <PageTransition>
@@ -138,9 +191,7 @@ const ProprietarioDashboard: React.FC = () => {
               ) : (
                 <>
                   <p className="font-display text-3xl text-foreground">{fmt(receitaMesAtual)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Reservas com checkout neste mês
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Reservas com checkout neste mês</p>
                 </>
               )}
             </CardContent>
@@ -159,13 +210,177 @@ const ProprietarioDashboard: React.FC = () => {
               ) : (
                 <>
                   <p className="font-display text-3xl text-foreground">{fmt(previsaoFutura)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Reservas futuras confirmadas
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Reservas futuras confirmadas</p>
                 </>
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* ── Extrato Financeiro ── */}
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          {/* Cabeçalho colapsável */}
+          <button
+            onClick={() => setExtratoAberto((v) => !v)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/20 transition-colors"
+          >
+            <div className="text-left">
+              <h2 className="font-display text-lg text-foreground">Extrato Financeiro</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Detalhamento por reserva: bruto, limpeza, comissão CW e seu repasse
+              </p>
+            </div>
+            {extratoAberto
+              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+
+          {extratoAberto && (
+            <div className="border-t border-border">
+              {/* Filtros de período */}
+              <div className="px-6 py-4 flex flex-wrap items-end gap-4 bg-muted/10 border-b border-border">
+                <div className="space-y-1.5">
+                  <Label className="text-muted-foreground text-xs uppercase tracking-wide">De</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-38 justify-start text-left font-normal bg-background border-border text-sm h-9",
+                          !filterDe && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarDays className="mr-2 h-3.5 w-3.5 opacity-60" />
+                        {filterDe ? format(filterDe, "dd/MM/yyyy") : "Início"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={filterDe}
+                        onSelect={setFilterDe}
+                        initialFocus
+                        locale={ptBR}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-muted-foreground text-xs uppercase tracking-wide">Até</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-38 justify-start text-left font-normal bg-background border-border text-sm h-9",
+                          !filterAte && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarDays className="mr-2 h-3.5 w-3.5 opacity-60" />
+                        {filterAte ? format(filterAte, "dd/MM/yyyy") : "Fim"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={filterAte}
+                        onSelect={setFilterAte}
+                        initialFocus
+                        locale={ptBR}
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {(filterDe || filterAte) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setFilterDe(undefined); setFilterAte(undefined); }}
+                    className="text-muted-foreground hover:text-foreground gap-1.5 self-end h-9"
+                  >
+                    <X className="h-3.5 w-3.5" /> Limpar
+                  </Button>
+                )}
+
+                <span className="ml-auto self-end text-xs text-muted-foreground">
+                  {reservasFiltradas.length} reserva{reservasFiltradas.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {/* Tabela */}
+              {loading ? (
+                <div className="p-8 flex justify-center">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : reservasFiltradas.length === 0 ? (
+                <div className="p-10 text-center">
+                  <p className="text-muted-foreground text-sm">Nenhuma reserva no período selecionado</p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Imóvel</TableHead>
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Check-in</TableHead>
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider">Check-out</TableHead>
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Valor Bruto</TableHead>
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Tx. Limpeza</TableHead>
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Comissão CW</TableHead>
+                        <TableHead className="text-muted-foreground text-xs uppercase tracking-wider text-right">Seu Repasse</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reservasFiltradas.map((r) => {
+                        const f = calcFinanceiro(r);
+                        return (
+                          <TableRow key={r.id} className="border-border hover:bg-muted/30">
+                            <TableCell className="text-foreground font-medium">
+                              {r.imovel?.nome_imovel ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right">{fmt(f.bruto)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right">{fmt(f.limpeza)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right">{fmt(f.comissao)}</TableCell>
+                            <TableCell className="text-primary font-semibold text-sm text-right">{fmt(f.proprietario)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+
+                  {/* Rodapé com totais */}
+                  <div className="border-t border-border bg-muted/20 px-4 py-3 grid grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Bruto</p>
+                      <p className="font-display text-sm text-foreground">{fmt(totais.bruto)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Limpeza</p>
+                      <p className="font-display text-sm text-foreground">{fmt(totais.limpeza)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Comissão CW</p>
+                      <p className="font-display text-sm text-foreground">{fmt(totais.comissao)}</p>
+                    </div>
+                    <div className="text-center border-l border-border">
+                      <p className="text-xs text-primary uppercase tracking-wide mb-1">Seu Total</p>
+                      <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Calendário */}
@@ -186,9 +401,7 @@ const ProprietarioDashboard: React.FC = () => {
                     locale={ptBR}
                     onDayClick={handleDayClick}
                     modifiers={{ occupied: occupiedDays }}
-                    modifiersClassNames={{
-                      occupied: "rdp-day-occupied",
-                    }}
+                    modifiersClassNames={{ occupied: "rdp-day-occupied" }}
                     classNames={{
                       root: "rdp-luxury",
                       months: "flex flex-col",
@@ -216,7 +429,7 @@ const ProprietarioDashboard: React.FC = () => {
 
               {selectedDay && selectedReservas.length > 0 && (
                 <PopoverContent
-                  className="bg-card border border-primary/30 shadow-luxury w-72 p-4"
+                  className="bg-card border border-primary/30 shadow-luxury w-80 p-4"
                   align="center"
                 >
                   <div className="space-y-3">
@@ -227,31 +440,52 @@ const ProprietarioDashboard: React.FC = () => {
                         month: "long",
                       })}
                     </p>
-                    {selectedReservas.map((r) => (
-                      <div key={r.id} className="border-t border-border pt-3 space-y-1.5">
-                        <p className="text-foreground font-medium text-sm">
-                          {r.imovel?.nome_imovel}
-                        </p>
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>
-                            Check-in: {new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>
-                            Check-out: {new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                        {r.valor_liquido_proprietario && (
-                          <p className="text-primary font-semibold text-sm mt-1">
-                            {fmt(r.valor_liquido_proprietario)}
+                    {selectedReservas.map((r) => {
+                      const f = calcFinanceiro(r);
+                      return (
+                        <div key={r.id} className="border-t border-border pt-3 space-y-2">
+                          <p className="text-foreground font-medium text-sm">
+                            {r.imovel?.nome_imovel}
                           </p>
-                        )}
-                        {r.observacoes && (
-                          <p className="text-xs text-muted-foreground italic">{r.observacoes}</p>
-                        )}
-                      </div>
-                    ))}
+                          <div className="text-xs text-muted-foreground space-y-0.5">
+                            <div className="flex justify-between">
+                              <span>Check-in</span>
+                              <span>{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Check-out</span>
+                              <span>{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                            </div>
+                          </div>
+                          {/* Detalhamento financeiro */}
+                          <div className="bg-muted/30 rounded-md p-2.5 space-y-1.5 text-xs">
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Valor bruto</span>
+                              <span>{fmt(f.bruto)}</span>
+                            </div>
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Taxa de limpeza</span>
+                              <span>- {fmt(f.limpeza)}</span>
+                            </div>
+                            <div className="flex justify-between text-muted-foreground border-t border-border pt-1.5">
+                              <span>Valor líquido</span>
+                              <span>{fmt(f.bruto - f.limpeza)}</span>
+                            </div>
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Comissão CW (25%)</span>
+                              <span>- {fmt(f.comissao)}</span>
+                            </div>
+                            <div className="flex justify-between font-semibold text-primary border-t border-border pt-1.5">
+                              <span>Seu repasse</span>
+                              <span>{fmt(f.proprietario)}</span>
+                            </div>
+                          </div>
+                          {r.observacoes && (
+                            <p className="text-xs text-muted-foreground italic">{r.observacoes}</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </PopoverContent>
               )}
