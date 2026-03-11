@@ -12,10 +12,10 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { role, loading: authLoading } = useAuth();
+  const { role } = useAuth();
 
   // Redirecionar quando o role estiver disponível
   React.useEffect(() => {
@@ -23,16 +23,9 @@ const Login: React.FC = () => {
     else if (role === "proprietario") navigate("/dashboard", { replace: true });
   }, [role, navigate]);
 
-  // Se authLoading terminar sem role, libera o botão
-  React.useEffect(() => {
-    if (!authLoading && !role) {
-      setLoading(false);
-    }
-  }, [authLoading, role]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -42,9 +35,9 @@ const Login: React.FC = () => {
 
     if (signInError) {
       setError("E-mail ou senha inválidos. Tente novamente.");
-      setLoading(false);
+      setSubmitting(false);
     }
-    // Se OK, loading fica true até role chegar e useEffect redirecionar
+    // Se OK, submitting fica true enquanto o role chega e o useEffect redireciona
   };
 
   return (
