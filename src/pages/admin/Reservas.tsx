@@ -63,22 +63,29 @@ const fmt = (v: number | null) =>
 
 const COMISSAO_RATE = 0.25;
 
-const calcComissao = (valorLiquido: string | number | null): number => {
-  const v = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
-  if (!v || isNaN(v)) return 0;
-  return v * COMISSAO_RATE;
+const toNum = (v: string | number | null): number | null => {
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  return n == null || isNaN(n) ? null : n;
 };
 
-const calcValorProprietario = (
-  valorLiquido: string | number | null,
-  taxaLimpeza: string | number | null
-): number | null => {
-  const liq = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
-  const taxa = typeof taxaLimpeza === "string" ? parseFloat(taxaLimpeza) : taxaLimpeza;
-  if (liq == null || isNaN(liq)) return null;
-  const comissao = liq * COMISSAO_RATE;
-  const limpeza = (taxa && !isNaN(taxa)) ? taxa : 0;
-  return liq - limpeza - comissao;
+// Valor Líquido = Valor Bruto - Taxa de Limpeza
+const calcValorLiquido = (valorBruto: string | number | null, taxaLimpeza: string | number | null): number | null => {
+  const bruto = toNum(valorBruto);
+  if (bruto == null) return null;
+  const limpeza = toNum(taxaLimpeza) ?? 0;
+  return bruto - limpeza;
+};
+
+// Comissão CW = 25% do Valor Líquido
+const calcComissao = (valorLiquido: number | null): number => {
+  if (valorLiquido == null) return 0;
+  return valorLiquido * COMISSAO_RATE;
+};
+
+// Valor Proprietário = Valor Líquido - Comissão CW
+const calcValorProprietario = (valorLiquido: number | null): number | null => {
+  if (valorLiquido == null) return null;
+  return valorLiquido * (1 - COMISSAO_RATE);
 };
 
 const emptyForm = {
@@ -86,7 +93,6 @@ const emptyForm = {
   data_inicio: "",
   data_fim: "",
   valor_bruto: "",
-  valor_liquido: "",
   taxa_limpeza: "",
   observacoes: "",
 };
@@ -103,8 +109,9 @@ const ReservaFormFields = ({
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
 }) => {
-  const comissao = calcComissao(form.valor_liquido);
-  const valorProprietario = calcValorProprietario(form.valor_liquido, form.taxa_limpeza);
+  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza);
+  const comissao = calcComissao(valorLiquido);
+  const valorProprietario = calcValorProprietario(valorLiquido);
 
   return (
     <>
@@ -161,21 +168,6 @@ const ReservaFormFields = ({
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.valor_liquido}
-            onChange={(e) => setForm({ ...form, valor_liquido: e.target.value })}
-            placeholder="0,00"
-            className="bg-background"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
           <Label className="text-muted-foreground">Taxa de Limpeza (R$)</Label>
           <Input
             type="number"
@@ -187,10 +179,19 @@ const ReservaFormFields = ({
             className="bg-background"
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
+          <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
+            {valorLiquido != null ? fmt(valorLiquido) : "—"}
+          </div>
+        </div>
         <div className="space-y-2">
           <Label className="text-muted-foreground">Comissão CW (25% sobre líquido)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
-            {form.valor_liquido ? fmt(comissao) : "—"}
+            {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
         </div>
       </div>
@@ -261,9 +262,9 @@ const Reservas: React.FC = () => {
     setSubmitting(true);
 
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
-    const valorLiquido = form.valor_liquido ? parseFloat(form.valor_liquido) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
-    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza);
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
@@ -289,19 +290,11 @@ const Reservas: React.FC = () => {
 
   const openEdit = (r: Reserva) => {
     setEditingReserva(r);
-    // Reverse-calc valor_liquido from stored valor_liquido_proprietario
-    // stored = liquido - limpeza - comissao (25% do liquido) => liquido = (stored + limpeza) / 0.75
-    const limpeza = r.taxa_limpeza ?? 0;
-    const liquidoRecalc = r.valor_liquido_proprietario != null
-      ? (r.valor_liquido_proprietario + limpeza) / 0.75
-      : null;
-
     setEditForm({
       imovel_id: r.imovel_id,
       data_inicio: r.data_inicio,
       data_fim: r.data_fim,
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
-      valor_liquido: liquidoRecalc != null ? String(liquidoRecalc) : "",
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
       observacoes: r.observacoes || "",
     });
@@ -314,9 +307,9 @@ const Reservas: React.FC = () => {
     setEditSubmitting(true);
 
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
-    const valorLiquido = editForm.valor_liquido ? parseFloat(editForm.valor_liquido) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
-    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza);
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase
       .from("reservas")
@@ -437,13 +430,9 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredReservas.map((r) => {
-                  // Comissão = 25% do valor líquido
-                  // liquido = (proprietario + limpeza) / 0.75
-                  // comissao = liquido * 0.25 = (proprietario + limpeza) / 3
-                  const limpeza = r.taxa_limpeza ?? 0;
-                  const comissao = r.valor_liquido_proprietario != null
-                    ? (r.valor_liquido_proprietario + limpeza) / 3
-                    : null;
+                  // Valor Líquido = Bruto - Limpeza; Comissão CW = Líquido * 25%
+                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza);
+                  const comissao = calcComissao(valorLiquido);
                   return (
                     <TableRow key={r.id} className="border-border hover:bg-muted/30">
                       <TableCell className="text-foreground font-medium">{r.imovel?.nome_imovel || "—"}</TableCell>
