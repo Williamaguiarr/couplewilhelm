@@ -140,8 +140,9 @@ const Proprietarios: React.FC = () => {
       action: "update",
       userId: editTarget.id,
       nome: editForm.nome,
-      email: editForm.email,
     };
+    // Only send email/password if they actually changed
+    if (editForm.email !== editTarget.email) body.email = editForm.email;
     if (editForm.password) body.password = editForm.password;
 
     const res = await supabase.functions.invoke("manage-user", {
