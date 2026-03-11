@@ -593,22 +593,104 @@ const Reservas: React.FC = () => {
           </div>
         </div>
 
-        {/* Filtro */}
-        <div className="flex items-center gap-3">
-          <Label className="text-muted-foreground text-sm">Filtrar por imóvel:</Label>
-          <Select value={filterImovel} onValueChange={setFilterImovel}>
-            <SelectTrigger className="w-56 bg-card border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="all" className="text-foreground">Todos os imóveis</SelectItem>
-              {imoveis.map((i) => (
-                <SelectItem key={i.id} value={i.id} className="text-foreground">
-                  {i.nome_imovel}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Filtros */}
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="flex flex-wrap items-end gap-4">
+            {/* Filtro por imóvel */}
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Imóvel</Label>
+              <Select value={filterImovel} onValueChange={setFilterImovel}>
+                <SelectTrigger className="w-52 bg-background border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="all" className="text-foreground">Todos os imóveis</SelectItem>
+                  {imoveis.map((i) => (
+                    <SelectItem key={i.id} value={i.id} className="text-foreground">
+                      {i.nome_imovel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro De */}
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">De</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-40 justify-start text-left font-normal bg-background border-border",
+                      !filterDe && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4 opacity-60" />
+                    {filterDe ? format(filterDe, "dd/MM/yyyy") : "Início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filterDe}
+                    onSelect={setFilterDe}
+                    initialFocus
+                    locale={ptBR}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Filtro Até */}
+            <div className="space-y-1.5">
+              <Label className="text-muted-foreground text-xs uppercase tracking-wide">Até</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-40 justify-start text-left font-normal bg-background border-border",
+                      !filterAte && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4 opacity-60" />
+                    {filterAte ? format(filterAte, "dd/MM/yyyy") : "Fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filterAte}
+                    onSelect={setFilterAte}
+                    initialFocus
+                    locale={ptBR}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Limpar filtros de data */}
+            {(filterDe || filterAte) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setFilterDe(undefined); setFilterAte(undefined); }}
+                className="text-muted-foreground hover:text-foreground gap-1.5 self-end"
+              >
+                <X className="h-3.5 w-3.5" /> Limpar período
+              </Button>
+            )}
+
+            {/* Contador de resultados */}
+            <div className="ml-auto self-end">
+              <span className="text-xs text-muted-foreground">
+                {filteredReservas.length} reserva{filteredReservas.length !== 1 ? "s" : ""} encontrada{filteredReservas.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-lg overflow-hidden">
