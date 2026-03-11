@@ -1,7 +1,9 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import type { AppRole } from "@/integrations/supabase/types";
+import type { Enums } from "@/integrations/supabase/types";
+
+type AppRole = Enums<"app_role">;
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
