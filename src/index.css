@@ -11,38 +11,38 @@
 
 @layer base {
   :root {
-    /* Core luxury palette */
-    --background: 211 71% 11%;        /* #0A192F azul-marinho profundo */
-    --foreground: 40 27% 94%;         /* #F0EDE8 branco creme */
+    /* Core — fundo branco creme, texto escuro */
+    --background: 40 30% 97%;         /* quase branco com leve warmth */
+    --foreground: 211 71% 11%;        /* azul-marinho profundo para texto */
 
-    --card: 211 65% 14%;              /* #0D2137 azul cards */
-    --card-foreground: 40 27% 94%;
+    --card: 0 0% 100%;                /* branco puro para cards */
+    --card-foreground: 211 71% 11%;
 
-    --popover: 211 65% 14%;
-    --popover-foreground: 40 27% 94%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 211 71% 11%;
 
-    --primary: 60 10% 58%;            /* #A3A38B dourado/khaki da logo */
-    --primary-foreground: 211 71% 11%;
+    --primary: 60 10% 44%;            /* dourado/khaki um pouco mais escuro no claro */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 211 55% 18%;
-    --secondary-foreground: 40 27% 94%;
+    --secondary: 211 30% 93%;         /* azul bem claro */
+    --secondary-foreground: 211 71% 15%;
 
-    --muted: 211 50% 16%;             /* #1A3050 azul acinzentado */
-    --muted-foreground: 210 20% 55%;
+    --muted: 210 20% 95%;             /* cinza azulado suave */
+    --muted-foreground: 211 25% 40%;
 
-    --accent: 211 50% 20%;
-    --accent-foreground: 40 27% 94%;
+    --accent: 210 25% 93%;
+    --accent-foreground: 211 71% 11%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 40 27% 94%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 60 10% 58% / 0.15;      /* borda dourada sutil */
-    --input: 211 50% 16%;
-    --ring: 60 10% 58%;
+    --border: 211 20% 88%;            /* borda cinza-azulada discreta */
+    --input: 210 20% 95%;
+    --ring: 60 10% 44%;
 
     --radius: 0.5rem;
 
-    /* Sidebar luxury */
+    /* Sidebar mantém o azul-marinho da identidade */
     --sidebar-background: 211 75% 9%;
     --sidebar-foreground: 40 27% 80%;
     --sidebar-primary: 60 10% 58%;
