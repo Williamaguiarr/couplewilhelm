@@ -457,7 +457,11 @@ const Reservas: React.FC = () => {
             <h1 className="font-display text-3xl text-foreground tracking-wide">Reservas</h1>
             <p className="text-muted-foreground mt-1">Gerencie as reservas de todos os imóveis</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={gerarPDF} disabled={filteredReservas.length === 0} className="gap-2">
+              <FileText className="h-4 w-4" /> Gerar PDF
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" /> Nova Reserva
