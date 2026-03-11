@@ -14,16 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      imoveis: {
+        Row: {
+          created_at: string | null
+          endereco: string | null
+          id: string
+          nome_imovel: string
+          proprietario_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endereco?: string | null
+          id?: string
+          nome_imovel: string
+          proprietario_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          endereco?: string | null
+          id?: string
+          nome_imovel?: string
+          proprietario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imoveis_proprietario_id_fkey"
+            columns: ["proprietario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          nome?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+        }
+        Relationships: []
+      }
+      reservas: {
+        Row: {
+          created_at: string | null
+          data_fim: string
+          data_inicio: string
+          id: string
+          imovel_id: string
+          observacoes: string | null
+          valor_bruto: number | null
+          valor_liquido_proprietario: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_fim: string
+          data_inicio: string
+          id?: string
+          imovel_id: string
+          observacoes?: string | null
+          valor_bruto?: number | null
+          valor_liquido_proprietario?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          imovel_id?: string
+          observacoes?: string | null
+          valor_bruto?: number | null
+          valor_liquido_proprietario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservas_imovel_id_fkey"
+            columns: ["imovel_id"]
+            isOneToOne: false
+            referencedRelation: "imoveis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "proprietario"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +267,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "proprietario"],
+    },
   },
 } as const
