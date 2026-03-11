@@ -96,7 +96,7 @@ export default {
       },
       boxShadow: {
         luxury:
-          "0 8px 30px -8px hsl(60 10% 58% / 0.12), 0 2px 8px -2px hsl(211 71% 5% / 0.4)",
+          "0 4px 24px -4px hsl(211 71% 11% / 0.08), 0 1px 6px -1px hsl(211 71% 11% / 0.06)",
       },
     },
   },
