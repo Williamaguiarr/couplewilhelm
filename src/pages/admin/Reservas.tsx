@@ -531,10 +531,23 @@ const Reservas: React.FC = () => {
     setDeleteId(null);
   };
 
-  const filteredReservas =
-    filterImovel === "all"
-      ? reservas
-      : reservas.filter((r) => r.imovel_id === filterImovel);
+  const filteredReservas = reservas.filter((r) => {
+    const matchImovel = filterImovel === "all" || r.imovel_id === filterImovel;
+
+    let matchPeriodo = true;
+    if (filterDe || filterAte) {
+      const dataFim = parseISO(r.data_fim + "T12:00:00");
+      if (filterDe && filterAte) {
+        matchPeriodo = isWithinInterval(dataFim, { start: filterDe, end: filterAte });
+      } else if (filterDe) {
+        matchPeriodo = dataFim >= filterDe;
+      } else if (filterAte) {
+        matchPeriodo = dataFim <= filterAte;
+      }
+    }
+
+    return matchImovel && matchPeriodo;
+  });
 
   return (
     <PageTransition>
