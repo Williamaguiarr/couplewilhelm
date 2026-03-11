@@ -262,9 +262,9 @@ const Reservas: React.FC = () => {
     setSubmitting(true);
 
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
-    const valorLiquido = form.valor_liquido ? parseFloat(form.valor_liquido) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
-    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza);
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
@@ -290,19 +290,11 @@ const Reservas: React.FC = () => {
 
   const openEdit = (r: Reserva) => {
     setEditingReserva(r);
-    // Reverse-calc valor_liquido from stored valor_liquido_proprietario
-    // stored = liquido - limpeza - comissao (25% do liquido) => liquido = (stored + limpeza) / 0.75
-    const limpeza = r.taxa_limpeza ?? 0;
-    const liquidoRecalc = r.valor_liquido_proprietario != null
-      ? (r.valor_liquido_proprietario + limpeza) / 0.75
-      : null;
-
     setEditForm({
       imovel_id: r.imovel_id,
       data_inicio: r.data_inicio,
       data_fim: r.data_fim,
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
-      valor_liquido: liquidoRecalc != null ? String(liquidoRecalc) : "",
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
       observacoes: r.observacoes || "",
     });
@@ -315,9 +307,9 @@ const Reservas: React.FC = () => {
     setEditSubmitting(true);
 
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
-    const valorLiquido = editForm.valor_liquido ? parseFloat(editForm.valor_liquido) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
-    const valorProprietario = calcValorProprietario(valorLiquido, taxaLimpeza);
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase
       .from("reservas")
