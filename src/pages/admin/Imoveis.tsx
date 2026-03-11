@@ -44,7 +44,9 @@ interface Imovel {
   nome_imovel: string;
   endereco: string | null;
   proprietario_id: string | null;
+  proprietario_id_2: string | null;
   proprietario?: { nome: string | null; email: string | null };
+  proprietario2?: { nome: string | null; email: string | null };
 }
 
 interface Proprietario {
@@ -53,6 +55,8 @@ interface Proprietario {
   email: string | null;
 }
 
+const NONE = "__none__";
+
 const Imoveis: React.FC = () => {
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
@@ -60,21 +64,29 @@ const Imoveis: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ nome_imovel: "", endereco: "", proprietario_id: "" });
+  const [form, setForm] = useState({
+    nome_imovel: "",
+    endereco: "",
+    proprietario_id: "",
+    proprietario_id_2: "",
+  });
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = async () => {
     const [{ data: imoveisData }, { data: rolesData }] = await Promise.all([
-      supabase.from("imoveis").select("*, profiles!imoveis_proprietario_id_fkey(nome, email)"),
+      supabase.from("imoveis").select(
+        "*, proprietario:profiles!imoveis_proprietario_id_fkey(nome, email), proprietario2:profiles!imoveis_proprietario_id_2_fkey(nome, email)"
+      ),
       supabase.from("user_roles").select("user_id").eq("role", "proprietario"),
     ]);
 
     setImoveis(
       (imoveisData || []).map((i: any) => ({
         ...i,
-        proprietario: i.profiles,
+        proprietario: i.proprietario,
+        proprietario2: i.proprietario2,
       }))
     );
 
@@ -94,24 +106,44 @@ const Imoveis: React.FC = () => {
     fetchData();
   }, []);
 
+  const resetForm = () =>
+    setForm({ nome_imovel: "", endereco: "", proprietario_id: "", proprietario_id_2: "" });
+
   const openEdit = (imovel: Imovel) => {
     setEditId(imovel.id);
     setForm({
       nome_imovel: imovel.nome_imovel,
       endereco: imovel.endereco || "",
       proprietario_id: imovel.proprietario_id || "",
+      proprietario_id_2: imovel.proprietario_id_2 || "",
     });
     setOpen(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar que os dois proprietários não são iguais
+    if (
+      form.proprietario_id &&
+      form.proprietario_id_2 &&
+      form.proprietario_id === form.proprietario_id_2
+    ) {
+      toast({
+        title: "Proprietários iguais",
+        description: "O 2º proprietário deve ser diferente do 1º.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     const payload = {
       nome_imovel: form.nome_imovel,
       endereco: form.endereco || null,
       proprietario_id: form.proprietario_id || null,
+      proprietario_id_2: form.proprietario_id_2 || null,
     };
 
     if (editId) {
@@ -135,7 +167,7 @@ const Imoveis: React.FC = () => {
       }
     }
 
-    setForm({ nome_imovel: "", endereco: "", proprietario_id: "" });
+    resetForm();
     setSubmitting(false);
   };
 
@@ -155,6 +187,14 @@ const Imoveis: React.FC = () => {
     setDeleteSubmitting(false);
   };
 
+  const propLabel = (p?: { nome: string | null; email: string | null } | null) =>
+    p?.nome || p?.email || null;
+
+  // Opções filtradas para o 2º proprietário (excluindo o 1º já selecionado)
+  const opcoesProprietario2 = proprietarios.filter((p) => p.id !== form.proprietario_id);
+  // Opções filtradas para o 1º proprietário (excluindo o 2º já selecionado)
+  const opcoesProprietario1 = proprietarios.filter((p) => p.id !== form.proprietario_id_2);
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -163,7 +203,16 @@ const Imoveis: React.FC = () => {
             <h1 className="font-display text-3xl text-foreground tracking-wide">Imóveis</h1>
             <p className="text-muted-foreground mt-1">Gerencie os imóveis da carteira</p>
           </div>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm({ nome_imovel: "", endereco: "", proprietario_id: "" }); } }}>
+          <Dialog
+            open={open}
+            onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) {
+                setEditId(null);
+                resetForm();
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" /> Novo Imóvel
@@ -178,20 +227,62 @@ const Imoveis: React.FC = () => {
               <form onSubmit={handleSave} className="space-y-4 mt-2">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Nome do imóvel</Label>
-                  <Input value={form.nome_imovel} onChange={(e) => setForm({ ...form, nome_imovel: e.target.value })} placeholder="Ex: Apartamento Ipanema 101" required className="bg-background" />
+                  <Input
+                    value={form.nome_imovel}
+                    onChange={(e) => setForm({ ...form, nome_imovel: e.target.value })}
+                    placeholder="Ex: Apartamento Ipanema 101"
+                    required
+                    className="bg-background"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Endereço</Label>
-                  <Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} placeholder="Rua, número, bairro" className="bg-background" />
+                  <Input
+                    value={form.endereco}
+                    onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+                    placeholder="Rua, número, bairro"
+                    className="bg-background"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Proprietário</Label>
-                  <Select value={form.proprietario_id} onValueChange={(v) => setForm({ ...form, proprietario_id: v })}>
+                  <Label className="text-muted-foreground">1º Proprietário</Label>
+                  <Select
+                    value={form.proprietario_id || NONE}
+                    onValueChange={(v) =>
+                      setForm({ ...form, proprietario_id: v === NONE ? "" : v })
+                    }
+                  >
                     <SelectTrigger className="bg-background border-border">
                       <SelectValue placeholder="Selecione o proprietário" />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
-                      {proprietarios.map((p) => (
+                      <SelectItem value={NONE} className="text-muted-foreground">
+                        Nenhum
+                      </SelectItem>
+                      {opcoesProprietario1.map((p) => (
+                        <SelectItem key={p.id} value={p.id} className="text-foreground">
+                          {p.nome || p.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">2º Proprietário <span className="text-xs text-muted-foreground/60">(opcional)</span></Label>
+                  <Select
+                    value={form.proprietario_id_2 || NONE}
+                    onValueChange={(v) =>
+                      setForm({ ...form, proprietario_id_2: v === NONE ? "" : v })
+                    }
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue placeholder="Selecione o 2º proprietário" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      <SelectItem value={NONE} className="text-muted-foreground">
+                        Nenhum
+                      </SelectItem>
+                      {opcoesProprietario2.map((p) => (
                         <SelectItem key={p.id} value={p.id} className="text-foreground">
                           {p.nome || p.email}
                         </SelectItem>
@@ -200,8 +291,12 @@ const Imoveis: React.FC = () => {
                   </Select>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancelar</Button>
-                  <Button type="submit" disabled={submitting} className="flex-1">{submitting ? "Salvando..." : "Salvar"}</Button>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={submitting} className="flex-1">
+                    {submitting ? "Salvando..." : "Salvar"}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
@@ -210,7 +305,9 @@ const Imoveis: React.FC = () => {
 
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           {loading ? (
-            <div className="p-8 flex justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+            <div className="p-8 flex justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
           ) : imoveis.length === 0 ? (
             <div className="p-12 flex flex-col items-center gap-3 text-center">
               <Building2 className="h-10 w-10 text-muted-foreground opacity-40" />
@@ -222,28 +319,52 @@ const Imoveis: React.FC = () => {
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Endereço</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário(s)</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {imoveis.map((imovel) => (
-                  <TableRow key={imovel.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="text-foreground font-medium">{imovel.nome_imovel}</TableCell>
-                    <TableCell className="text-muted-foreground">{imovel.endereco || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{imovel.proprietario?.nome || imovel.proprietario?.email || "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(imovel)} className="h-8 w-8 hover:text-primary">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(imovel)} className="h-8 w-8 hover:text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {imoveis.map((imovel) => {
+                  const p1 = propLabel(imovel.proprietario);
+                  const p2 = propLabel(imovel.proprietario2);
+                  return (
+                    <TableRow key={imovel.id} className="border-border hover:bg-muted/30">
+                      <TableCell className="text-foreground font-medium">{imovel.nome_imovel}</TableCell>
+                      <TableCell className="text-muted-foreground">{imovel.endereco || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {p1 && p2 ? (
+                          <span>
+                            {p1}{" "}
+                            <span className="text-xs text-muted-foreground/60">e</span>{" "}
+                            {p2}
+                          </span>
+                        ) : (
+                          p1 || p2 || "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEdit(imovel)}
+                            className="h-8 w-8 hover:text-primary"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteTarget(imovel)}
+                            className="h-8 w-8 hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -258,7 +379,9 @@ const Imoveis: React.FC = () => {
               Excluir imóvel?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              Você está prestes a excluir <strong className="text-foreground">{deleteTarget?.nome_imovel}</strong>. As reservas vinculadas também serão removidas. Esta ação não pode ser desfeita.
+              Você está prestes a excluir{" "}
+              <strong className="text-foreground">{deleteTarget?.nome_imovel}</strong>. As
+              reservas vinculadas também serão removidas. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
