@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import logoSrc from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -240,57 +241,108 @@ const Reservas: React.FC = () => {
   const { toast } = useToast();
 
   const gerarPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const now = new Date();
-    const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
-    // Header
-    doc.setFontSize(20);
-    doc.setTextColor(30, 30, 30);
-    doc.text("Relatório de Reservas", 14, 20);
+    // ── Paleta da marca ──────────────────────────────────────────────────────
+    const navy: [number, number, number] = [10, 25, 47];      // #0A192F
+    const gold: [number, number, number] = [163, 163, 139];   // #A3A38B
+    const cream: [number, number, number] = [240, 237, 232];  // #F0EDE8
+    const white: [number, number, number] = [255, 255, 255];
+    const lightGray: [number, number, number] = [245, 244, 241];
 
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`, 14, 28);
+    // ── Fundo header navy ────────────────────────────────────────────────────
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageW, 42, "F");
 
+    // Linha dourada sob o header
+    doc.setFillColor(...gold);
+    doc.rect(0, 42, pageW, 0.8, "F");
+
+    // ── Logo ─────────────────────────────────────────────────────────────────
+    try {
+      doc.addImage(logoSrc, "PNG", 10, 4, 52, 34);
+    } catch (_) { /* se falhar, continua sem logo */ }
+
+    // ── Título do relatório (direita do header) ───────────────────────────────
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...gold);
+    doc.text("RELATÓRIO DE RESERVAS", pageW - 14, 16, { align: "right" });
+
+    doc.setFontSize(7);
+    doc.setTextColor(...cream);
     const imovelNome = filterImovel !== "all"
       ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
       : "Todos os imóveis";
-    doc.text(`Imóvel: ${imovelNome}`, 14, 34);
+    const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    doc.text(`Imóvel: ${imovelNome}`, pageW - 14, 23, { align: "right" });
+    doc.text(`Período de referência: ${mesAno}`, pageW - 14, 29, { align: "right" });
+    doc.text(
+      `Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      pageW - 14, 35, { align: "right" }
+    );
 
-    // Totals summary
+    // ── Calcular totais ───────────────────────────────────────────────────────
     let totalBruto = 0, totalLimpeza = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
     filteredReservas.forEach((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
       const liquido = bruto - limpeza;
       const comissao = liquido * 0.25;
-      const proprietario = liquido - comissao;
       totalBruto += bruto;
       totalLimpeza += limpeza;
       totalLiquido += liquido;
       totalComissao += comissao;
-      totalProprietario += proprietario;
+      totalProprietario += liquido - comissao;
     });
 
     const fmtPDF = (v: number) =>
       v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-    // Summary box
-    doc.setFillColor(245, 245, 245);
-    doc.rect(14, 40, 182, 40, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    const summaryY = 50;
-    doc.text(`Total Bruto: ${fmtPDF(totalBruto)}`, 20, summaryY);
-    doc.text(`Taxa de Limpeza: ${fmtPDF(totalLimpeza)}`, 80, summaryY);
-    doc.text(`Valor Líquido: ${fmtPDF(totalLiquido)}`, 20, summaryY + 10);
-    doc.text(`Comissão CW (25%): ${fmtPDF(totalComissao)}`, 80, summaryY + 10);
-    doc.setFontSize(10);
-    doc.setTextColor(30, 30, 30);
-    doc.text(`Repasse Total aos Proprietários: ${fmtPDF(totalProprietario)}`, 20, summaryY + 22);
+    // ── Cards de resumo financeiro ────────────────────────────────────────────
+    const summaryItems = [
+      { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
+      { label: "Taxa de Limpeza", value: fmtPDF(totalLimpeza) },
+      { label: "Valor Líquido", value: fmtPDF(totalLiquido) },
+      { label: "Comissão CW (25%)", value: fmtPDF(totalComissao) },
+      { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
+    ];
 
-    // Table
+    const cardW = (pageW - 28 - (summaryItems.length - 1) * 4) / summaryItems.length;
+    const cardY = 48;
+    const cardH = 22;
+
+    summaryItems.forEach((item, i) => {
+      const x = 14 + i * (cardW + 4);
+      doc.setFillColor(...(item.highlight ? navy : lightGray));
+      doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "F");
+
+      if (item.highlight) {
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "S");
+      }
+
+      doc.setFontSize(6.5);
+      doc.setTextColor(...(item.highlight ? gold : [120, 115, 105] as [number, number, number]));
+      doc.text(item.label.toUpperCase(), x + cardW / 2, cardY + 8, { align: "center" });
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...(item.highlight ? cream : navy));
+      doc.text(item.value, x + cardW / 2, cardY + 17, { align: "center" });
+      doc.setFont("helvetica", "normal");
+    });
+
+    // Linha separadora dourada
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.3);
+    doc.line(14, cardY + cardH + 4, pageW - 14, cardY + cardH + 4);
+
+    // ── Tabela de reservas ────────────────────────────────────────────────────
     const tableData = filteredReservas.map((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
@@ -303,6 +355,7 @@ const Reservas: React.FC = () => {
         new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
         fmtPDF(bruto),
         fmtPDF(limpeza),
+        fmtPDF(liquido),
         fmtPDF(comissao),
         fmtPDF(proprietario),
         r.observacoes || "",
@@ -310,27 +363,54 @@ const Reservas: React.FC = () => {
     });
 
     autoTable(doc, {
-      startY: 88,
-      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão CW", "Proprietário", "Obs."]],
+      startY: cardY + cardH + 8,
+      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "V. Líquido", "Comissão CW", "Proprietário", "Obs."]],
       body: tableData,
-      headStyles: { fillColor: [40, 40, 40], textColor: 255, fontSize: 8, fontStyle: "bold" },
-      bodyStyles: { fontSize: 8, textColor: [50, 50, 50] },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
+      headStyles: {
+        fillColor: navy,
+        textColor: gold,
+        fontSize: 7,
+        fontStyle: "bold",
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+      },
+      bodyStyles: {
+        fontSize: 7.5,
+        textColor: [40, 40, 40] as [number, number, number],
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+      },
+      alternateRowStyles: { fillColor: lightGray },
       columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 18 },
-        2: { cellWidth: 18 },
-        3: { cellWidth: 22 },
-        4: { cellWidth: 18 },
-        5: { cellWidth: 24 },
-        6: { cellWidth: 24 },
-        7: { cellWidth: "auto" },
+        0: { cellWidth: 32 },
+        1: { cellWidth: 18, halign: "center" },
+        2: { cellWidth: 18, halign: "center" },
+        3: { cellWidth: 24, halign: "right" },
+        4: { cellWidth: 20, halign: "right" },
+        5: { cellWidth: 24, halign: "right" },
+        6: { cellWidth: 24, halign: "right" },
+        7: { cellWidth: 26, halign: "right", fontStyle: "bold", textColor: navy },
+        8: { cellWidth: "auto" },
       },
       margin: { left: 14, right: 14 },
+      didDrawPage: (data) => {
+        // Footer em cada página
+        const footerY = pageH - 8;
+        doc.setFillColor(...navy);
+        doc.rect(0, footerY - 4, pageW, 14, "F");
+        doc.setFontSize(6.5);
+        doc.setTextColor(...gold);
+        doc.text("COUPLE WILHELM — Gestão de Imóveis", 14, footerY + 1);
+        doc.setTextColor(...cream);
+        doc.text(
+          `Página ${data.pageNumber}`,
+          pageW - 14,
+          footerY + 1,
+          { align: "right" }
+        );
+      },
     });
 
-    doc.save(`relatorio-reservas-${now.toISOString().split("T")[0]}.pdf`);
-    toast({ title: "PDF gerado com sucesso!" });
+    doc.save(`CW-relatorio-reservas-${now.toISOString().split("T")[0]}.pdf`);
+    toast({ title: "Relatório gerado com sucesso!" });
   };
 
   const fetchData = async () => {
