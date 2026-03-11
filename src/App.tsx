@@ -13,6 +13,7 @@ import Imoveis from "@/pages/admin/Imoveis";
 import Reservas from "@/pages/admin/Reservas";
 import ProprietarioDashboard from "@/pages/proprietario/Dashboard";
 import MeusImoveis from "@/pages/proprietario/MeusImoveis";
+import Setup from "@/pages/Setup";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
