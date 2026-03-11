@@ -188,9 +188,9 @@ const ReservaFormFields = ({
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão CW (25%)</Label>
+          <Label className="text-muted-foreground">Comissão CW (25% sobre líquido)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
-            {form.valor_bruto ? fmt(comissao) : "—"}
+            {form.valor_liquido ? fmt(comissao) : "—"}
           </div>
         </div>
       </div>
