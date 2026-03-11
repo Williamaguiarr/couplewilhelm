@@ -63,22 +63,29 @@ const fmt = (v: number | null) =>
 
 const COMISSAO_RATE = 0.25;
 
-const calcComissao = (valorLiquido: string | number | null): number => {
-  const v = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
-  if (!v || isNaN(v)) return 0;
-  return v * COMISSAO_RATE;
+const toNum = (v: string | number | null): number | null => {
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  return n == null || isNaN(n) ? null : n;
 };
 
-const calcValorProprietario = (
-  valorLiquido: string | number | null,
-  taxaLimpeza: string | number | null
-): number | null => {
-  const liq = typeof valorLiquido === "string" ? parseFloat(valorLiquido) : valorLiquido;
-  const taxa = typeof taxaLimpeza === "string" ? parseFloat(taxaLimpeza) : taxaLimpeza;
-  if (liq == null || isNaN(liq)) return null;
-  const comissao = liq * COMISSAO_RATE;
-  const limpeza = (taxa && !isNaN(taxa)) ? taxa : 0;
-  return liq - limpeza - comissao;
+// Valor Líquido = Valor Bruto - Taxa de Limpeza
+const calcValorLiquido = (valorBruto: string | number | null, taxaLimpeza: string | number | null): number | null => {
+  const bruto = toNum(valorBruto);
+  if (bruto == null) return null;
+  const limpeza = toNum(taxaLimpeza) ?? 0;
+  return bruto - limpeza;
+};
+
+// Comissão CW = 25% do Valor Líquido
+const calcComissao = (valorLiquido: number | null): number => {
+  if (valorLiquido == null) return 0;
+  return valorLiquido * COMISSAO_RATE;
+};
+
+// Valor Proprietário = Valor Líquido - Comissão CW
+const calcValorProprietario = (valorLiquido: number | null): number | null => {
+  if (valorLiquido == null) return null;
+  return valorLiquido * (1 - COMISSAO_RATE);
 };
 
 const emptyForm = {
@@ -86,7 +93,6 @@ const emptyForm = {
   data_inicio: "",
   data_fim: "",
   valor_bruto: "",
-  valor_liquido: "",
   taxa_limpeza: "",
   observacoes: "",
 };
