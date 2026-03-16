@@ -65,10 +65,10 @@ Deno.serve(async (req) => {
 
       await adminClient.from("user_roles").insert({
         user_id: newUser.user.id,
-        role: "admin",
+        role: "master",
       });
 
-      await adminClient.from("profiles").update({ nome: nome || "Administrador" }).eq("id", newUser.user.id);
+      await adminClient.from("profiles").update({ nome: nome || "Master" }).eq("id", newUser.user.id);
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
         status: 200,
