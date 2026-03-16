@@ -33,11 +33,16 @@ import {
   ChevronUp,
   AlertCircle,
   Building2,
+  FileText,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import logoSrc from "@/assets/logo.png";
+import { useToast } from "@/hooks/use-toast";
 
 interface Reserva {
   id: string;
