@@ -247,16 +247,206 @@ const ProprietarioDashboard: React.FC = () => {
 
   const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
 
+  const gerarPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const genDate = new Date();
+
+    const navy: [number, number, number] = [10, 25, 47];
+    const gold: [number, number, number] = [163, 163, 139];
+    const cream: [number, number, number] = [240, 237, 232];
+    const lightGray: [number, number, number] = [245, 244, 241];
+
+    // Header navy
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageW, 42, "F");
+    doc.setFillColor(...gold);
+    doc.rect(0, 42, pageW, 0.8, "F");
+
+    // Logo
+    try { doc.addImage(logoSrc, "PNG", 10, 4, 52, 34); } catch (_) {}
+
+    // Título
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...gold);
+    doc.text("EXTRATO DO PROPRIETÁRIO", pageW - 14, 16, { align: "right" });
+
+    doc.setFontSize(7);
+    doc.setTextColor(...cream);
+    const imovelNome = filterImovel !== "todos"
+      ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
+      : "Todos os imóveis";
+    doc.text(`Imóvel: ${imovelNome}`, pageW - 14, 23, { align: "right" });
+    doc.text(`Período: ${MESES[filterMes]} de ${filterAno}`, pageW - 14, 29, { align: "right" });
+    doc.text(
+      `Gerado em ${genDate.toLocaleDateString("pt-BR")} às ${genDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      pageW - 14, 35, { align: "right" }
+    );
+
+    const fmtPDF = (v: number) =>
+      v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+    // Cards de resumo
+    const summaryItems = [
+      { label: "Valor Bruto Total", value: fmtPDF(totais.bruto) },
+      { label: "Tx. Limpeza", value: fmtPDF(totais.limpeza) },
+      { label: "Comissão OTA", value: fmtPDF(totais.plataforma) },
+      { label: "Comissão CW (25%)", value: fmtPDF(totais.comissao) },
+      { label: "Despesas Extras", value: fmtPDF(totalDespesas) },
+      { label: "Repasse Líquido", value: fmtPDF(totalLiquido), highlight: true },
+    ];
+
+    const cardW = (pageW - 28 - (summaryItems.length - 1) * 4) / summaryItems.length;
+    const cardY = 48;
+    const cardH = 22;
+
+    summaryItems.forEach((item, i) => {
+      const x = 14 + i * (cardW + 4);
+      doc.setFillColor(...(item.highlight ? navy : lightGray));
+      doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "F");
+      if (item.highlight) {
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "S");
+      }
+      doc.setFontSize(6.5);
+      doc.setTextColor(...(item.highlight ? gold : [120, 115, 105] as [number, number, number]));
+      doc.text(item.label.toUpperCase(), x + cardW / 2, cardY + 8, { align: "center" });
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...(item.highlight ? cream : navy));
+      doc.text(item.value, x + cardW / 2, cardY + 17, { align: "center" });
+      doc.setFont("helvetica", "normal");
+    });
+
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.3);
+    doc.line(14, cardY + cardH + 4, pageW - 14, cardY + cardH + 4);
+
+    // Tabela de reservas
+    const tableData = reservasFiltradas.map((r) => {
+      const f = calcFinanceiro(r);
+      return [
+        r.imovel?.nome_imovel || "—",
+        new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
+        new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
+        fmtPDF(f.bruto),
+        fmtPDF(f.limpeza),
+        f.plataforma > 0 ? fmtPDF(f.plataforma) : "—",
+        fmtPDF(f.comissao),
+        fmtPDF(f.proprietario),
+        r.observacoes || "",
+      ];
+    });
+
+    autoTable(doc, {
+      startY: cardY + cardH + 8,
+      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Com. OTA", "Comissão CW", "Repasse", "Obs."]],
+      body: tableData,
+      headStyles: { fillColor: navy, textColor: gold, fontSize: 7, fontStyle: "bold", cellPadding: { top: 3, bottom: 3, left: 3, right: 3 } },
+      bodyStyles: { fontSize: 7.5, textColor: [40, 40, 40] as [number, number, number], cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 18, halign: "center" },
+        2: { cellWidth: 18, halign: "center" },
+        3: { cellWidth: 22, halign: "right" },
+        4: { cellWidth: 18, halign: "right" },
+        5: { cellWidth: 18, halign: "right" },
+        6: { cellWidth: 22, halign: "right" },
+        7: { cellWidth: 24, halign: "right", fontStyle: "bold", textColor: navy },
+        8: { cellWidth: "auto" },
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (data) => {
+        const footerY = pageH - 8;
+        doc.setFillColor(...navy);
+        doc.rect(0, footerY - 4, pageW, 14, "F");
+        doc.setFontSize(6.5);
+        doc.setTextColor(...gold);
+        doc.text("COUPLE WILHELM — Gestão de Imóveis", 14, footerY + 1);
+        doc.setTextColor(...cream);
+        doc.text(`Página ${data.pageNumber}`, pageW - 14, footerY + 1, { align: "right" });
+      },
+    });
+
+    // Se houver despesas extras, adicionar seção
+    if (despesasFiltradas.length > 0) {
+      const finalY = (doc as any).lastAutoTable?.finalY ?? pageH - 40;
+      if (finalY + 40 > pageH - 20) {
+        doc.addPage();
+      }
+      const despY = Math.min(finalY + 8, pageH - 60);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...navy);
+      doc.text("DESPESAS EXTRAS", 14, despY + 6);
+      doc.setLineWidth(0.3);
+      doc.setDrawColor(...gold);
+      doc.line(14, despY + 8, pageW - 14, despY + 8);
+
+      autoTable(doc, {
+        startY: despY + 12,
+        head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor"]],
+        body: despesasFiltradas.map((d) => [
+          d.imovel?.nome_imovel || "—",
+          d.descricao,
+          TIPO_LABELS[d.tipo] ?? d.tipo,
+          new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR"),
+          `- ${fmtPDF(d.valor)}`,
+        ]),
+        headStyles: { fillColor: navy, textColor: gold, fontSize: 7, fontStyle: "bold", cellPadding: { top: 3, bottom: 3, left: 3, right: 3 } },
+        bodyStyles: { fontSize: 7.5, textColor: [40, 40, 40] as [number, number, number], cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } },
+        alternateRowStyles: { fillColor: lightGray },
+        columnStyles: {
+          0: { cellWidth: 40 },
+          1: { cellWidth: "auto" },
+          2: { cellWidth: 28 },
+          3: { cellWidth: 22, halign: "center" },
+          4: { cellWidth: 28, halign: "right", textColor: [180, 40, 40] as [number, number, number], fontStyle: "bold" },
+        },
+        margin: { left: 14, right: 14 },
+        didDrawPage: (data) => {
+          const footerY = pageH - 8;
+          doc.setFillColor(...navy);
+          doc.rect(0, footerY - 4, pageW, 14, "F");
+          doc.setFontSize(6.5);
+          doc.setTextColor(...gold);
+          doc.text("COUPLE WILHELM — Gestão de Imóveis", 14, footerY + 1);
+          doc.setTextColor(...cream);
+          doc.text(`Página ${data.pageNumber}`, pageW - 14, footerY + 1, { align: "right" });
+        },
+      });
+    }
+
+    doc.save(`CW-extrato-${MESES[filterMes].toLowerCase()}-${filterAno}.pdf`);
+    toast({ title: "Extrato gerado com sucesso!" });
+  };
+
   return (
     <PageTransition>
       <div className="space-y-6 max-w-5xl">
 
         {/* Header */}
-        <div className="pb-2 border-b border-border">
-          <h1 className="font-display text-2xl text-foreground tracking-wide">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-          </p>
+        <div className="pb-2 border-b border-border flex items-end justify-between">
+          <div>
+            <h1 className="font-display text-2xl text-foreground tracking-wide">Dashboard</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              {now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={gerarPDF}
+            disabled={loading || (reservasFiltradas.length === 0 && despesasFiltradas.length === 0)}
+            className="gap-2 text-xs"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Gerar PDF — {MESES[filterMes]} {filterAno}
+          </Button>
         </div>
 
         {/* Metric cards */}
