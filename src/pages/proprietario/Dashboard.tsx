@@ -343,7 +343,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Comissão CW", "Repasse"].map((h, i) => (
+                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão CW", "Repasse"].map((h, i) => (
                           <TableHead
                             key={h}
                             className={cn(
@@ -372,6 +372,9 @@ const ProprietarioDashboard: React.FC = () => {
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.bruto)}</TableCell>
                             <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.limpeza)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right py-3">
+                              {f.plataforma > 0 ? fmt(f.plataforma) : <span className="opacity-30">—</span>}
+                            </TableCell>
                             <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.comissao)}</TableCell>
                             <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(f.proprietario)}</TableCell>
                           </TableRow>
