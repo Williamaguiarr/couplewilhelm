@@ -260,6 +260,22 @@ const Imoveis: React.FC = () => {
   const propLabel = (p?: { nome: string | null; email: string | null } | null) =>
     p?.nome || p?.email || null;
 
+  const getIcalUrl = (imovel: Imovel, source: "airbnb" | "booking") => {
+    return source === "airbnb" ? imovel.ical_url_airbnb : imovel.ical_url_booking;
+  };
+
+  const handleCopy = async (imovel: Imovel, source: "airbnb" | "booking") => {
+    const url = getIcalUrl(imovel, source);
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(source);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      toast({ title: "Erro ao copiar URL", variant: "destructive" });
+    }
+  };
+
   const opcoesProprietario2 = proprietarios.filter((p) => p.id !== form.proprietario_id);
   const opcoesProprietario1 = proprietarios.filter((p) => p.id !== form.proprietario_id_2);
 
