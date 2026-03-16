@@ -32,15 +32,15 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Verificar se já existe algum admin
+      // Verificar se já existe algum master ou admin
       const { data: existingAdmins } = await adminClient
         .from("user_roles")
         .select("user_id")
-        .eq("role", "admin");
+        .in("role", ["admin", "master"]);
 
       if (existingAdmins && existingAdmins.length > 0) {
         return new Response(
-          JSON.stringify({ error: "Admin já cadastrado. Use o painel admin para criar mais usuários." }),
+          JSON.stringify({ error: "Sistema já configurado. Use o painel para criar mais usuários." }),
           {
             status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
