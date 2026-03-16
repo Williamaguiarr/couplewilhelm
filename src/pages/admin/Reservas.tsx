@@ -742,19 +742,21 @@ const Reservas: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReservas.map((r) => {
+              {filteredReservas.map((r) => {
                   // Valor Líquido = Bruto - Limpeza; Comissão CW = Líquido * 25%
                   const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza);
                   const comissao = calcComissao(valorLiquido);
+                  const semValores = r.valor_bruto == null;
                   return (
-                    <TableRow key={r.id} className="border-border hover:bg-muted/30">
+                    <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
                       <TableCell className="text-foreground font-medium">
                         <div className="flex items-center gap-2">
                           {r.imovel?.nome_imovel || "—"}
-                          {r.valor_bruto == null && (
-                            <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
+                          {semValores && (
+                            <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20 text-xs font-medium gap-1">
+                              <AlertCircle className="h-3 w-3" />
                               Sem valores
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </TableCell>
