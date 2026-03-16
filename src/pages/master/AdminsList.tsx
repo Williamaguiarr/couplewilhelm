@@ -678,6 +678,7 @@ const AdminsList: React.FC = () => {
                   className="bg-background"
                 />
               </div>
+            </div>
             <div className="flex gap-3 pt-2">
               <Button
                 type="button"
