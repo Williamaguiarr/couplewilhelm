@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           admin_id: string
           ativo: boolean
+          comissao_cw: number
           cor_primaria: string
           cor_secundaria: string
           created_at: string
@@ -30,6 +31,7 @@ export type Database = {
         Insert: {
           admin_id: string
           ativo?: boolean
+          comissao_cw?: number
           cor_primaria?: string
           cor_secundaria?: string
           created_at?: string
@@ -42,6 +44,7 @@ export type Database = {
         Update: {
           admin_id?: string
           ativo?: boolean
+          comissao_cw?: number
           cor_primaria?: string
           cor_secundaria?: string
           created_at?: string
