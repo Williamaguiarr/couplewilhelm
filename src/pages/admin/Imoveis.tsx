@@ -35,9 +35,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Building2, Pencil, Trash2 } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, RefreshCw, Link } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 
 interface Imovel {
   id: string;
@@ -45,6 +48,9 @@ interface Imovel {
   endereco: string | null;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
+  ical_url_airbnb: string | null;
+  ical_url_booking: string | null;
+  ical_last_sync: string | null;
   proprietario?: { nome: string | null; email: string | null };
   proprietario2?: { nome: string | null; email: string | null };
 }
@@ -69,9 +75,12 @@ const Imoveis: React.FC = () => {
     endereco: "",
     proprietario_id: "",
     proprietario_id_2: "",
+    ical_url_airbnb: "",
+    ical_url_booking: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -107,7 +116,14 @@ const Imoveis: React.FC = () => {
   }, []);
 
   const resetForm = () =>
-    setForm({ nome_imovel: "", endereco: "", proprietario_id: "", proprietario_id_2: "" });
+    setForm({
+      nome_imovel: "",
+      endereco: "",
+      proprietario_id: "",
+      proprietario_id_2: "",
+      ical_url_airbnb: "",
+      ical_url_booking: "",
+    });
 
   const openEdit = (imovel: Imovel) => {
     setEditId(imovel.id);
@@ -116,6 +132,8 @@ const Imoveis: React.FC = () => {
       endereco: imovel.endereco || "",
       proprietario_id: imovel.proprietario_id || "",
       proprietario_id_2: imovel.proprietario_id_2 || "",
+      ical_url_airbnb: imovel.ical_url_airbnb || "",
+      ical_url_booking: imovel.ical_url_booking || "",
     });
     setOpen(true);
   };
@@ -123,7 +141,6 @@ const Imoveis: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar que os dois proprietários não são iguais
     if (
       form.proprietario_id &&
       form.proprietario_id_2 &&
@@ -144,6 +161,8 @@ const Imoveis: React.FC = () => {
       endereco: form.endereco || null,
       proprietario_id: form.proprietario_id || null,
       proprietario_id_2: form.proprietario_id_2 || null,
+      ical_url_airbnb: form.ical_url_airbnb || null,
+      ical_url_booking: form.ical_url_booking || null,
     };
 
     if (editId) {
@@ -187,12 +206,59 @@ const Imoveis: React.FC = () => {
     setDeleteSubmitting(false);
   };
 
+  const handleSync = async (imovel: Imovel) => {
+    if (!imovel.ical_url_airbnb && !imovel.ical_url_booking) {
+      toast({ title: "Nenhuma URL iCal configurada", variant: "destructive" });
+      return;
+    }
+
+    setSyncingId(imovel.id);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/ical-sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({ imovel_id: imovel.id }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Erro ao sincronizar");
+      }
+
+      const totalSynced = result.results?.reduce(
+        (acc: number, r: any) => acc + (r.synced ?? 0),
+        0
+      ) ?? 0;
+
+      toast({
+        title: "Sincronização concluída",
+        description: totalSynced > 0
+          ? `${totalSynced} nova(s) reserva(s) importada(s).`
+          : "Nenhuma reserva nova encontrada.",
+      });
+
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   const propLabel = (p?: { nome: string | null; email: string | null } | null) =>
     p?.nome || p?.email || null;
 
-  // Opções filtradas para o 2º proprietário (excluindo o 1º já selecionado)
   const opcoesProprietario2 = proprietarios.filter((p) => p.id !== form.proprietario_id);
-  // Opções filtradas para o 1º proprietário (excluindo o 2º já selecionado)
   const opcoesProprietario1 = proprietarios.filter((p) => p.id !== form.proprietario_id_2);
 
   return (
@@ -218,7 +284,7 @@ const Imoveis: React.FC = () => {
                 <Plus className="h-4 w-4" /> Novo Imóvel
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
+            <DialogContent className="bg-card border-border max-w-lg">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">
                   {editId ? "Editar Imóvel" : "Cadastrar Imóvel"}
@@ -268,7 +334,10 @@ const Imoveis: React.FC = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">2º Proprietário <span className="text-xs text-muted-foreground/60">(opcional)</span></Label>
+                  <Label className="text-muted-foreground">
+                    2º Proprietário{" "}
+                    <span className="text-xs text-muted-foreground/60">(opcional)</span>
+                  </Label>
                   <Select
                     value={form.proprietario_id_2 || NONE}
                     onValueChange={(v) =>
@@ -290,6 +359,35 @@ const Imoveis: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* iCal Section */}
+                <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Link className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Sincronização iCal
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">URL iCal — Airbnb</Label>
+                    <Input
+                      value={form.ical_url_airbnb}
+                      onChange={(e) => setForm({ ...form, ical_url_airbnb: e.target.value })}
+                      placeholder="https://www.airbnb.com/calendar/ical/..."
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">URL iCal — Booking.com</Label>
+                    <Input
+                      value={form.ical_url_booking}
+                      onChange={(e) => setForm({ ...form, ical_url_booking: e.target.value })}
+                      placeholder="https://admin.booking.com/hotel/hoteladmin/ical.html?..."
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
                     Cancelar
@@ -320,13 +418,15 @@ const Imoveis: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Endereço</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário(s)</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-20"></TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">iCal</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {imoveis.map((imovel) => {
                   const p1 = propLabel(imovel.proprietario);
                   const p2 = propLabel(imovel.proprietario2);
+                  const hasIcal = !!(imovel.ical_url_airbnb || imovel.ical_url_booking);
                   return (
                     <TableRow key={imovel.id} className="border-border hover:bg-muted/30">
                       <TableCell className="text-foreground font-medium">{imovel.nome_imovel}</TableCell>
@@ -343,7 +443,39 @@ const Imoveis: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        {hasIcal ? (
+                          <div className="flex flex-col gap-1">
+                            {imovel.ical_url_airbnb && (
+                              <Badge variant="secondary" className="text-xs w-fit">Airbnb</Badge>
+                            )}
+                            {imovel.ical_url_booking && (
+                              <Badge variant="secondary" className="text-xs w-fit">Booking</Badge>
+                            )}
+                            {imovel.ical_last_sync && (
+                              <span className="text-xs text-muted-foreground/60">
+                                Sync:{" "}
+                                {format(new Date(imovel.ical_last_sync), "dd/MM HH:mm", { locale: ptBR })}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/50 text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1">
+                          {hasIcal && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleSync(imovel)}
+                              disabled={syncingId === imovel.id}
+                              className="h-8 w-8 hover:text-primary"
+                              title="Sincronizar iCal agora"
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${syncingId === imovel.id ? "animate-spin" : ""}`} />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
