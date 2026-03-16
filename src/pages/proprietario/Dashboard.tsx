@@ -85,14 +85,12 @@ const getDaysBetween = (start: string, end: string): Date[] => {
   return days;
 };
 
-const COMISSAO = 0.25;
-
-const calcFinanceiro = (r: Reserva) => {
+const calcFinanceiro = (r: Reserva, comissaoRate: number) => {
   const bruto = r.valor_bruto ?? 0;
   const limpeza = r.taxa_limpeza ?? 0;
   const plataforma = r.comissao_plataforma ?? 0;
   const liquido = bruto - limpeza - plataforma;
-  const comissao = liquido * COMISSAO;
+  const comissao = liquido * comissaoRate;
   const proprietario = liquido - comissao;
   return { bruto, limpeza, plataforma, liquido, comissao, proprietario };
 };
