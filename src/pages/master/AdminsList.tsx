@@ -667,7 +667,17 @@ const AdminsList: React.FC = () => {
                   className="bg-background font-mono text-sm"
                 />
               </div>
-            </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-widest">
+                  Data do último pagamento
+                </Label>
+                <Input
+                  type="date"
+                  value={editForm.ultimo_pagamento}
+                  onChange={(e) => setEditForm({ ...editForm, ultimo_pagamento: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
             <div className="flex gap-3 pt-2">
               <Button
                 type="button"
