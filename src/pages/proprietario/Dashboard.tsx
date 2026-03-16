@@ -808,7 +808,8 @@ const ProprietarioDashboard: React.FC = () => {
                       })}
                     </p>
                     {selectedReservas.map((r) => {
-                      const f = calcFinanceiro(r);
+                      const f = calcFinanceiro(r, comissaoRate);
+                      const pctLabel = `${Math.round(comissaoRate * 100)}%`;
                       return (
                         <div key={r.id} className="border-t border-border pt-3 space-y-3">
                           <p className="text-foreground font-medium text-sm">
@@ -831,7 +832,7 @@ const ProprietarioDashboard: React.FC = () => {
                             <div className="border-t border-border pt-1.5">
                               <FinRow label="Valor líquido" value={fmt(f.bruto - f.limpeza)} />
                             </div>
-                            <FinRow label="Comissão CW (25%)" value={`- ${fmt(f.comissao)}`} />
+                            <FinRow label={`Comissão ${nomeAdmin} (${pctLabel})`} value={`- ${fmt(f.comissao)}`} />
                             <div className="border-t border-border pt-1.5">
                               <FinRow label="Seu repasse" value={fmt(f.proprietario)} highlight />
                             </div>
