@@ -31,7 +31,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   {profile?.nome || profile?.email}
                 </p>
                 <p className="text-xs text-primary leading-tight">
-                  {role === "admin" ? "Administrador" : "Proprietário"}
+                  {roleLabel}
                 </p>
               </div>
               <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
