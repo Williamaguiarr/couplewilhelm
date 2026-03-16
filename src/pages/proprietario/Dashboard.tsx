@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { ptBR } from "date-fns/locale";
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface Reserva {
