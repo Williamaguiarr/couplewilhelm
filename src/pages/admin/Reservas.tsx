@@ -40,7 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -232,6 +233,7 @@ const Reservas: React.FC = () => {
   const [filterImovel, setFilterImovel] = useState("all");
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [filterSemValores, setFilterSemValores] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
@@ -537,6 +539,8 @@ const Reservas: React.FC = () => {
     setDeleteId(null);
   };
 
+  const semValoresCount = reservas.filter((r) => r.valor_bruto == null).length;
+
   const filteredReservas = reservas.filter((r) => {
     const matchImovel = filterImovel === "all" || r.imovel_id === filterImovel;
 
@@ -552,7 +556,9 @@ const Reservas: React.FC = () => {
       }
     }
 
-    return matchImovel && matchPeriodo;
+    const matchSemValores = !filterSemValores || r.valor_bruto == null;
+
+    return matchImovel && matchPeriodo && matchSemValores;
   });
 
   return (
@@ -684,6 +690,24 @@ const Reservas: React.FC = () => {
               </Button>
             )}
 
+            {/* Filtro Sem Valores */}
+            {semValoresCount > 0 && (
+              <Button
+                variant={filterSemValores ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterSemValores((v) => !v)}
+                className={cn(
+                  "gap-1.5 self-end",
+                  filterSemValores
+                    ? "bg-warning text-warning-foreground hover:bg-warning/90 border-warning"
+                    : "border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                )}
+              >
+                <AlertCircle className="h-3.5 w-3.5" />
+                Sem valores ({semValoresCount})
+              </Button>
+            )}
+
             {/* Contador de resultados */}
             <div className="ml-auto self-end">
               <span className="text-xs text-muted-foreground">
@@ -718,19 +742,21 @@ const Reservas: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReservas.map((r) => {
+              {filteredReservas.map((r) => {
                   // Valor Líquido = Bruto - Limpeza; Comissão CW = Líquido * 25%
                   const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza);
                   const comissao = calcComissao(valorLiquido);
+                  const semValores = r.valor_bruto == null;
                   return (
-                    <TableRow key={r.id} className="border-border hover:bg-muted/30">
+                    <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
                       <TableCell className="text-foreground font-medium">
                         <div className="flex items-center gap-2">
                           {r.imovel?.nome_imovel || "—"}
-                          {r.valor_bruto == null && (
-                            <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
+                          {semValores && (
+                            <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20 text-xs font-medium gap-1">
+                              <AlertCircle className="h-3 w-3" />
                               Sem valores
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </TableCell>

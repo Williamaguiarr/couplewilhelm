@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Building2, Pencil, Trash2, RefreshCw, Link } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, RefreshCw, Link, Copy, Check, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import { format } from "date-fns";
@@ -81,6 +81,8 @@ const Imoveis: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [calendarLinkOpen, setCalendarLinkOpen] = useState<Imovel | null>(null);
+  const [copied, setCopied] = useState<"airbnb" | "booking" | null>(null);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -257,6 +259,22 @@ const Imoveis: React.FC = () => {
 
   const propLabel = (p?: { nome: string | null; email: string | null } | null) =>
     p?.nome || p?.email || null;
+
+  const getIcalUrl = (imovel: Imovel, source: "airbnb" | "booking") => {
+    return source === "airbnb" ? imovel.ical_url_airbnb : imovel.ical_url_booking;
+  };
+
+  const handleCopy = async (imovel: Imovel, source: "airbnb" | "booking") => {
+    const url = getIcalUrl(imovel, source);
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(source);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      toast({ title: "Erro ao copiar URL", variant: "destructive" });
+    }
+  };
 
   const opcoesProprietario2 = proprietarios.filter((p) => p.id !== form.proprietario_id);
   const opcoesProprietario1 = proprietarios.filter((p) => p.id !== form.proprietario_id_2);
@@ -468,6 +486,17 @@ const Imoveis: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setCalendarLinkOpen(imovel)}
+                              className="h-8 w-8 hover:text-primary"
+                              title="Ver / copiar URLs iCal"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          {hasIcal && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleSync(imovel)}
                               disabled={syncingId === imovel.id}
                               className="h-8 w-8 hover:text-primary"
@@ -502,6 +531,88 @@ const Imoveis: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* iCal Export Dialog */}
+      <Dialog open={!!calendarLinkOpen} onOpenChange={(v) => { if (!v) { setCalendarLinkOpen(null); setCopied(null); } }}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <Link className="h-4 w-4 text-primary" />
+              URLs iCal — {calendarLinkOpen?.nome_imovel}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Copie as URLs abaixo e cole nas respectivas plataformas para sincronizar o calendário deste imóvel.
+            </p>
+
+            {calendarLinkOpen?.ical_url_airbnb ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Airbnb</span>
+                  <Badge variant="secondary" className="text-xs">iCal URL</Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={calendarLinkOpen.ical_url_airbnb}
+                    className="bg-muted/30 text-xs font-mono text-muted-foreground border-border"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => handleCopy(calendarLinkOpen, "airbnb")}
+                    className="shrink-0 border-border"
+                    title="Copiar URL Airbnb"
+                  >
+                    {copied === "airbnb" ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground/70">
+                  No Airbnb: <span className="font-medium text-muted-foreground">Anúncio → Calendário → Exportar calendário</span>
+                </p>
+              </div>
+            ) : null}
+
+            {calendarLinkOpen?.ical_url_booking ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Booking.com</span>
+                  <Badge variant="secondary" className="text-xs">iCal URL</Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={calendarLinkOpen.ical_url_booking}
+                    className="bg-muted/30 text-xs font-mono text-muted-foreground border-border"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => handleCopy(calendarLinkOpen, "booking")}
+                    className="shrink-0 border-border"
+                    title="Copiar URL Booking"
+                  >
+                    {copied === "booking" ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground/70">
+                  No Booking.com: <span className="font-medium text-muted-foreground">Extranet → Calendário → Sincronizar calendário → Exportar</span>
+                </p>
+              </div>
+            ) : null}
+
+            {calendarLinkOpen?.ical_last_sync && (
+              <p className="text-xs text-muted-foreground/60 pt-1 border-t border-border">
+                Última sincronização:{" "}
+                {format(new Date(calendarLinkOpen.ical_last_sync), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* DELETE CONFIRMATION */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>

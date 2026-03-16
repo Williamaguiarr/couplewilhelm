@@ -42,6 +42,9 @@
 
     --radius: 0.5rem;
 
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
     /* Sidebar mantém o azul-marinho da identidade */
     --sidebar-background: 211 75% 9%;
     --sidebar-foreground: 40 27% 80%;
