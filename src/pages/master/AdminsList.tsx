@@ -209,6 +209,7 @@ const AdminsList: React.FC = () => {
       password: "",
       slug: admin.slug || "",
       nome_empresa: admin.nome_empresa || "",
+      ultimo_pagamento: admin.ultimo_pagamento || "",
     });
     setEditOpen(true);
   };
@@ -243,9 +244,10 @@ const AdminsList: React.FC = () => {
     }
 
     // Atualiza ou cria config
-    const configPayload = {
+    const configPayload: Record<string, unknown> = {
       slug: editForm.slug || slugify(editForm.nome_empresa || editForm.nome),
       nome_empresa: editForm.nome_empresa || editForm.nome,
+      ultimo_pagamento: editForm.ultimo_pagamento || null,
     };
 
     if (editTarget.slug) {
