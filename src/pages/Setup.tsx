@@ -17,10 +17,11 @@ const Setup: React.FC = () => {
 
   useEffect(() => {
     const checkAdmin = async () => {
+      // Verifica se já existe master ou admin
       const { count } = await supabase
         .from("user_roles")
         .select("*", { count: "exact", head: true })
-        .eq("role", "admin");
+        .in("role", ["admin", "master"]);
       setAdminExists((count || 0) > 0);
       setChecking(false);
     };
