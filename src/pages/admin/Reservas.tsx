@@ -55,6 +55,7 @@ interface Reserva {
   valor_bruto: number | null;
   valor_liquido_proprietario: number | null;
   taxa_limpeza: number | null;
+  comissao_plataforma: number | null;
   observacoes: string | null;
   imovel_id: string;
   imovel?: { nome_imovel: string };
@@ -77,21 +78,26 @@ const toNum = (v: string | number | null): number | null => {
   return n == null || isNaN(n) ? null : n;
 };
 
-// Valor Líquido = Valor Bruto - Taxa de Limpeza
-const calcValorLiquido = (valorBruto: string | number | null, taxaLimpeza: string | number | null): number | null => {
+// Base para CW = Valor Bruto - Taxa de Limpeza - Comissão Plataforma
+const calcValorLiquido = (
+  valorBruto: string | number | null,
+  taxaLimpeza: string | number | null,
+  comissaoPlataforma: string | number | null = 0
+): number | null => {
   const bruto = toNum(valorBruto);
   if (bruto == null) return null;
   const limpeza = toNum(taxaLimpeza) ?? 0;
-  return bruto - limpeza;
+  const plataforma = toNum(comissaoPlataforma) ?? 0;
+  return bruto - limpeza - plataforma;
 };
 
-// Comissão CW = 25% do Valor Líquido
+// Comissão CW = 25% da base (após deduzir limpeza + comissão plataforma)
 const calcComissao = (valorLiquido: number | null): number => {
   if (valorLiquido == null) return 0;
   return valorLiquido * COMISSAO_RATE;
 };
 
-// Valor Proprietário = Valor Líquido - Comissão CW
+// Valor Proprietário = Base - Comissão CW
 const calcValorProprietario = (valorLiquido: number | null): number | null => {
   if (valorLiquido == null) return null;
   return valorLiquido * (1 - COMISSAO_RATE);
@@ -103,6 +109,7 @@ const emptyForm = {
   data_fim: "",
   valor_bruto: "",
   taxa_limpeza: "",
+  comissao_plataforma: "",
   observacoes: "",
 };
 
@@ -118,7 +125,8 @@ const ReservaFormFields = ({
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
 }) => {
-  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza);
+  const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
+  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
   const comissao = calcComissao(valorLiquido);
   const valorProprietario = calcValorProprietario(valorLiquido);
 
@@ -190,15 +198,32 @@ const ReservaFormFields = ({
         </div>
       </div>
 
+      {/* Comissão de Plataforma (OTA) */}
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">
+          Comissão Plataforma OTA (R$)
+          <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">ex: Booking.com — deduzida antes da CW</span>
+        </Label>
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          value={form.comissao_plataforma}
+          onChange={(e) => setForm({ ...form, comissao_plataforma: e.target.value })}
+          placeholder="0,00 (opcional)"
+          className="bg-background"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
+          <Label className="text-muted-foreground">Base CW (após deduções)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(valorLiquido) : "—"}
           </div>
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão CW (25% sobre líquido)</Label>
+          <Label className="text-muted-foreground">Comissão CW (25% sobre base)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
@@ -301,14 +326,16 @@ const Reservas: React.FC = () => {
     );
 
     // ── Calcular totais ───────────────────────────────────────────────────────
-    let totalBruto = 0, totalLimpeza = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
+    let totalBruto = 0, totalLimpeza = 0, totalPlataforma = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
     filteredReservas.forEach((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
-      const liquido = bruto - limpeza;
+      const plataforma = r.comissao_plataforma || 0;
+      const liquido = bruto - limpeza - plataforma;
       const comissao = liquido * 0.25;
       totalBruto += bruto;
       totalLimpeza += limpeza;
+      totalPlataforma += plataforma;
       totalLiquido += liquido;
       totalComissao += comissao;
       totalProprietario += liquido - comissao;
@@ -320,8 +347,8 @@ const Reservas: React.FC = () => {
     // ── Cards de resumo financeiro ────────────────────────────────────────────
     const summaryItems = [
       { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
-      { label: "Taxa de Limpeza", value: fmtPDF(totalLimpeza) },
-      { label: "Valor Líquido", value: fmtPDF(totalLiquido) },
+      { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
+      { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
       { label: "Comissão CW (25%)", value: fmtPDF(totalComissao) },
       { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
     ];
@@ -361,7 +388,8 @@ const Reservas: React.FC = () => {
     const tableData = filteredReservas.map((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
-      const liquido = bruto - limpeza;
+      const plataforma = r.comissao_plataforma || 0;
+      const liquido = bruto - limpeza - plataforma;
       const comissao = liquido * 0.25;
       const proprietario = liquido - comissao;
       return [
@@ -370,6 +398,7 @@ const Reservas: React.FC = () => {
         new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
         fmtPDF(bruto),
         fmtPDF(limpeza),
+        plataforma > 0 ? fmtPDF(plataforma) : "—",
         fmtPDF(liquido),
         fmtPDF(comissao),
         fmtPDF(proprietario),
@@ -379,7 +408,7 @@ const Reservas: React.FC = () => {
 
     autoTable(doc, {
       startY: cardY + cardH + 8,
-      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "V. Líquido", "Comissão CW", "Proprietário", "Obs."]],
+      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão OTA", "Base CW", "Comissão CW", "Proprietário", "Obs."]],
       body: tableData,
       headStyles: {
         fillColor: navy,
@@ -395,15 +424,16 @@ const Reservas: React.FC = () => {
       },
       alternateRowStyles: { fillColor: lightGray },
       columnStyles: {
-        0: { cellWidth: 32 },
-        1: { cellWidth: 18, halign: "center" },
-        2: { cellWidth: 18, halign: "center" },
-        3: { cellWidth: 24, halign: "right" },
-        4: { cellWidth: 20, halign: "right" },
-        5: { cellWidth: 24, halign: "right" },
-        6: { cellWidth: 24, halign: "right" },
-        7: { cellWidth: 26, halign: "right", fontStyle: "bold", textColor: navy },
-        8: { cellWidth: "auto" },
+        0: { cellWidth: 28 },
+        1: { cellWidth: 16, halign: "center" },
+        2: { cellWidth: 16, halign: "center" },
+        3: { cellWidth: 20, halign: "right" },
+        4: { cellWidth: 17, halign: "right" },
+        5: { cellWidth: 20, halign: "right" },
+        6: { cellWidth: 20, halign: "right" },
+        7: { cellWidth: 20, halign: "right" },
+        8: { cellWidth: 22, halign: "right", fontStyle: "bold", textColor: navy },
+        9: { cellWidth: "auto" },
       },
       margin: { left: 14, right: 14 },
       didDrawPage: (data) => {
@@ -454,7 +484,8 @@ const Reservas: React.FC = () => {
 
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
-    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase.from("reservas").insert({
@@ -464,6 +495,7 @@ const Reservas: React.FC = () => {
       valor_bruto: valorBruto,
       valor_liquido_proprietario: valorProprietario,
       taxa_limpeza: taxaLimpeza,
+      comissao_plataforma: comissaoPlataforma,
       observacoes: form.observacoes || null,
     });
 
@@ -487,6 +519,7 @@ const Reservas: React.FC = () => {
       data_fim: r.data_fim,
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
+      comissao_plataforma: r.comissao_plataforma != null ? String(r.comissao_plataforma) : "",
       observacoes: r.observacoes || "",
     });
     setEditOpen(true);
@@ -499,7 +532,8 @@ const Reservas: React.FC = () => {
 
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
-    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase
@@ -511,6 +545,7 @@ const Reservas: React.FC = () => {
         valor_bruto: valorBruto,
         valor_liquido_proprietario: valorProprietario,
         taxa_limpeza: taxaLimpeza,
+        comissao_plataforma: comissaoPlataforma,
         observacoes: editForm.observacoes || null,
       })
       .eq("id", editingReserva.id);
@@ -743,8 +778,7 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
               {filteredReservas.map((r) => {
-                  // Valor Líquido = Bruto - Limpeza; Comissão CW = Líquido * 25%
-                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza);
+                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
                   const comissao = calcComissao(valorLiquido);
                   const semValores = r.valor_bruto == null;
                   return (
