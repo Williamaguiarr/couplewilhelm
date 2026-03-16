@@ -8,7 +8,15 @@ interface AppLayoutProps {
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const { profile, role } = useAuth();
+  const { profile, role, hasRole } = useAuth();
+
+  const roleLabel = hasRole("master") && hasRole("admin")
+    ? "Master / Admin"
+    : role === "master"
+    ? "Master"
+    : role === "admin"
+    ? "Administrador"
+    : "Proprietário";
 
   return (
     <SidebarProvider>
