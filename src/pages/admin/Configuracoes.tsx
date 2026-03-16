@@ -75,7 +75,7 @@ const Configuracoes: React.FC = () => {
       .maybeSingle();
 
     if (data) {
-      const c = data as AdminConfig;
+      const c = data as unknown as AdminConfig;
       setConfig(c);
       setForm({
         slug: c.slug || "",
