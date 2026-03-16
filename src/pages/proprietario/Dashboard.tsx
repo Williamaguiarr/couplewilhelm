@@ -118,6 +118,8 @@ const ProprietarioDashboard: React.FC = () => {
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [comissaoRate, setComissaoRate] = useState<number>(0.25);
+  const [nomeAdmin, setNomeAdmin] = useState<string>("CW");
 
   const now = new Date();
 
@@ -137,13 +139,28 @@ const ProprietarioDashboard: React.FC = () => {
     const fetchData = async () => {
       const { data: imoveisData } = await supabase
         .from("imoveis")
-        .select("id, nome_imovel")
+        .select("id, nome_imovel, admin_id")
         .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
-      setImoveis(imoveisData || []);
+      setImoveis((imoveisData || []).map(({ id, nome_imovel }) => ({ id, nome_imovel })));
 
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
+      }
+
+      // Buscar comissão do admin responsável (usa o admin_id do primeiro imóvel)
+      const adminId = imoveisData?.[0]?.admin_id;
+      if (adminId) {
+        const { data: configData } = await supabase
+          .from("admin_configs" as any)
+          .select("comissao_cw, nome_empresa")
+          .eq("admin_id", adminId)
+          .maybeSingle();
+        if (configData) {
+          const cfg = configData as any;
+          if (cfg.comissao_cw != null) setComissaoRate(cfg.comissao_cw);
+          if (cfg.nome_empresa) setNomeAdmin(cfg.nome_empresa);
+        }
       }
 
       const [{ data: resData }, { data: despData }] = await Promise.all([
