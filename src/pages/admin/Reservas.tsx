@@ -326,14 +326,16 @@ const Reservas: React.FC = () => {
     );
 
     // ── Calcular totais ───────────────────────────────────────────────────────
-    let totalBruto = 0, totalLimpeza = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
+    let totalBruto = 0, totalLimpeza = 0, totalPlataforma = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
     filteredReservas.forEach((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
-      const liquido = bruto - limpeza;
+      const plataforma = r.comissao_plataforma || 0;
+      const liquido = bruto - limpeza - plataforma;
       const comissao = liquido * 0.25;
       totalBruto += bruto;
       totalLimpeza += limpeza;
+      totalPlataforma += plataforma;
       totalLiquido += liquido;
       totalComissao += comissao;
       totalProprietario += liquido - comissao;
@@ -345,8 +347,8 @@ const Reservas: React.FC = () => {
     // ── Cards de resumo financeiro ────────────────────────────────────────────
     const summaryItems = [
       { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
-      { label: "Taxa de Limpeza", value: fmtPDF(totalLimpeza) },
-      { label: "Valor Líquido", value: fmtPDF(totalLiquido) },
+      { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
+      { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
       { label: "Comissão CW (25%)", value: fmtPDF(totalComissao) },
       { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
     ];
