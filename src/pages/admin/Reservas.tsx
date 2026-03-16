@@ -40,7 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
