@@ -385,11 +385,14 @@ const ProprietarioDashboard: React.FC = () => {
                   </Table>
 
                   {/* Totals footer */}
-                  <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-8">
+                  <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-6 flex-wrap">
                     <TotalItem label="Bruto" value={fmt(totais.bruto)} />
                     <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
-                    <TotalItem label="Comissão" value={fmt(totais.comissao)} />
-                    <div className="pl-8 border-l border-border">
+                    {totais.plataforma > 0 && (
+                      <TotalItem label="Com. OTA" value={fmt(totais.plataforma)} />
+                    )}
+                    <TotalItem label="Comissão CW" value={fmt(totais.comissao)} />
+                    <div className="pl-6 border-l border-border">
                       <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Repasse</p>
                       <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
                     </div>
