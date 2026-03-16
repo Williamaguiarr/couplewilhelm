@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Building2, Pencil, Trash2, RefreshCw, Link } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, RefreshCw, Link, Copy, Check, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import { format } from "date-fns";
