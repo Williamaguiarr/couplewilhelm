@@ -500,7 +500,7 @@ const Reservas: React.FC = () => {
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
     const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido);
+    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
