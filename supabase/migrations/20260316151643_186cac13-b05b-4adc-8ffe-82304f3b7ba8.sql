@@ -1,0 +1,1 @@
+ALTER TABLE public.admin_configs ADD COLUMN IF NOT EXISTS ultimo_pagamento date NULL;
