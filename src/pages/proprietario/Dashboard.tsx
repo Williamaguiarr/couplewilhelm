@@ -601,7 +601,7 @@ const ProprietarioDashboard: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {reservasFiltradas.map((r) => {
-                        const f = calcFinanceiro(r);
+                        const f = calcFinanceiro(r, comissaoRate);
                         return (
                           <TableRow key={r.id} className="border-border hover:bg-muted/20">
                             <TableCell className="text-foreground font-medium text-sm py-3">
