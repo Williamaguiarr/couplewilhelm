@@ -78,6 +78,7 @@ const AdminsList: React.FC = () => {
     password: "",
     slug: "",
     nome_empresa: "",
+    ultimo_pagamento: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<AdminConfig | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
