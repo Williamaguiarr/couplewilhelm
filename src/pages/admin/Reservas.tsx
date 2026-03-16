@@ -539,6 +539,8 @@ const Reservas: React.FC = () => {
     setDeleteId(null);
   };
 
+  const semValoresCount = reservas.filter((r) => r.valor_bruto == null).length;
+
   const filteredReservas = reservas.filter((r) => {
     const matchImovel = filterImovel === "all" || r.imovel_id === filterImovel;
 
@@ -554,7 +556,9 @@ const Reservas: React.FC = () => {
       }
     }
 
-    return matchImovel && matchPeriodo;
+    const matchSemValores = !filterSemValores || r.valor_bruto == null;
+
+    return matchImovel && matchPeriodo && matchSemValores;
   });
 
   return (
