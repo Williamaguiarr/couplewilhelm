@@ -26,6 +26,7 @@ export type Database = {
           logo_url: string | null
           nome_empresa: string | null
           slug: string
+          ultimo_pagamento: string | null
           updated_at: string
         }
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           logo_url?: string | null
           nome_empresa?: string | null
           slug: string
+          ultimo_pagamento?: string | null
           updated_at?: string
         }
         Update: {
@@ -52,6 +54,7 @@ export type Database = {
           logo_url?: string | null
           nome_empresa?: string | null
           slug?: string
+          ultimo_pagamento?: string | null
           updated_at?: string
         }
         Relationships: []

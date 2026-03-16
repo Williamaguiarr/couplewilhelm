@@ -36,6 +36,9 @@ import {
   Power,
   PowerOff,
   Users,
+  Percent,
+  CalendarCheck,
+  CalendarX,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
@@ -49,6 +52,8 @@ interface AdminConfig {
   cor_secundaria: string;
   logo_url: string | null;
   ativo: boolean;
+  comissao_cw: number;
+  ultimo_pagamento: string | null;
   created_at: string;
   profile?: { nome: string | null; email: string | null };
 }
@@ -73,6 +78,7 @@ const AdminsList: React.FC = () => {
     password: "",
     slug: "",
     nome_empresa: "",
+    ultimo_pagamento: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<AdminConfig | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
@@ -124,6 +130,8 @@ const AdminsList: React.FC = () => {
         cor_secundaria: "#A38B5E",
         logo_url: null,
         ativo: true,
+        comissao_cw: 0.25,
+        ultimo_pagamento: null,
         created_at: new Date().toISOString(),
         profile: profileMap[id] || null,
       }));
@@ -201,6 +209,7 @@ const AdminsList: React.FC = () => {
       password: "",
       slug: admin.slug || "",
       nome_empresa: admin.nome_empresa || "",
+      ultimo_pagamento: admin.ultimo_pagamento || "",
     });
     setEditOpen(true);
   };
@@ -235,9 +244,10 @@ const AdminsList: React.FC = () => {
     }
 
     // Atualiza ou cria config
-    const configPayload = {
+    const configPayload: Record<string, unknown> = {
       slug: editForm.slug || slugify(editForm.nome_empresa || editForm.nome),
       nome_empresa: editForm.nome_empresa || editForm.nome,
+      ultimo_pagamento: editForm.ultimo_pagamento || null,
     };
 
     if (editTarget.slug) {
@@ -345,10 +355,13 @@ const AdminsList: React.FC = () => {
                     Cores
                   </TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
-                    Status
+                    Comissão
                   </TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
-                    Cadastrado
+                    Último Pagamento
+                  </TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
+                    Status
                   </TableHead>
                   <TableHead className="w-28" />
                 </TableRow>
@@ -393,6 +406,44 @@ const AdminsList: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Percent className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-foreground text-sm font-medium">
+                          {((admin.comissao_cw ?? 0.25) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {admin.ultimo_pagamento ? (
+                          <>
+                            <CalendarCheck className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                            <div>
+                              <p className="text-foreground text-sm">
+                                {new Date(admin.ultimo_pagamento + "T12:00:00").toLocaleDateString("pt-BR")}
+                              </p>
+                              {(() => {
+                                const d = new Date(admin.ultimo_pagamento + "T12:00:00");
+                                const now = new Date();
+                                const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+                                const late = diff > 30;
+                                return (
+                                  <p className={`text-xs ${late ? "text-destructive" : "text-muted-foreground"}`}>
+                                    {diff === 0 ? "hoje" : `${diff}d atrás`}{late ? " ⚠️" : ""}
+                                  </p>
+                                );
+                              })()}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <CalendarX className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="text-muted-foreground text-sm">Não registrado</span>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <Badge
                         variant={admin.ativo ? "default" : "secondary"}
                         className={
@@ -403,9 +454,6 @@ const AdminsList: React.FC = () => {
                       >
                         {admin.ativo ? "Ativo" : "Pausado"}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(admin.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -617,6 +665,17 @@ const AdminsList: React.FC = () => {
                     setEditForm({ ...editForm, slug: slugify(e.target.value) })
                   }
                   className="bg-background font-mono text-sm"
+                />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-widest">
+                  Data do último pagamento
+                </Label>
+                <Input
+                  type="date"
+                  value={editForm.ultimo_pagamento}
+                  onChange={(e) => setEditForm({ ...editForm, ultimo_pagamento: e.target.value })}
+                  className="bg-background"
                 />
               </div>
             </div>
