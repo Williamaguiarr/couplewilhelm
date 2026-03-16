@@ -352,10 +352,13 @@ const AdminsList: React.FC = () => {
                     Cores
                   </TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
-                    Status
+                    Comissão
                   </TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
-                    Cadastrado
+                    Último Pagamento
+                  </TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
+                    Status
                   </TableHead>
                   <TableHead className="w-28" />
                 </TableRow>
