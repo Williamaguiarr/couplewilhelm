@@ -19,7 +19,8 @@ const Login: React.FC = () => {
 
   // Redirecionar quando o role estiver disponível
   React.useEffect(() => {
-    if (role === "admin") navigate("/admin", { replace: true });
+    if (role === "master") navigate("/master", { replace: true });
+    else if (role === "admin") navigate("/admin", { replace: true });
     else if (role === "proprietario") navigate("/dashboard", { replace: true });
   }, [role, navigate]);
 

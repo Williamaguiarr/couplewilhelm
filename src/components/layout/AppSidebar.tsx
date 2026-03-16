@@ -7,6 +7,8 @@ import {
   CalendarDays,
   Home,
   LogOut,
+  Settings,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,13 +23,20 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import logo from "@/assets/logo.png";
+
+const masterItems = [
+  { title: "Visão Geral", url: "/master", icon: LayoutDashboard },
+  { title: "Administradores", url: "/master/admins", icon: ShieldCheck },
+];
 
 const adminItems = [
   { title: "Visão Geral", url: "/admin", icon: LayoutDashboard },
   { title: "Proprietários", url: "/admin/proprietarios", icon: Users },
   { title: "Imóveis", url: "/admin/imoveis", icon: Building2 },
   { title: "Reservas", url: "/admin/reservas", icon: CalendarDays },
+  { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
 ];
 
 const proprietarioItems = [
@@ -37,37 +46,60 @@ const proprietarioItems = [
 
 const AppSidebar: React.FC = () => {
   const { role, profile, signOut } = useAuth();
+  const { theme } = useTheme();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
 
-  const items = role === "admin" ? adminItems : proprietarioItems;
+  const items =
+    role === "master"
+      ? masterItems
+      : role === "admin"
+      ? adminItems
+      : proprietarioItems;
 
   const isActive = (url: string) => {
-    if (url === "/admin" || url === "/dashboard") {
-      return location.pathname === url;
-    }
+    const rootUrls = ["/admin", "/dashboard", "/master"];
+    if (rootUrls.includes(url)) return location.pathname === url;
     return location.pathname.startsWith(url);
   };
+
+  const logoSrc = theme.logoUrl || logo;
+  const companyName = theme.nomeEmpresa || "Couple Wilhelm";
+  const nameParts = companyName.split(" ");
+  const nameLine1 = nameParts.slice(0, Math.ceil(nameParts.length / 2)).join(" ");
+  const nameLine2 = nameParts.slice(Math.ceil(nameParts.length / 2)).join(" ");
+
+  const roleLabel =
+    role === "master"
+      ? "Master"
+      : role === "admin"
+      ? "Administrador"
+      : "Proprietário";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="px-4 py-5">
         <div className="flex items-center gap-3 overflow-hidden">
           <img
-            src={logo}
-            alt="Couple Wilhelm"
-            className="h-8 w-8 object-contain flex-shrink-0"
+            src={logoSrc}
+            alt={companyName}
+            className="h-8 w-8 object-contain flex-shrink-0 rounded"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = logo;
+            }}
           />
           {!collapsed && (
-            <div className="flex flex-col leading-tight">
-              <span className="font-display text-sm tracking-widest text-primary uppercase">
-                Couple
+            <div className="flex flex-col leading-tight overflow-hidden">
+              <span className="font-display text-sm tracking-widest text-primary uppercase truncate">
+                {nameLine1}
               </span>
-              <span className="font-display text-sm tracking-widest text-primary uppercase">
-                Wilhelm
-              </span>
+              {nameLine2 && (
+                <span className="font-display text-sm tracking-widest text-primary uppercase truncate">
+                  {nameLine2}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -114,9 +146,7 @@ const AppSidebar: React.FC = () => {
             <p className="text-xs text-muted-foreground truncate">
               {profile?.nome || profile?.email}
             </p>
-            <p className="text-xs text-primary capitalize">
-              {role === "admin" ? "Administrador" : "Proprietário"}
-            </p>
+            <p className="text-xs text-primary capitalize">{roleLabel}</p>
           </div>
         )}
         <button
