@@ -778,8 +778,7 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
               {filteredReservas.map((r) => {
-                  // Valor Líquido = Bruto - Limpeza; Comissão CW = Líquido * 25%
-                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza);
+                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
                   const comissao = calcComissao(valorLiquido);
                   const semValores = r.valor_bruto == null;
                   return (
