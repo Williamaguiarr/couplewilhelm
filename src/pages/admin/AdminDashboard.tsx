@@ -251,7 +251,26 @@ const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Stats cards */}
+        {/* Banner: reservas sem valores */}
+        {reservasSemValores > 0 && (
+          <button
+            onClick={() => navigate("/admin/reservas")}
+            className="w-full text-left flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group"
+          >
+            <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-primary/15 text-primary">
+              <AlertTriangle className="h-4 w-4" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {reservasSemValores} reserva{reservasSemValores !== 1 ? "s" : ""} sem valores financeiros
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Importada{reservasSemValores !== 1 ? "s" : ""} via iCal — clique para preencher os valores
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+          </button>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card) => (
             <Card
