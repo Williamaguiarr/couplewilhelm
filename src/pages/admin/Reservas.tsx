@@ -548,7 +548,7 @@ const Reservas: React.FC = () => {
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido);
+    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
 
     const { error } = await supabase
       .from("reservas")
