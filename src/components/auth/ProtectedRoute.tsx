@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { session, role, loading } = useAuth();
+  const { session, role, hasRole, loading } = useAuth();
 
   if (loading) {
     return (
@@ -28,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && role !== requiredRole) {
-    // Redirecionar para o dashboard correto conforme role
+  // Master tem acesso a tudo (incluindo rotas de admin)
+  if (requiredRole && !hasRole(requiredRole) && !hasRole("master")) {
     if (role === "admin") return <Navigate to="/admin" replace />;
     if (role === "proprietario") return <Navigate to="/dashboard" replace />;
     return <Navigate to="/login" replace />;
