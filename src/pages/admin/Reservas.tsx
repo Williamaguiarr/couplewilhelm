@@ -690,6 +690,24 @@ const Reservas: React.FC = () => {
               </Button>
             )}
 
+            {/* Filtro Sem Valores */}
+            {semValoresCount > 0 && (
+              <Button
+                variant={filterSemValores ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterSemValores((v) => !v)}
+                className={cn(
+                  "gap-1.5 self-end",
+                  filterSemValores
+                    ? "bg-warning text-warning-foreground hover:bg-warning/90 border-warning"
+                    : "border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                )}
+              >
+                <AlertCircle className="h-3.5 w-3.5" />
+                Sem valores ({semValoresCount})
+              </Button>
+            )}
+
             {/* Contador de resultados */}
             <div className="ml-auto self-end">
               <span className="text-xs text-muted-foreground">
