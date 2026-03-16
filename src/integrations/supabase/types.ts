@@ -56,6 +56,9 @@ export type Database = {
         Row: {
           created_at: string | null
           endereco: string | null
+          ical_last_sync: string | null
+          ical_url_airbnb: string | null
+          ical_url_booking: string | null
           id: string
           nome_imovel: string
           proprietario_id: string | null
@@ -64,6 +67,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           endereco?: string | null
+          ical_last_sync?: string | null
+          ical_url_airbnb?: string | null
+          ical_url_booking?: string | null
           id?: string
           nome_imovel: string
           proprietario_id?: string | null
@@ -72,6 +78,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           endereco?: string | null
+          ical_last_sync?: string | null
+          ical_url_airbnb?: string | null
+          ical_url_booking?: string | null
           id?: string
           nome_imovel?: string
           proprietario_id?: string | null
