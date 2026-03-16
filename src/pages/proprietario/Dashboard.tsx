@@ -48,6 +48,7 @@ interface Reserva {
   data_fim: string;
   valor_bruto: number | null;
   taxa_limpeza: number | null;
+  comissao_plataforma: number | null;
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
   imovel?: { nome_imovel: string };
