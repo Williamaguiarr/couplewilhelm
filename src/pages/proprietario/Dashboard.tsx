@@ -248,7 +248,7 @@ const ProprietarioDashboard: React.FC = () => {
 
   const totais = reservasFiltradas.reduce(
     (acc, r) => {
-      const f = calcFinanceiro(r);
+      const f = calcFinanceiro(r, comissaoRate);
       return {
         bruto: acc.bruto + f.bruto,
         limpeza: acc.limpeza + f.limpeza,
