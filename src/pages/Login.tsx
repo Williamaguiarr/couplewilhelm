@@ -18,6 +18,7 @@ const Login: React.FC = () => {
   const { role } = useAuth();
 
   // Redirecionar quando o role estiver disponível
+  // Master+Admin vai para /master por padrão; pode navegar para /admin manualmente
   React.useEffect(() => {
     if (role === "master") navigate("/master", { replace: true });
     else if (role === "admin") navigate("/admin", { replace: true });

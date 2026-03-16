@@ -9,6 +9,7 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sidebar,
@@ -16,6 +17,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -45,19 +47,12 @@ const proprietarioItems = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { role, profile, signOut } = useAuth();
+  const { role, hasRole, profile, signOut } = useAuth();
   const { theme } = useTheme();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-
-  const items =
-    role === "master"
-      ? masterItems
-      : role === "admin"
-      ? adminItems
-      : proprietarioItems;
 
   const isActive = (url: string) => {
     const rootUrls = ["/admin", "/dashboard", "/master"];
@@ -71,12 +66,56 @@ const AppSidebar: React.FC = () => {
   const nameLine1 = nameParts.slice(0, Math.ceil(nameParts.length / 2)).join(" ");
   const nameLine2 = nameParts.slice(Math.ceil(nameParts.length / 2)).join(" ");
 
-  const roleLabel =
-    role === "master"
-      ? "Master"
-      : role === "admin"
-      ? "Administrador"
-      : "Proprietário";
+  // Usuário com master + admin: exibe ambas as seções
+  const isMasterAdmin = hasRole("master") && hasRole("admin");
+
+  const roleLabel = isMasterAdmin
+    ? "Master / Admin"
+    : role === "master"
+    ? "Master"
+    : role === "admin"
+    ? "Administrador"
+    : "Proprietário";
+
+  const renderItems = (items: typeof adminItems, label?: string) => (
+    <SidebarGroup>
+      {label && !collapsed && (
+        <SidebarGroupLabel className="text-xs uppercase tracking-widest text-muted-foreground/60 px-3 mb-1">
+          {label}
+        </SidebarGroupLabel>
+      )}
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => {
+            const active = isActive(item.url);
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  tooltip={collapsed ? item.title : undefined}
+                >
+                  <button
+                    onClick={() => navigate(item.url)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200 ${
+                      active
+                        ? "bg-primary/15 text-primary font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    <item.icon
+                      className={`h-4 w-4 flex-shrink-0 ${active ? "text-primary" : ""}`}
+                    />
+                    {!collapsed && <span>{item.title}</span>}
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -106,38 +145,19 @@ const AppSidebar: React.FC = () => {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => {
-                const active = isActive(item.url);
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={collapsed ? item.title : undefined}
-                    >
-                      <button
-                        onClick={() => navigate(item.url)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                          active
-                            ? "bg-primary/15 text-primary font-medium"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        }`}
-                      >
-                        <item.icon
-                          className={`h-4 w-4 flex-shrink-0 ${active ? "text-primary" : ""}`}
-                        />
-                        {!collapsed && <span>{item.title}</span>}
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {isMasterAdmin ? (
+          <>
+            {renderItems(masterItems, "Plataforma")}
+            <div className="mx-4 border-t border-sidebar-border my-1" />
+            {renderItems(adminItems, "Minha Gestão")}
+          </>
+        ) : role === "master" ? (
+          renderItems(masterItems)
+        ) : role === "admin" ? (
+          renderItems(adminItems)
+        ) : (
+          renderItems(proprietarioItems)
+        )}
       </SidebarContent>
 
       <SidebarFooter className="px-4 py-4 border-t border-sidebar-border">
