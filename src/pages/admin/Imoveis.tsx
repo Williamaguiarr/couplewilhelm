@@ -532,6 +532,88 @@ const Imoveis: React.FC = () => {
         </div>
       </div>
 
+      {/* iCal Export Dialog */}
+      <Dialog open={!!calendarLinkOpen} onOpenChange={(v) => { if (!v) { setCalendarLinkOpen(null); setCopied(null); } }}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <Link className="h-4 w-4 text-primary" />
+              URLs iCal — {calendarLinkOpen?.nome_imovel}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Copie as URLs abaixo e cole nas respectivas plataformas para sincronizar o calendário deste imóvel.
+            </p>
+
+            {calendarLinkOpen?.ical_url_airbnb ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Airbnb</span>
+                  <Badge variant="secondary" className="text-xs">iCal URL</Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={calendarLinkOpen.ical_url_airbnb}
+                    className="bg-muted/30 text-xs font-mono text-muted-foreground border-border"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => handleCopy(calendarLinkOpen, "airbnb")}
+                    className="shrink-0 border-border"
+                    title="Copiar URL Airbnb"
+                  >
+                    {copied === "airbnb" ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground/70">
+                  No Airbnb: <span className="font-medium text-muted-foreground">Anúncio → Calendário → Exportar calendário</span>
+                </p>
+              </div>
+            ) : null}
+
+            {calendarLinkOpen?.ical_url_booking ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Booking.com</span>
+                  <Badge variant="secondary" className="text-xs">iCal URL</Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={calendarLinkOpen.ical_url_booking}
+                    className="bg-muted/30 text-xs font-mono text-muted-foreground border-border"
+                    onFocus={(e) => e.target.select()}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => handleCopy(calendarLinkOpen, "booking")}
+                    className="shrink-0 border-border"
+                    title="Copiar URL Booking"
+                  >
+                    {copied === "booking" ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground/70">
+                  No Booking.com: <span className="font-medium text-muted-foreground">Extranet → Calendário → Sincronizar calendário → Exportar</span>
+                </p>
+              </div>
+            ) : null}
+
+            {calendarLinkOpen?.ical_last_sync && (
+              <p className="text-xs text-muted-foreground/60 pt-1 border-t border-border">
+                Última sincronização:{" "}
+                {format(new Date(calendarLinkOpen.ical_last_sync), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* DELETE CONFIRMATION */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
         <AlertDialogContent className="bg-card border-border">
