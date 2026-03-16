@@ -724,7 +724,16 @@ const Reservas: React.FC = () => {
                   const comissao = calcComissao(valorLiquido);
                   return (
                     <TableRow key={r.id} className="border-border hover:bg-muted/30">
-                      <TableCell className="text-foreground font-medium">{r.imovel?.nome_imovel || "—"}</TableCell>
+                      <TableCell className="text-foreground font-medium">
+                        <div className="flex items-center gap-2">
+                          {r.imovel?.nome_imovel || "—"}
+                          {r.valor_bruto == null && (
+                            <span className="inline-flex items-center rounded-full border border-amber-400/50 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                              Sem valores
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
