@@ -793,7 +793,7 @@ const Reservas: React.FC = () => {
               <TableBody>
               {filteredReservas.map((r) => {
                   const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-                  const comissao = calcComissao(valorLiquido);
+                  const comissao = calcComissao(valorLiquido, comissaoRate);
                   const semValores = r.valor_bruto == null;
                   return (
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
