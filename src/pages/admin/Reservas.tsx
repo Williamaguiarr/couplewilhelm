@@ -233,6 +233,7 @@ const Reservas: React.FC = () => {
   const [filterImovel, setFilterImovel] = useState("all");
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [filterSemValores, setFilterSemValores] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
