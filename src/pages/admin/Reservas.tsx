@@ -55,6 +55,7 @@ interface Reserva {
   valor_bruto: number | null;
   valor_liquido_proprietario: number | null;
   taxa_limpeza: number | null;
+  comissao_plataforma: number | null;
   observacoes: string | null;
   imovel_id: string;
   imovel?: { nome_imovel: string };
@@ -77,21 +78,26 @@ const toNum = (v: string | number | null): number | null => {
   return n == null || isNaN(n) ? null : n;
 };
 
-// Valor Líquido = Valor Bruto - Taxa de Limpeza
-const calcValorLiquido = (valorBruto: string | number | null, taxaLimpeza: string | number | null): number | null => {
+// Base para CW = Valor Bruto - Taxa de Limpeza - Comissão Plataforma
+const calcValorLiquido = (
+  valorBruto: string | number | null,
+  taxaLimpeza: string | number | null,
+  comissaoPlataforma: string | number | null = 0
+): number | null => {
   const bruto = toNum(valorBruto);
   if (bruto == null) return null;
   const limpeza = toNum(taxaLimpeza) ?? 0;
-  return bruto - limpeza;
+  const plataforma = toNum(comissaoPlataforma) ?? 0;
+  return bruto - limpeza - plataforma;
 };
 
-// Comissão CW = 25% do Valor Líquido
+// Comissão CW = 25% da base (após deduzir limpeza + comissão plataforma)
 const calcComissao = (valorLiquido: number | null): number => {
   if (valorLiquido == null) return 0;
   return valorLiquido * COMISSAO_RATE;
 };
 
-// Valor Proprietário = Valor Líquido - Comissão CW
+// Valor Proprietário = Base - Comissão CW
 const calcValorProprietario = (valorLiquido: number | null): number | null => {
   if (valorLiquido == null) return null;
   return valorLiquido * (1 - COMISSAO_RATE);
@@ -103,6 +109,7 @@ const emptyForm = {
   data_fim: "",
   valor_bruto: "",
   taxa_limpeza: "",
+  comissao_plataforma: "",
   observacoes: "",
 };
 
