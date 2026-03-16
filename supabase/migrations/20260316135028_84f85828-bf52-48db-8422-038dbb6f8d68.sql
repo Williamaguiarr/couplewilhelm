@@ -1,0 +1,1 @@
+ALTER TABLE public.admin_configs ADD COLUMN IF NOT EXISTS comissao_cw numeric NOT NULL DEFAULT 0.25;

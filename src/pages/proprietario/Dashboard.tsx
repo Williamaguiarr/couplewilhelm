@@ -85,14 +85,12 @@ const getDaysBetween = (start: string, end: string): Date[] => {
   return days;
 };
 
-const COMISSAO = 0.25;
-
-const calcFinanceiro = (r: Reserva) => {
+const calcFinanceiro = (r: Reserva, comissaoRate: number) => {
   const bruto = r.valor_bruto ?? 0;
   const limpeza = r.taxa_limpeza ?? 0;
   const plataforma = r.comissao_plataforma ?? 0;
   const liquido = bruto - limpeza - plataforma;
-  const comissao = liquido * COMISSAO;
+  const comissao = liquido * comissaoRate;
   const proprietario = liquido - comissao;
   return { bruto, limpeza, plataforma, liquido, comissao, proprietario };
 };
@@ -120,6 +118,8 @@ const ProprietarioDashboard: React.FC = () => {
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [comissaoRate, setComissaoRate] = useState<number>(0.25);
+  const [nomeAdmin, setNomeAdmin] = useState<string>("CW");
 
   const now = new Date();
 
@@ -139,13 +139,28 @@ const ProprietarioDashboard: React.FC = () => {
     const fetchData = async () => {
       const { data: imoveisData } = await supabase
         .from("imoveis")
-        .select("id, nome_imovel")
+        .select("id, nome_imovel, admin_id")
         .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
-      setImoveis(imoveisData || []);
+      setImoveis((imoveisData || []).map(({ id, nome_imovel }) => ({ id, nome_imovel })));
 
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
+      }
+
+      // Buscar comissão do admin responsável (usa o admin_id do primeiro imóvel)
+      const adminId = imoveisData?.[0]?.admin_id;
+      if (adminId) {
+        const { data: configData } = await supabase
+          .from("admin_configs" as any)
+          .select("comissao_cw, nome_empresa")
+          .eq("admin_id", adminId)
+          .maybeSingle();
+        if (configData) {
+          const cfg = configData as any;
+          if (cfg.comissao_cw != null) setComissaoRate(cfg.comissao_cw);
+          if (cfg.nome_empresa) setNomeAdmin(cfg.nome_empresa);
+        }
       }
 
       const [{ data: resData }, { data: despData }] = await Promise.all([
@@ -233,7 +248,7 @@ const ProprietarioDashboard: React.FC = () => {
 
   const totais = reservasFiltradas.reduce(
     (acc, r) => {
-      const f = calcFinanceiro(r);
+      const f = calcFinanceiro(r, comissaoRate);
       return {
         bruto: acc.bruto + f.bruto,
         limpeza: acc.limpeza + f.limpeza,
@@ -330,7 +345,7 @@ const ProprietarioDashboard: React.FC = () => {
 
     // Tabela de reservas
     const tableData = reservasFiltradas.map((r) => {
-      const f = calcFinanceiro(r);
+      const f = calcFinanceiro(r, comissaoRate);
       return [
         r.imovel?.nome_imovel || "—",
         new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
@@ -586,7 +601,7 @@ const ProprietarioDashboard: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {reservasFiltradas.map((r) => {
-                        const f = calcFinanceiro(r);
+                        const f = calcFinanceiro(r, comissaoRate);
                         return (
                           <TableRow key={r.id} className="border-border hover:bg-muted/20">
                             <TableCell className="text-foreground font-medium text-sm py-3">
@@ -793,7 +808,8 @@ const ProprietarioDashboard: React.FC = () => {
                       })}
                     </p>
                     {selectedReservas.map((r) => {
-                      const f = calcFinanceiro(r);
+                      const f = calcFinanceiro(r, comissaoRate);
+                      const pctLabel = `${Math.round(comissaoRate * 100)}%`;
                       return (
                         <div key={r.id} className="border-t border-border pt-3 space-y-3">
                           <p className="text-foreground font-medium text-sm">
@@ -816,7 +832,7 @@ const ProprietarioDashboard: React.FC = () => {
                             <div className="border-t border-border pt-1.5">
                               <FinRow label="Valor líquido" value={fmt(f.bruto - f.limpeza)} />
                             </div>
-                            <FinRow label="Comissão CW (25%)" value={`- ${fmt(f.comissao)}`} />
+                            <FinRow label={`Comissão ${nomeAdmin} (${pctLabel})`} value={`- ${fmt(f.comissao)}`} />
                             <div className="border-t border-border pt-1.5">
                               <FinRow label="Seu repasse" value={fmt(f.proprietario)} highlight />
                             </div>

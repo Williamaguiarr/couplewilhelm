@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import logoSrc from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,14 +72,11 @@ const fmt = (v: number | null) =>
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
     : "—";
 
-const COMISSAO_RATE = 0.25;
-
 const toNum = (v: string | number | null): number | null => {
   const n = typeof v === "string" ? parseFloat(v) : v;
   return n == null || isNaN(n) ? null : n;
 };
 
-// Base para CW = Valor Bruto - Taxa de Limpeza - Comissão Plataforma
 const calcValorLiquido = (
   valorBruto: string | number | null,
   taxaLimpeza: string | number | null,
@@ -91,16 +89,14 @@ const calcValorLiquido = (
   return bruto - limpeza - plataforma;
 };
 
-// Comissão CW = 25% da base (após deduzir limpeza + comissão plataforma)
-const calcComissao = (valorLiquido: number | null): number => {
+const calcComissao = (valorLiquido: number | null, rate: number): number => {
   if (valorLiquido == null) return 0;
-  return valorLiquido * COMISSAO_RATE;
+  return valorLiquido * rate;
 };
 
-// Valor Proprietário = Base - Comissão CW
-const calcValorProprietario = (valorLiquido: number | null): number | null => {
+const calcValorProprietario = (valorLiquido: number | null, rate: number): number | null => {
   if (valorLiquido == null) return null;
-  return valorLiquido * (1 - COMISSAO_RATE);
+  return valorLiquido * (1 - rate);
 };
 
 const emptyForm = {
@@ -120,15 +116,18 @@ const ReservaFormFields = ({
   form,
   setForm,
   imoveis,
+  comissaoRate,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
+  comissaoRate: number;
 }) => {
   const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
   const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
-  const comissao = calcComissao(valorLiquido);
-  const valorProprietario = calcValorProprietario(valorLiquido);
+  const comissao = calcComissao(valorLiquido, comissaoRate);
+  const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
+  const pct = Math.round(comissaoRate * 100);
 
   return (
     <>
@@ -255,12 +254,14 @@ const ReservaFormFields = ({
 const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
+  const [comissaoRate, setComissaoRate] = useState<number>(0.25);
   const [filterImovel, setFilterImovel] = useState("all");
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
   const [filterSemValores, setFilterSemValores] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -471,6 +472,19 @@ const Reservas: React.FC = () => {
       (reservasData || []).map((r: any) => ({ ...r, imovel: r.imoveis }))
     );
     setImoveis(imoveisData || []);
+
+    if (user) {
+      const { data: configData } = await supabase
+        .from("admin_configs" as any)
+        .select("comissao_cw")
+        .eq("admin_id", user.id)
+        .maybeSingle();
+      if (configData) {
+        const cfg = configData as any;
+        if (cfg.comissao_cw != null) setComissaoRate(cfg.comissao_cw);
+      }
+    }
+
     setLoading(false);
   };
 
@@ -486,7 +500,7 @@ const Reservas: React.FC = () => {
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
     const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido);
+    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
@@ -534,7 +548,7 @@ const Reservas: React.FC = () => {
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido);
+    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
 
     const { error } = await supabase
       .from("reservas")
@@ -619,7 +633,7 @@ const Reservas: React.FC = () => {
                 <DialogTitle className="font-display text-xl text-foreground">Cadastrar Reserva</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSave} className="space-y-4 mt-2">
-                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} />
+                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={comissaoRate} />
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
                     Cancelar
@@ -779,7 +793,7 @@ const Reservas: React.FC = () => {
               <TableBody>
               {filteredReservas.map((r) => {
                   const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-                  const comissao = calcComissao(valorLiquido);
+                  const comissao = calcComissao(valorLiquido, comissaoRate);
                   const semValores = r.valor_bruto == null;
                   return (
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
@@ -824,7 +838,7 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} />
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={comissaoRate} />
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar
