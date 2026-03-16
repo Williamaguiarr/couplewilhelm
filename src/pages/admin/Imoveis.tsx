@@ -486,6 +486,17 @@ const Imoveis: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setCalendarLinkOpen(imovel)}
+                              className="h-8 w-8 hover:text-primary"
+                              title="Ver / copiar URLs iCal"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          {hasIcal && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleSync(imovel)}
                               disabled={syncingId === imovel.id}
                               className="h-8 w-8 hover:text-primary"
