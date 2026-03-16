@@ -479,7 +479,8 @@ const Reservas: React.FC = () => {
 
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
-    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase.from("reservas").insert({
@@ -489,6 +490,7 @@ const Reservas: React.FC = () => {
       valor_bruto: valorBruto,
       valor_liquido_proprietario: valorProprietario,
       taxa_limpeza: taxaLimpeza,
+      comissao_plataforma: comissaoPlataforma,
       observacoes: form.observacoes || null,
     });
 
@@ -512,6 +514,7 @@ const Reservas: React.FC = () => {
       data_fim: r.data_fim,
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
+      comissao_plataforma: r.comissao_plataforma != null ? String(r.comissao_plataforma) : "",
       observacoes: r.observacoes || "",
     });
     setEditOpen(true);
@@ -524,7 +527,8 @@ const Reservas: React.FC = () => {
 
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
-    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza);
+    const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
+    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido);
 
     const { error } = await supabase
@@ -536,6 +540,7 @@ const Reservas: React.FC = () => {
         valor_bruto: valorBruto,
         valor_liquido_proprietario: valorProprietario,
         taxa_limpeza: taxaLimpeza,
+        comissao_plataforma: comissaoPlataforma,
         observacoes: editForm.observacoes || null,
       })
       .eq("id", editingReserva.id);
