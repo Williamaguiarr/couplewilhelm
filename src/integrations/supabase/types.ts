@@ -126,6 +126,7 @@ export type Database = {
       }
       reservas: {
         Row: {
+          comissao_plataforma: number | null
           created_at: string | null
           data_fim: string
           data_inicio: string
@@ -137,6 +138,7 @@ export type Database = {
           valor_liquido_proprietario: number | null
         }
         Insert: {
+          comissao_plataforma?: number | null
           created_at?: string | null
           data_fim: string
           data_inicio: string
@@ -148,6 +150,7 @@ export type Database = {
           valor_liquido_proprietario?: number | null
         }
         Update: {
+          comissao_plataforma?: number | null
           created_at?: string | null
           data_fim?: string
           data_inicio?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS comissao_plataforma numeric DEFAULT NULL;
