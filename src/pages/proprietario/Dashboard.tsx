@@ -72,11 +72,13 @@ const fmt = (v: number | null) =>
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
     : "—";
 
+// Checkout day is excluded: guest leaves in the morning (≤12h), so that day is free
 const getDaysBetween = (start: string, end: string): Date[] => {
   const days: Date[] = [];
   const current = new Date(start + "T12:00:00");
   const endDate = new Date(end + "T12:00:00");
-  while (current <= endDate) {
+  // Exclude the checkout day (data_fim) — it's free since guest leaves in the morning
+  while (current < endDate) {
     days.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
