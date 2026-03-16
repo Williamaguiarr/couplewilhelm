@@ -253,12 +253,14 @@ const ReservaFormFields = ({
 const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
+  const [comissaoRate, setComissaoRate] = useState<number>(0.25);
   const [filterImovel, setFilterImovel] = useState("all");
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
   const [filterSemValores, setFilterSemValores] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
