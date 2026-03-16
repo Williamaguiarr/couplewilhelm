@@ -217,7 +217,7 @@ const ReservaFormFields = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Base CW (após deduções)</Label>
+          <Label className="text-muted-foreground">Valor Base Líquido</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(valorLiquido) : "—"}
           </div>
