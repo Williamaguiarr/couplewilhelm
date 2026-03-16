@@ -408,7 +408,7 @@ const Reservas: React.FC = () => {
 
     autoTable(doc, {
       startY: cardY + cardH + 8,
-      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "V. Líquido", "Comissão CW", "Proprietário", "Obs."]],
+      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão OTA", "Base CW", "Comissão CW", "Proprietário", "Obs."]],
       body: tableData,
       headStyles: {
         fillColor: navy,
