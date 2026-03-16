@@ -52,6 +52,8 @@ interface AdminConfig {
   cor_secundaria: string;
   logo_url: string | null;
   ativo: boolean;
+  comissao_cw: number;
+  ultimo_pagamento: string | null;
   created_at: string;
   profile?: { nome: string | null; email: string | null };
 }
