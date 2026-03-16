@@ -73,6 +73,7 @@ const TIPOS = [
 const tipoLabel = (v: string) => TIPOS.find((t) => t.value === v)?.label ?? v;
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalProprietarios: 0,
     totalImoveis: 0,
@@ -87,6 +88,7 @@ const AdminDashboard: React.FC = () => {
     valorProprietario: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [reservasSemValores, setReservasSemValores] = useState(0);
 
   // Despesas extras
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
@@ -105,7 +107,16 @@ const AdminDashboard: React.FC = () => {
     fetchStats();
     fetchDespesas();
     fetchImoveis();
+    fetchReservasSemValores();
   }, []);
+
+  const fetchReservasSemValores = async () => {
+    const { count } = await supabase
+      .from("reservas")
+      .select("*", { count: "exact", head: true })
+      .is("valor_bruto", null);
+    setReservasSemValores(count ?? 0);
+  };
 
   const fetchStats = async () => {
     const now = new Date();
