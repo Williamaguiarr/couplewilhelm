@@ -36,6 +36,9 @@ import {
   Power,
   PowerOff,
   Users,
+  Percent,
+  CalendarCheck,
+  CalendarX,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
