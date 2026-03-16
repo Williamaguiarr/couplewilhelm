@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type { Enums } from "@/integrations/supabase/types";
 
-type AppRole = Enums<"app_role">;
+type AppRole = "admin" | "proprietario" | "master";
 
 interface Profile {
   id: string;
@@ -42,7 +41,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Busca profile e role separadamente do listener
   useEffect(() => {
     if (!user) return;
 
@@ -66,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   useEffect(() => {
-    // Listener síncrono — sem async/await
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
@@ -77,11 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setRole(null);
           setLoading(false);
         }
-        // Se há user, o useEffect acima cuida do fetch e seta loading=false
       }
     );
 
-    // Verifica sessão inicial
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
       if (!existing) {
         setLoading(false);
