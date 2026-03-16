@@ -8,7 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,7 +28,6 @@ import {
 import {
   TrendingUp,
   CalendarCheck,
-  CalendarDays,
   X,
   ChevronDown,
   ChevronUp,
@@ -38,7 +36,7 @@ import {
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { ptBR } from "date-fns/locale";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface Reserva {
@@ -100,6 +98,11 @@ const TIPO_LABELS: Record<string, string> = {
   outros: "Outros",
 };
 
+const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
 const ProprietarioDashboard: React.FC = () => {
   const { user } = useAuth();
   const [reservas, setReservas] = useState<Reserva[]>([]);
@@ -110,17 +113,22 @@ const ProprietarioDashboard: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
 
-  // Filtros
-  const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
-  const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
+  const now = new Date();
+
+  // Filtros: mês e ano (baseado em data_fim - checkout)
+  const [filterMes, setFilterMes] = useState<number>(now.getMonth()); // 0-indexed
+  const [filterAno, setFilterAno] = useState<number>(now.getFullYear());
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [despesasAberto, setDespesasAberto] = useState(true);
 
+  // Gera lista de anos disponíveis: 2 anos atrás até 1 ano à frente
+  const anoAtual = now.getFullYear();
+  const anos = Array.from({ length: 4 }, (_, i) => anoAtual - 2 + i);
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      // Busca os imóveis do proprietário
       const { data: imoveisData } = await supabase
         .from("imoveis")
         .select("id, nome_imovel")
@@ -128,7 +136,6 @@ const ProprietarioDashboard: React.FC = () => {
 
       setImoveis(imoveisData || []);
 
-      // Se o proprietário tiver apenas um imóvel, pré-seleciona ele
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
       }
@@ -151,7 +158,6 @@ const ProprietarioDashboard: React.FC = () => {
     fetchData();
   }, [user]);
 
-  const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
@@ -176,43 +182,23 @@ const ProprietarioDashboard: React.FC = () => {
 
   const selectedReservas = selectedDay ? getReservasForDay(selectedDay) : [];
 
-  // Normaliza filterDe para início do dia e filterAte para final do dia
-  const filterDeNorm = filterDe ? new Date(filterDe.getFullYear(), filterDe.getMonth(), filterDe.getDate(), 0, 0, 0) : undefined;
-  const filterAteNorm = filterAte ? new Date(filterAte.getFullYear(), filterAte.getMonth(), filterAte.getDate(), 23, 59, 59) : undefined;
-
-  // Filtrar reservas por período e por imóvel (se selecionado)
-  // Uma reserva é incluída se ela se sobrepõe ao intervalo selecionado
+  // Filtrar reservas: pertence ao mês/ano pelo checkout (data_fim)
   const reservasFiltradas = reservas.filter((r) => {
-    // Filtro por imóvel
     if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
-
-    // Filtro por período: reserva se sobrepõe ao intervalo se início <= filterAte E fim >= filterDe
-    if (!filterDeNorm && !filterAteNorm) return true;
-    const inicio = new Date(r.data_inicio + "T00:00:00");
-    const fim = new Date(r.data_fim + "T23:59:59");
-    if (filterDeNorm && filterAteNorm)
-      return inicio <= filterAteNorm && fim >= filterDeNorm;
-    if (filterDeNorm) return fim >= filterDeNorm;
-    if (filterAteNorm) return inicio <= filterAteNorm;
-    return true;
+    const fim = new Date(r.data_fim + "T12:00:00");
+    return fim.getMonth() === filterMes && fim.getFullYear() === filterAno;
   });
 
+  // Despesas: pelo campo data (mês da despesa)
   const despesasFiltradas = despesas.filter((d) => {
-    // Filtro por imóvel
     if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
-
-    // Filtro por período
-    if (!filterDeNorm && !filterAteNorm) return true;
     const data = new Date(d.data + "T12:00:00");
-    if (filterDeNorm && filterAteNorm) return data >= filterDeNorm && data <= filterAteNorm;
-    if (filterDeNorm) return data >= filterDeNorm;
-    if (filterAteNorm) return data <= filterAteNorm;
-    return true;
+    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
   // Calcular métricas apenas para o imóvel selecionado
-  const reservasImovelSelecionado = filterImovel === "todos" 
-    ? reservas 
+  const reservasImovelSelecionado = filterImovel === "todos"
+    ? reservas
     : reservas.filter(r => r.imovel_id === filterImovel);
 
   const receitaMesAtual = reservasImovelSelecionado
@@ -252,6 +238,8 @@ const ProprietarioDashboard: React.FC = () => {
 
   const totalDespesas = despesasFiltradas.reduce((acc, d) => acc + d.valor, 0);
   const totalLiquido = totais.proprietario - totalDespesas;
+
+  const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
 
   return (
     <PageTransition>
@@ -297,7 +285,7 @@ const ProprietarioDashboard: React.FC = () => {
             <div className="border-t border-border">
               {/* Filters */}
               <div className="px-5 py-3 flex flex-wrap items-end gap-3 border-b border-border">
-                {/* Filtro por Imóvel - só aparece se tiver mais de 1 imóvel */}
+                {/* Filtro por Imóvel */}
                 {imoveis.length > 1 && (
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
@@ -318,18 +306,53 @@ const ProprietarioDashboard: React.FC = () => {
                     </Select>
                   </div>
                 )}
-                <DateFilter label="De" value={filterDe} onChange={setFilterDe} />
-                <DateFilter label="Até" value={filterAte} onChange={setFilterAte} />
-                {(filterDe || filterAte || filterImovel !== "todos") && (
+
+                {/* Filtro Mês */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Mês</Label>
+                  <Select value={String(filterMes)} onValueChange={(v) => setFilterMes(Number(v))}>
+                    <SelectTrigger className="w-36 h-8 text-xs bg-transparent border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      {MESES.map((nome, idx) => (
+                        <SelectItem key={idx} value={String(idx)} className="text-xs">
+                          {nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Filtro Ano */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Ano</Label>
+                  <Select value={String(filterAno)} onValueChange={(v) => setFilterAno(Number(v))}>
+                    <SelectTrigger className="w-24 h-8 text-xs bg-transparent border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      {anos.map((ano) => (
+                        <SelectItem key={ano} value={String(ano)} className="text-xs">
+                          {ano}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Botão voltar ao mês atual */}
+                {!isPeriodoAtual && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setFilterDe(undefined); setFilterAte(undefined); setFilterImovel("todos"); }}
+                    onClick={() => { setFilterMes(currentMonth); setFilterAno(currentYear); }}
                     className="text-muted-foreground hover:text-foreground gap-1.5 h-8 self-end"
                   >
-                    <X className="h-3 w-3" /> Limpar
+                    <X className="h-3 w-3" /> Mês atual
                   </Button>
                 )}
+
                 <span className="ml-auto self-end text-xs text-muted-foreground">
                   {reservasFiltradas.length} reserva{reservasFiltradas.length !== 1 ? "s" : ""}
                 </span>
@@ -342,7 +365,7 @@ const ProprietarioDashboard: React.FC = () => {
                 </div>
               ) : reservasFiltradas.length === 0 ? (
                 <div className="p-10 text-center">
-                  <p className="text-muted-foreground text-sm">Nenhuma reserva no período selecionado</p>
+                  <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
                 </div>
               ) : (
                 <>
@@ -436,7 +459,7 @@ const ProprietarioDashboard: React.FC = () => {
                 </div>
               ) : despesasFiltradas.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-muted-foreground text-sm">Nenhuma despesa extra no período selecionado</p>
+                  <p className="text-muted-foreground text-sm">Nenhuma despesa extra em {MESES[filterMes]} de {filterAno}</p>
                 </div>
               ) : (
                 <>
@@ -495,7 +518,9 @@ const ProprietarioDashboard: React.FC = () => {
         {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
           <div className="border border-primary/20 rounded-lg px-5 py-4 bg-primary/5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Líquido Final do Período</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">
+                Líquido Final — {MESES[filterMes]} {filterAno}
+              </p>
               <p className="text-xs text-muted-foreground">Repasse − Despesas Extras</p>
             </div>
             <div className="text-right">
@@ -582,7 +607,8 @@ const ProprietarioDashboard: React.FC = () => {
                             </div>
                             <div className="flex justify-between">
                               <span>Check-out</span>
-                              <span>{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                              <span>{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
+                              </span>
                             </div>
                           </div>
                           <div className="bg-muted/20 rounded p-2.5 space-y-1.5 text-xs">
@@ -634,40 +660,6 @@ const MetricCard: React.FC<{
     <span className="text-primary opacity-50 group-hover:opacity-80 transition-opacity mt-0.5">
       {icon}
     </span>
-  </div>
-);
-
-const DateFilter: React.FC<{
-  label: string;
-  value: Date | undefined;
-  onChange: (d: Date | undefined) => void;
-}> = ({ label, value, onChange }) => (
-  <div className="space-y-1">
-    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">{label}</Label>
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-36 justify-start text-left font-normal bg-transparent border-border text-xs h-8",
-            !value && "text-muted-foreground"
-          )}
-        >
-          <CalendarDays className="mr-2 h-3 w-3 opacity-50" />
-          {value ? format(value, "dd/MM/yyyy") : "Selecionar"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 bg-card border-border" align="start">
-        <Calendar
-          mode="single"
-          selected={value}
-          onSelect={onChange}
-          initialFocus
-          locale={ptBR}
-          className="p-3 pointer-events-auto"
-        />
-      </PopoverContent>
-    </Popover>
   </div>
 );
 
