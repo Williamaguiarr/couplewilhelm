@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,8 @@ import {
   Plus,
   Trash2,
   Receipt,
+  AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
@@ -70,6 +73,7 @@ const TIPOS = [
 const tipoLabel = (v: string) => TIPOS.find((t) => t.value === v)?.label ?? v;
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalProprietarios: 0,
     totalImoveis: 0,
@@ -84,6 +88,7 @@ const AdminDashboard: React.FC = () => {
     valorProprietario: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [reservasSemValores, setReservasSemValores] = useState(0);
 
   // Despesas extras
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
@@ -102,7 +107,16 @@ const AdminDashboard: React.FC = () => {
     fetchStats();
     fetchDespesas();
     fetchImoveis();
+    fetchReservasSemValores();
   }, []);
+
+  const fetchReservasSemValores = async () => {
+    const { count } = await supabase
+      .from("reservas")
+      .select("*", { count: "exact", head: true })
+      .is("valor_bruto", null);
+    setReservasSemValores(count ?? 0);
+  };
 
   const fetchStats = async () => {
     const now = new Date();
@@ -237,6 +251,26 @@ const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
+        {/* Banner: reservas sem valores */}
+        {reservasSemValores > 0 && (
+          <button
+            onClick={() => navigate("/admin/reservas")}
+            className="w-full text-left flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group"
+          >
+            <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-primary/15 text-primary">
+              <AlertTriangle className="h-4 w-4" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {reservasSemValores} reserva{reservasSemValores !== 1 ? "s" : ""} sem valores financeiros
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Importada{reservasSemValores !== 1 ? "s" : ""} via iCal — clique para preencher os valores
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+          </button>
+        )}
         {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card) => (
