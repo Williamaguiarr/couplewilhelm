@@ -125,7 +125,8 @@ const ReservaFormFields = ({
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
 }) => {
-  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza);
+  const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
+  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
   const comissao = calcComissao(valorLiquido);
   const valorProprietario = calcValorProprietario(valorLiquido);
 
@@ -197,15 +198,32 @@ const ReservaFormFields = ({
         </div>
       </div>
 
+      {/* Comissão de Plataforma (OTA) */}
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">
+          Comissão Plataforma OTA (R$)
+          <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">ex: Booking.com — deduzida antes da CW</span>
+        </Label>
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          value={form.comissao_plataforma}
+          onChange={(e) => setForm({ ...form, comissao_plataforma: e.target.value })}
+          placeholder="0,00 (opcional)"
+          className="bg-background"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Valor Líquido (R$)</Label>
+          <Label className="text-muted-foreground">Base CW (após deduções)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(valorLiquido) : "—"}
           </div>
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão CW (25% sobre líquido)</Label>
+          <Label className="text-muted-foreground">Comissão CW (25% sobre base)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
