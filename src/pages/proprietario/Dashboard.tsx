@@ -237,11 +237,12 @@ const ProprietarioDashboard: React.FC = () => {
       return {
         bruto: acc.bruto + f.bruto,
         limpeza: acc.limpeza + f.limpeza,
+        plataforma: acc.plataforma + f.plataforma,
         comissao: acc.comissao + f.comissao,
         proprietario: acc.proprietario + f.proprietario,
       };
     },
-    { bruto: 0, limpeza: 0, comissao: 0, proprietario: 0 }
+    { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
   );
 
   const totalDespesas = despesasFiltradas.reduce((acc, d) => acc + d.valor, 0);
