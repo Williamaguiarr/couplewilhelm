@@ -471,6 +471,19 @@ const Reservas: React.FC = () => {
       (reservasData || []).map((r: any) => ({ ...r, imovel: r.imoveis }))
     );
     setImoveis(imoveisData || []);
+
+    if (user) {
+      const { data: configData } = await supabase
+        .from("admin_configs" as any)
+        .select("comissao_cw")
+        .eq("admin_id", user.id)
+        .maybeSingle();
+      if (configData) {
+        const cfg = configData as any;
+        if (cfg.comissao_cw != null) setComissaoRate(cfg.comissao_cw);
+      }
+    }
+
     setLoading(false);
   };
 
