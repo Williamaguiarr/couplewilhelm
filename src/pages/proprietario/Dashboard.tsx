@@ -176,7 +176,8 @@ const ProprietarioDashboard: React.FC = () => {
         const fim = new Date(r.data_fim + "T12:00:00");
         const d = new Date(day);
         d.setHours(12, 0, 0, 0);
-        return d >= inicio && d <= fim;
+        // Checkout day is free (guest leaves in the morning)
+        return d >= inicio && d < fim;
       }),
     [reservas]
   );
