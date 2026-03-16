@@ -388,7 +388,8 @@ const Reservas: React.FC = () => {
     const tableData = filteredReservas.map((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
-      const liquido = bruto - limpeza;
+      const plataforma = r.comissao_plataforma || 0;
+      const liquido = bruto - limpeza - plataforma;
       const comissao = liquido * 0.25;
       const proprietario = liquido - comissao;
       return [
@@ -397,6 +398,7 @@ const Reservas: React.FC = () => {
         new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
         fmtPDF(bruto),
         fmtPDF(limpeza),
+        plataforma > 0 ? fmtPDF(plataforma) : "—",
         fmtPDF(liquido),
         fmtPDF(comissao),
         fmtPDF(proprietario),
