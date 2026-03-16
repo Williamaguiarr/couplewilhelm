@@ -48,6 +48,7 @@ interface Reserva {
   data_fim: string;
   valor_bruto: number | null;
   taxa_limpeza: number | null;
+  comissao_plataforma: number | null;
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
   imovel?: { nome_imovel: string };
@@ -84,10 +85,11 @@ const COMISSAO = 0.25;
 const calcFinanceiro = (r: Reserva) => {
   const bruto = r.valor_bruto ?? 0;
   const limpeza = r.taxa_limpeza ?? 0;
-  const liquido = bruto - limpeza;
+  const plataforma = r.comissao_plataforma ?? 0;
+  const liquido = bruto - limpeza - plataforma;
   const comissao = liquido * COMISSAO;
   const proprietario = liquido - comissao;
-  return { bruto, limpeza, liquido, comissao, proprietario };
+  return { bruto, limpeza, plataforma, liquido, comissao, proprietario };
 };
 
 const TIPO_LABELS: Record<string, string> = {
@@ -235,11 +237,12 @@ const ProprietarioDashboard: React.FC = () => {
       return {
         bruto: acc.bruto + f.bruto,
         limpeza: acc.limpeza + f.limpeza,
+        plataforma: acc.plataforma + f.plataforma,
         comissao: acc.comissao + f.comissao,
         proprietario: acc.proprietario + f.proprietario,
       };
     },
-    { bruto: 0, limpeza: 0, comissao: 0, proprietario: 0 }
+    { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
   );
 
   const totalDespesas = despesasFiltradas.reduce((acc, d) => acc + d.valor, 0);
@@ -341,7 +344,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Comissão CW", "Repasse"].map((h, i) => (
+                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão CW", "Repasse"].map((h, i) => (
                           <TableHead
                             key={h}
                             className={cn(
@@ -370,6 +373,9 @@ const ProprietarioDashboard: React.FC = () => {
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.bruto)}</TableCell>
                             <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.limpeza)}</TableCell>
+                            <TableCell className="text-muted-foreground text-sm text-right py-3">
+                              {f.plataforma > 0 ? fmt(f.plataforma) : <span className="opacity-30">—</span>}
+                            </TableCell>
                             <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.comissao)}</TableCell>
                             <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(f.proprietario)}</TableCell>
                           </TableRow>
@@ -379,11 +385,14 @@ const ProprietarioDashboard: React.FC = () => {
                   </Table>
 
                   {/* Totals footer */}
-                  <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-8">
+                  <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-6 flex-wrap">
                     <TotalItem label="Bruto" value={fmt(totais.bruto)} />
                     <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
-                    <TotalItem label="Comissão" value={fmt(totais.comissao)} />
-                    <div className="pl-8 border-l border-border">
+                    {totais.plataforma > 0 && (
+                      <TotalItem label="Com. OTA" value={fmt(totais.plataforma)} />
+                    )}
+                    <TotalItem label="Comissão CW" value={fmt(totais.comissao)} />
+                    <div className="pl-6 border-l border-border">
                       <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Repasse</p>
                       <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
                     </div>
