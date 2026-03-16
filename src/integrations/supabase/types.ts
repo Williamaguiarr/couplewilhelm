@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_configs: {
+        Row: {
+          admin_id: string
+          ativo: boolean
+          cor_primaria: string
+          cor_secundaria: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          nome_empresa: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          ativo?: boolean
+          cor_primaria?: string
+          cor_secundaria?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          ativo?: boolean
+          cor_primaria?: string
+          cor_secundaria?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       despesas_extras: {
         Row: {
           created_at: string
@@ -54,6 +93,7 @@ export type Database = {
       }
       imoveis: {
         Row: {
+          admin_id: string | null
           created_at: string | null
           endereco: string | null
           ical_last_sync: string | null
@@ -65,6 +105,7 @@ export type Database = {
           proprietario_id_2: string | null
         }
         Insert: {
+          admin_id?: string | null
           created_at?: string | null
           endereco?: string | null
           ical_last_sync?: string | null
@@ -76,6 +117,7 @@ export type Database = {
           proprietario_id_2?: string | null
         }
         Update: {
+          admin_id?: string | null
           created_at?: string | null
           endereco?: string | null
           ical_last_sync?: string | null
@@ -201,6 +243,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "proprietario" | "master"
