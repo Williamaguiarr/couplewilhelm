@@ -129,6 +129,8 @@ const AdminsList: React.FC = () => {
         cor_secundaria: "#A38B5E",
         logo_url: null,
         ativo: true,
+        comissao_cw: 0.25,
+        ultimo_pagamento: null,
         created_at: new Date().toISOString(),
         profile: profileMap[id] || null,
       }));
