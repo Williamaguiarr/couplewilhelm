@@ -176,32 +176,37 @@ const ProprietarioDashboard: React.FC = () => {
 
   const selectedReservas = selectedDay ? getReservasForDay(selectedDay) : [];
 
+  // Normaliza filterDe para início do dia e filterAte para final do dia
+  const filterDeNorm = filterDe ? new Date(filterDe.getFullYear(), filterDe.getMonth(), filterDe.getDate(), 0, 0, 0) : undefined;
+  const filterAteNorm = filterAte ? new Date(filterAte.getFullYear(), filterAte.getMonth(), filterAte.getDate(), 23, 59, 59) : undefined;
+
   // Filtrar reservas por período e por imóvel (se selecionado)
+  // Uma reserva é incluída se ela se sobrepõe ao intervalo selecionado
   const reservasFiltradas = reservas.filter((r) => {
     // Filtro por imóvel
     if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
-    
-    // Filtro por período
-    if (!filterDe && !filterAte) return true;
-    const dataFim = parseISO(r.data_fim + "T12:00:00");
-    if (filterDe && filterAte)
-      return isWithinInterval(dataFim, { start: filterDe, end: filterAte });
-    if (filterDe) return dataFim >= filterDe;
-    if (filterAte) return dataFim <= filterAte;
+
+    // Filtro por período: reserva se sobrepõe ao intervalo se início <= filterAte E fim >= filterDe
+    if (!filterDeNorm && !filterAteNorm) return true;
+    const inicio = new Date(r.data_inicio + "T00:00:00");
+    const fim = new Date(r.data_fim + "T23:59:59");
+    if (filterDeNorm && filterAteNorm)
+      return inicio <= filterAteNorm && fim >= filterDeNorm;
+    if (filterDeNorm) return fim >= filterDeNorm;
+    if (filterAteNorm) return inicio <= filterAteNorm;
     return true;
   });
 
   const despesasFiltradas = despesas.filter((d) => {
     // Filtro por imóvel
     if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
-    
+
     // Filtro por período
-    if (!filterDe && !filterAte) return true;
-    const data = parseISO(d.data + "T12:00:00");
-    if (filterDe && filterAte)
-      return isWithinInterval(data, { start: filterDe, end: filterAte });
-    if (filterDe) return data >= filterDe;
-    if (filterAte) return data <= filterAte;
+    if (!filterDeNorm && !filterAteNorm) return true;
+    const data = new Date(d.data + "T12:00:00");
+    if (filterDeNorm && filterAteNorm) return data >= filterDeNorm && data <= filterAteNorm;
+    if (filterDeNorm) return data >= filterDeNorm;
+    if (filterAteNorm) return data <= filterAteNorm;
     return true;
   });
 
