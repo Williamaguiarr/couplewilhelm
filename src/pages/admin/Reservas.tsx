@@ -71,14 +71,11 @@ const fmt = (v: number | null) =>
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
     : "—";
 
-const COMISSAO_RATE = 0.25;
-
 const toNum = (v: string | number | null): number | null => {
   const n = typeof v === "string" ? parseFloat(v) : v;
   return n == null || isNaN(n) ? null : n;
 };
 
-// Base para CW = Valor Bruto - Taxa de Limpeza - Comissão Plataforma
 const calcValorLiquido = (
   valorBruto: string | number | null,
   taxaLimpeza: string | number | null,
@@ -91,16 +88,14 @@ const calcValorLiquido = (
   return bruto - limpeza - plataforma;
 };
 
-// Comissão CW = 25% da base (após deduzir limpeza + comissão plataforma)
-const calcComissao = (valorLiquido: number | null): number => {
+const calcComissao = (valorLiquido: number | null, rate: number): number => {
   if (valorLiquido == null) return 0;
-  return valorLiquido * COMISSAO_RATE;
+  return valorLiquido * rate;
 };
 
-// Valor Proprietário = Base - Comissão CW
-const calcValorProprietario = (valorLiquido: number | null): number | null => {
+const calcValorProprietario = (valorLiquido: number | null, rate: number): number | null => {
   if (valorLiquido == null) return null;
-  return valorLiquido * (1 - COMISSAO_RATE);
+  return valorLiquido * (1 - rate);
 };
 
 const emptyForm = {
@@ -120,15 +115,18 @@ const ReservaFormFields = ({
   form,
   setForm,
   imoveis,
+  comissaoRate,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
+  comissaoRate: number;
 }) => {
   const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
   const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
-  const comissao = calcComissao(valorLiquido);
-  const valorProprietario = calcValorProprietario(valorLiquido);
+  const comissao = calcComissao(valorLiquido, comissaoRate);
+  const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
+  const pct = Math.round(comissaoRate * 100);
 
   return (
     <>
