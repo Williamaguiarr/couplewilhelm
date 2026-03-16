@@ -728,7 +728,7 @@ const Reservas: React.FC = () => {
                         <div className="flex items-center gap-2">
                           {r.imovel?.nome_imovel || "—"}
                           {r.valor_bruto == null && (
-                            <span className="inline-flex items-center rounded-full border border-amber-400/50 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                            <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
                               Sem valores
                             </span>
                           )}
