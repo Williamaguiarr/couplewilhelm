@@ -353,24 +353,34 @@ const Configuracoes: React.FC = () => {
                         title={c.label}
                       />
                     ))}
-                    <div className="relative">
-                      <input
-                        type="color"
-                        value={form.cor_primaria}
-                        onChange={(e) => setForm({ ...form, cor_primaria: e.target.value })}
-                        className="h-9 w-9 rounded-lg border-2 border-border cursor-pointer"
-                        title="Cor personalizada"
-                      />
-                    </div>
+                    <input
+                      type="color"
+                      value={form.cor_primaria}
+                      onChange={(e) => setForm({ ...form, cor_primaria: e.target.value })}
+                      className="h-9 w-9 rounded-lg border-2 border-border cursor-pointer"
+                      title="Escolher cor personalizada"
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <div
-                      className="h-6 w-6 rounded-md border border-border"
+                      className="h-6 w-6 rounded-md border border-border flex-shrink-0"
                       style={{ background: form.cor_primaria }}
                     />
-                    <span className="text-sm text-muted-foreground font-mono">
-                      {form.cor_primaria}
-                    </span>
+                    <Input
+                      value={form.cor_primaria}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) setForm({ ...form, cor_primaria: v });
+                      }}
+                      onBlur={(e) => {
+                        if (!/^#[0-9A-Fa-f]{6}$/.test(e.target.value))
+                          setForm({ ...form, cor_primaria: "#0A192F" });
+                      }}
+                      placeholder="#000000"
+                      className="h-8 w-28 font-mono text-sm bg-background border-border"
+                      maxLength={7}
+                    />
+                    <span className="text-xs text-muted-foreground">código hex</span>
                   </div>
                 </div>
 
@@ -393,24 +403,34 @@ const Configuracoes: React.FC = () => {
                         title={c.label}
                       />
                     ))}
-                    <div className="relative">
-                      <input
-                        type="color"
-                        value={form.cor_secundaria}
-                        onChange={(e) => setForm({ ...form, cor_secundaria: e.target.value })}
-                        className="h-9 w-9 rounded-lg border-2 border-border cursor-pointer"
-                        title="Cor personalizada"
-                      />
-                    </div>
+                    <input
+                      type="color"
+                      value={form.cor_secundaria}
+                      onChange={(e) => setForm({ ...form, cor_secundaria: e.target.value })}
+                      className="h-9 w-9 rounded-lg border-2 border-border cursor-pointer"
+                      title="Escolher cor personalizada"
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <div
-                      className="h-6 w-6 rounded-md border border-border"
+                      className="h-6 w-6 rounded-md border border-border flex-shrink-0"
                       style={{ background: form.cor_secundaria }}
                     />
-                    <span className="text-sm text-muted-foreground font-mono">
-                      {form.cor_secundaria}
-                    </span>
+                    <Input
+                      value={form.cor_secundaria}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) setForm({ ...form, cor_secundaria: v });
+                      }}
+                      onBlur={(e) => {
+                        if (!/^#[0-9A-Fa-f]{6}$/.test(e.target.value))
+                          setForm({ ...form, cor_secundaria: "#A38B5E" });
+                      }}
+                      placeholder="#000000"
+                      className="h-8 w-28 font-mono text-sm bg-background border-border"
+                      maxLength={7}
+                    />
+                    <span className="text-xs text-muted-foreground">código hex</span>
                   </div>
                 </div>
 
