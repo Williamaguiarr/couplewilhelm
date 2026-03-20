@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ interface Proprietario {
 }
 
 const Proprietarios: React.FC = () => {
+  const { user } = useAuth();
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,18 +63,35 @@ const Proprietarios: React.FC = () => {
   const { toast } = useToast();
 
   const fetchProprietarios = async () => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "proprietario");
+    if (!user) return;
 
-    if (!data || data.length === 0) {
+    // Busca apenas proprietários vinculados aos imóveis deste admin
+    const { data: imoveisData } = await supabase
+      .from("imoveis")
+      .select("proprietario_id, proprietario_id_2")
+      .eq("admin_id", user.id);
+
+    if (!imoveisData || imoveisData.length === 0) {
       setProprietarios([]);
       setLoading(false);
       return;
     }
 
-    const ids = data.map((r) => r.user_id);
+    // Coleta IDs únicos de proprietários (excluindo nulos)
+    const ids = Array.from(
+      new Set(
+        imoveisData.flatMap((i: any) =>
+          [i.proprietario_id, i.proprietario_id_2].filter(Boolean)
+        )
+      )
+    );
+
+    if (ids.length === 0) {
+      setProprietarios([]);
+      setLoading(false);
+      return;
+    }
+
     const { data: profiles } = await supabase
       .from("profiles")
       .select("*")
@@ -84,7 +103,7 @@ const Proprietarios: React.FC = () => {
 
   useEffect(() => {
     fetchProprietarios();
-  }, []);
+  }, [user]);
 
   const getToken = async () => {
     const { data } = await supabase.auth.getSession();
