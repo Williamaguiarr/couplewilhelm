@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldCheck,
   ChevronRight,
+  CalendarRange,
 } from "lucide-react";
 import {
   Sidebar,
