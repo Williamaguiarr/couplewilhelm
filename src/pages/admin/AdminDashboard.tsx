@@ -43,9 +43,12 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  FileDown,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Imovel {
   id: string;
