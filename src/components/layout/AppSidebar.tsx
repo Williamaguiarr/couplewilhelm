@@ -121,12 +121,12 @@ const AppSidebar: React.FC = () => {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="px-4 py-5">
+      <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-3 overflow-hidden">
           <img
             src={logoSrc}
             alt={companyName}
-            className="h-10 w-10 object-contain flex-shrink-0 rounded-md"
+            className="h-14 w-14 object-contain flex-shrink-0 rounded-lg"
             onError={(e) => {
               (e.target as HTMLImageElement).src = logo;
             }}
