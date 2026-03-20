@@ -238,10 +238,10 @@ const Calendario: React.FC = () => {
             </Select>
             <button
               onClick={() => navegarMes(1)}
-              disabled={isMesAtual}
+              disabled={isMesMaximo}
               className={cn(
                 "p-1 rounded transition-colors",
-                isMesAtual
+                isMesMaximo
                   ? "text-muted-foreground/30 cursor-not-allowed"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
