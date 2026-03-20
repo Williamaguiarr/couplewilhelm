@@ -111,6 +111,7 @@ const MESES = [
 
 const ProprietarioDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const { toast } = useToast();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);

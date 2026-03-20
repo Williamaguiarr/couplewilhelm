@@ -263,6 +263,7 @@ const Reservas: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);

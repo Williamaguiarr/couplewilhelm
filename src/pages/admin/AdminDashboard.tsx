@@ -102,6 +102,7 @@ const ANOS = Array.from(
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   // Filtro mês/ano
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); // 0-indexed
