@@ -41,6 +41,8 @@ import {
   AlertTriangle,
   ArrowRight,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
@@ -81,8 +83,24 @@ const TIPOS = [
 
 const tipoLabel = (v: string) => TIPOS.find((t) => t.value === v)?.label ?? v;
 
+const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+const now = new Date();
+// Gerar anos disponíveis: de 2 anos atrás até o ano atual
+const ANOS = Array.from(
+  { length: now.getFullYear() - 2023 + 1 },
+  (_, i) => 2024 + i
+);
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  // Filtro mês/ano
+  const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); // 0-indexed
+  const [anoSelecionado, setAnoSelecionado] = useState(now.getFullYear());
 
   // Filtro por proprietário
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
@@ -126,7 +144,20 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchStats();
-  }, [filtroProprietario, imoveis]);
+  }, [filtroProprietario, imoveis, mesSelecionado, anoSelecionado]);
+
+  const navegarMes = (delta: number) => {
+    let novoMes = mesSelecionado + delta;
+    let novoAno = anoSelecionado;
+    if (novoMes < 0) { novoMes = 11; novoAno -= 1; }
+    if (novoMes > 11) { novoMes = 0; novoAno += 1; }
+    // Não avançar além do mês atual
+    if (novoAno > now.getFullYear() || (novoAno === now.getFullYear() && novoMes > now.getMonth())) return;
+    setMesSelecionado(novoMes);
+    setAnoSelecionado(novoAno);
+  };
+
+  const isMesAtual = mesSelecionado === now.getMonth() && anoSelecionado === now.getFullYear();
 
   const fetchProprietarios = async () => {
     const { data: roles } = await supabase
@@ -155,15 +186,14 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const firstDay = new Date(anoSelecionado, mesSelecionado, 1)
       .toISOString()
       .split("T")[0];
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const lastDay = new Date(anoSelecionado, mesSelecionado + 1, 0)
       .toISOString()
       .split("T")[0];
 
-    // Determinar quais imovel_ids usar com base no filtro
+    // Determinar quais imovel_ids usar com base no filtro de proprietário
     let imovelIds: string[] | null = null;
     if (filtroProprietario !== "todos" && imoveis.length > 0) {
       imovelIds = imoveis
@@ -175,7 +205,6 @@ const AdminDashboard: React.FC = () => {
         .map((im) => im.id);
     }
 
-    // Se filtrou por proprietário mas ele não tem imóveis, retorna zeros
     if (imovelIds !== null && imovelIds.length === 0) {
       setStats({ totalProprietarios: 1, totalImoveis: 0, totalReservas: 0, receitaMes: 0 });
       setFinanceiro({ valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 });
@@ -183,7 +212,6 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    // Queries base
     let reservasMesQuery = supabase
       .from("reservas")
       .select("valor_liquido_proprietario")
@@ -198,13 +226,14 @@ const AdminDashboard: React.FC = () => {
 
     let reservaCountQuery = supabase
       .from("reservas")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .gte("data_fim", firstDay)
+      .lte("data_fim", lastDay);
 
     let imovelCountQuery = supabase
       .from("imoveis")
       .select("*", { count: "exact", head: true });
 
-    // Aplicar filtro de imóveis se necessário
     if (imovelIds) {
       reservasMesQuery = reservasMesQuery.in("imovel_id", imovelIds);
       reservasDetalhadasQuery = reservasDetalhadasQuery.in("imovel_id", imovelIds);
@@ -234,7 +263,6 @@ const AdminDashboard: React.FC = () => {
       0
     );
 
-    // Buscar comissão do admin
     const { data: adminConfig } = await supabase
       .from("admin_configs")
       .select("comissao_cw")
@@ -308,7 +336,6 @@ const AdminDashboard: React.FC = () => {
 
   const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
 
-  // Imóveis do proprietário selecionado (para filtrar despesas)
   const imoveisDoProprietario =
     filtroProprietario === "todos"
       ? null
@@ -328,7 +355,7 @@ const AdminDashboard: React.FC = () => {
   const cards = [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
     { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
-    { title: "Reservas", value: stats.totalReservas, icon: CalendarDays, format: "number" },
+    { title: "Reservas no mês", value: stats.totalReservas, icon: CalendarDays, format: "number" },
     { title: "Repasse a Proprietários", value: stats.receitaMes, icon: TrendingUp, format: "currency" },
   ];
 
@@ -349,39 +376,96 @@ const AdminDashboard: React.FC = () => {
     <PageTransition>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl text-foreground tracking-wide">Visão Geral</h1>
-            <p className="text-muted-foreground mt-1">
-              Resumo do mês de{" "}
-              {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-              {filtroProprietario !== "todos" && proprietarioSelecionado && (
-                <span className="ml-2 inline-flex items-center gap-1 text-primary font-medium">
-                  · {proprietarioSelecionado.nome || proprietarioSelecionado.email}
-                </span>
-              )}
-            </p>
+            {filtroProprietario !== "todos" && proprietarioSelecionado && (
+              <p className="text-primary text-sm font-medium mt-1">
+                {proprietarioSelecionado.nome || proprietarioSelecionado.email}
+              </p>
+            )}
           </div>
 
-          {/* Filtro por proprietário */}
-          {proprietarios.length > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-              <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
-                <SelectTrigger className="w-[200px] bg-background border-border text-sm h-9">
-                  <SelectValue placeholder="Filtrar proprietário…" />
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Seletor de mês/ano */}
+            <div className="flex items-center gap-1 bg-card border border-border rounded-lg px-1 py-1">
+              <button
+                onClick={() => navegarMes(-1)}
+                className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                title="Mês anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <Select
+                value={String(mesSelecionado)}
+                onValueChange={(v) => setMesSelecionado(Number(v))}
+              >
+                <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[108px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os proprietários</SelectItem>
-                  {proprietarios.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome || p.email || p.id.slice(0, 8)}
-                    </SelectItem>
+                  {MESES.map((m, i) => {
+                    const disabled =
+                      anoSelecionado === now.getFullYear() && i > now.getMonth();
+                    return (
+                      <SelectItem key={i} value={String(i)} disabled={disabled}>
+                        {m}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={String(anoSelecionado)}
+                onValueChange={(v) => setAnoSelecionado(Number(v))}
+              >
+                <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[68px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ANOS.map((a) => (
+                    <SelectItem key={a} value={String(a)}>{a}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
+              <button
+                onClick={() => navegarMes(1)}
+                disabled={isMesAtual}
+                className={cn(
+                  "p-1 rounded transition-colors",
+                  isMesAtual
+                    ? "text-muted-foreground/30 cursor-not-allowed"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                title="Próximo mês"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
-          )}
+
+            {/* Filtro por proprietário */}
+            {proprietarios.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
+                  <SelectTrigger className="w-[190px] bg-background border-border text-sm h-9">
+                    <SelectValue placeholder="Filtrar proprietário…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os proprietários</SelectItem>
+                    {proprietarios.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nome || p.email || p.id.slice(0, 8)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Banner: reservas sem valores */}
