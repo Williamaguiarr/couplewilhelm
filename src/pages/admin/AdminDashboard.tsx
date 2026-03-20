@@ -635,6 +635,18 @@ const AdminDashboard: React.FC = () => {
                 </Select>
               </div>
             )}
+
+            {/* Botão exportar PDF */}
+            <Button
+              onClick={gerarPDF}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/60"
+            >
+              <FileDown className="h-4 w-4" />
+              Exportar PDF
+            </Button>
           </div>
         </div>
 
