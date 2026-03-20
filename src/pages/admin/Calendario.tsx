@@ -32,7 +32,8 @@ const MESES = [
 ];
 
 const now = new Date();
-const ANOS = Array.from({ length: now.getFullYear() - 2023 + 1 }, (_, i) => 2024 + i);
+// Allow viewing up to 12 months ahead
+const ANOS = Array.from({ length: now.getFullYear() - 2023 + 2 }, (_, i) => 2024 + i);
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
