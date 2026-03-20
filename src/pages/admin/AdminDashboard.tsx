@@ -43,9 +43,12 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  FileDown,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Imovel {
   id: string;
@@ -336,6 +339,171 @@ const AdminDashboard: React.FC = () => {
     fetchDespesas();
   };
 
+  const gerarPDF = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const mesNome = MESES[mesSelecionado];
+    const nomeProprietario =
+      filtroProprietario === "todos"
+        ? "Todos os proprietários"
+        : proprietarioSelecionado?.nome || proprietarioSelecionado?.email || "—";
+
+    const primaryColor: [number, number, number] = [10, 25, 47];
+    const accentColor: [number, number, number] = [163, 139, 94];
+    const lightGray: [number, number, number] = [245, 245, 247];
+
+    // Header background
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, 210, 38, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Visão Geral — Relatório Financeiro", 14, 16);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Período: ${mesNome} / ${anoSelecionado}`, 14, 25);
+    doc.text(`Proprietário: ${nomeProprietario}`, 14, 32);
+
+    // Generated date
+    doc.setFontSize(8);
+    doc.setTextColor(180, 180, 180);
+    doc.text(
+      `Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
+      196,
+      32,
+      { align: "right" }
+    );
+
+    let y = 48;
+
+    // ── Estatísticas ──
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...primaryColor);
+    doc.text("Estatísticas do Período", 14, y);
+    y += 6;
+
+    const statsData = [
+      ["Proprietários", String(stats.totalProprietarios)],
+      ["Imóveis", String(stats.totalImoveis)],
+      ["Reservas no mês", String(stats.totalReservas)],
+      ["Repasse a proprietários", fmt(stats.receitaMes)],
+    ];
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Indicador", "Valor"]],
+      body: statsData,
+      theme: "grid",
+      headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
+      bodyStyles: { fontSize: 9, textColor: [40, 40, 40] },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // ── Detalhamento Financeiro ──
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...primaryColor);
+    doc.text("Detalhamento Financeiro", 14, y);
+    y += 6;
+
+    const finData = [
+      ["Valor Bruto", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
+      ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
+      ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma (Airbnb, Booking...)"],
+      ["= Valor Líquido", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
+      ["(−) Comissão CW", fmt(financeiro.comissaoCW), "Comissão de gestão"],
+      ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão CW"],
+    ];
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Descrição", "Valor", "Observação"]],
+      body: finData,
+      theme: "grid",
+      headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
+      bodyStyles: { fontSize: 9, textColor: [40, 40, 40] },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: {
+        1: { halign: "right", fontStyle: "bold" },
+        2: { textColor: [120, 120, 120], fontSize: 8 },
+      },
+      didParseCell: (data) => {
+        // Highlight "Repasse ao Proprietário" row
+        if (data.row.index === 5) {
+          data.cell.styles.fillColor = accentColor;
+          data.cell.styles.textColor = [255, 255, 255];
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // ── Despesas Extras ──
+    if (despesasFiltradas.length > 0) {
+      // Check if we need a new page
+      if (y > 220) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...primaryColor);
+      doc.text("Despesas Extras", 14, y);
+      y += 6;
+
+      const despesasData = despesasFiltradas.map((d) => [
+        d.imovel?.nome_imovel ?? "—",
+        d.descricao,
+        tipoLabel(d.tipo),
+        new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR"),
+        fmt(d.valor),
+      ]);
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor"]],
+        body: despesasData,
+        theme: "grid",
+        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
+        bodyStyles: { fontSize: 9, textColor: [40, 40, 40] },
+        alternateRowStyles: { fillColor: lightGray },
+        columnStyles: { 4: { halign: "right", fontStyle: "bold" } },
+        margin: { left: 14, right: 14 },
+        foot: [[
+          "", "", "", "Total",
+          fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0)),
+        ]],
+        footStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 9 },
+      });
+    }
+
+    // Footer on all pages
+    const totalPages = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...accentColor);
+      doc.setLineWidth(0.5);
+      doc.line(14, 285, 196, 285);
+      doc.setFontSize(7);
+      doc.setTextColor(150, 150, 150);
+      doc.setFont("helvetica", "normal");
+      doc.text("Relatório gerado pelo sistema de gestão CoupleWilhelm", 14, 289);
+      doc.text(`Página ${i} de ${totalPages}`, 196, 289, { align: "right" });
+    }
+
+    const fileName = `visao-geral_${mesNome.toLowerCase()}-${anoSelecionado}${filtroProprietario !== "todos" ? `_${(proprietarioSelecionado?.nome || "proprietario").replace(/\s+/g, "-").toLowerCase()}` : ""}.pdf`;
+    doc.save(fileName);
+  };
+
   const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
 
   const imoveisDoProprietario =
@@ -467,6 +635,18 @@ const AdminDashboard: React.FC = () => {
                 </Select>
               </div>
             )}
+
+            {/* Botão exportar PDF */}
+            <Button
+              onClick={gerarPDF}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/60"
+            >
+              <FileDown className="h-4 w-4" />
+              Exportar PDF
+            </Button>
           </div>
         </div>
 
