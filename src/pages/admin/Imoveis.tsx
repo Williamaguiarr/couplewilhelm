@@ -90,7 +90,7 @@ const Imoveis: React.FC = () => {
   const fetchData = async () => {
     if (!user) return;
 
-    // Imóveis do admin logado (RLS já filtra, mas garantimos admin_id no select)
+    // Imóveis do admin logado (RLS já filtra por admin_id)
     const { data: imoveisData } = await supabase.from("imoveis").select(
       "*, proprietario:profiles!imoveis_proprietario_id_fkey(nome, email), proprietario2:profiles!imoveis_proprietario_id_2_fkey(nome, email)"
     );
@@ -103,14 +103,13 @@ const Imoveis: React.FC = () => {
       }))
     );
 
-    // Proprietários: apenas os vinculados aos imóveis deste admin
-    const propIds = Array.from(
-      new Set(
-        (imoveisData || []).flatMap((i: any) =>
-          [i.proprietario_id, i.proprietario_id_2].filter(Boolean)
-        )
-      )
-    );
+    // Proprietários: apenas os vinculados a este admin via tabela de vínculo
+    const { data: vinculos } = await supabase
+      .from("admin_proprietarios" as any)
+      .select("proprietario_id")
+      .eq("admin_id", user.id);
+
+    const propIds = (vinculos as any[] || []).map((v) => v.proprietario_id);
 
     if (propIds.length > 0) {
       const { data: profiles } = await supabase
