@@ -65,33 +65,19 @@ const Proprietarios: React.FC = () => {
   const fetchProprietarios = async () => {
     if (!user) return;
 
-    // Busca apenas proprietários vinculados aos imóveis deste admin
-    const { data: imoveisData } = await supabase
-      .from("imoveis")
-      .select("proprietario_id, proprietario_id_2")
+    // Busca proprietários vinculados a este admin via tabela de vínculo
+    const { data: vinculos } = await supabase
+      .from("admin_proprietarios" as any)
+      .select("proprietario_id")
       .eq("admin_id", user.id);
 
-    if (!imoveisData || imoveisData.length === 0) {
+    if (!vinculos || vinculos.length === 0) {
       setProprietarios([]);
       setLoading(false);
       return;
     }
 
-    // Coleta IDs únicos de proprietários (excluindo nulos)
-    const ids = Array.from(
-      new Set(
-        imoveisData.flatMap((i: any) =>
-          [i.proprietario_id, i.proprietario_id_2].filter(Boolean)
-        )
-      )
-    );
-
-    if (ids.length === 0) {
-      setProprietarios([]);
-      setLoading(false);
-      return;
-    }
-
+    const ids = (vinculos as any[]).map((v) => v.proprietario_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("*")
