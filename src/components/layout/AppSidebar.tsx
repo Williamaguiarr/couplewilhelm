@@ -121,29 +121,37 @@ const AppSidebar: React.FC = () => {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="px-3 py-4">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <img
-            src={logoSrc}
-            alt={companyName}
-            className="h-20 w-20 object-contain flex-shrink-0 rounded-lg"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = logo;
-            }}
-          />
-          {!collapsed && (
-            <div className="flex flex-col leading-tight overflow-hidden">
-              <span className="font-display text-sm tracking-widest text-primary uppercase truncate">
+      <SidebarHeader className="px-3 py-3">
+        {collapsed ? (
+          <div className="flex justify-center">
+            <img
+              src={logoSrc}
+              alt={companyName}
+              className="h-10 w-10 object-contain rounded-lg"
+              onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 py-1">
+            <img
+              src={logoSrc}
+              alt={companyName}
+              className="h-20 w-20 object-contain rounded-lg"
+              style={{ maxWidth: "80px", maxHeight: "80px" }}
+              onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+            />
+            <div className="flex flex-col items-center leading-tight">
+              <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
                 {nameLine1}
               </span>
               {nameLine2 && (
-                <span className="font-display text-sm tracking-widest text-primary uppercase truncate">
+                <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
                   {nameLine2}
                 </span>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
