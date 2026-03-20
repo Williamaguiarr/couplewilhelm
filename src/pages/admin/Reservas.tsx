@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Dialog,
@@ -595,13 +595,14 @@ const Reservas: React.FC = () => {
 
     let matchPeriodo = true;
     if (filterDe || filterAte) {
-      const dataFim = parseISO(r.data_fim + "T12:00:00");
+      const dataFim = parseISO(r.data_fim);
       if (filterDe && filterAte) {
-        matchPeriodo = isWithinInterval(dataFim, { start: filterDe, end: filterAte });
+        // Use endOfDay on filterAte so that a checkout on the last selected day is included
+        matchPeriodo = isWithinInterval(dataFim, { start: filterDe, end: endOfDay(filterAte) });
       } else if (filterDe) {
         matchPeriodo = dataFim >= filterDe;
       } else if (filterAte) {
-        matchPeriodo = dataFim <= filterAte;
+        matchPeriodo = dataFim <= endOfDay(filterAte);
       }
     }
 
