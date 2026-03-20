@@ -118,6 +118,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    let targetUserId: string;
+
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -126,24 +128,101 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // ── Email já cadastrado: tenta vincular o usuário existente ──────────
+      const isEmailExists =
+        createError.message?.toLowerCase().includes("already been registered") ||
+        createError.message?.toLowerCase().includes("email_exists") ||
+        (createError as any)?.code === "email_exists";
+
+      if (!isEmailExists) {
+        return new Response(JSON.stringify({ error: createError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Busca o usuário existente pela listagem (Admin API)
+      const { data: listData, error: listError } = await adminClient.auth.admin.listUsers();
+      if (listError) {
+        return new Response(JSON.stringify({ error: "Erro ao buscar usuário existente." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const existingUser = (listData?.users ?? []).find(
+        (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+
+      if (!existingUser) {
+        return new Response(
+          JSON.stringify({ error: "E-mail já cadastrado mas não foi possível localizar o usuário." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      targetUserId = existingUser.id;
+
+      // Verifica se o usuário já tem algum papel incompatível (admin/master)
+      const { data: existingRoles } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", targetUserId);
+
+      const roles = (existingRoles ?? []).map((r: any) => r.role);
+      if (roles.includes("admin") || roles.includes("master")) {
+        return new Response(
+          JSON.stringify({ error: "Este e-mail pertence a um administrador e não pode ser vinculado como proprietário." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Garante que tem o papel correto
+      if (!roles.includes(role)) {
+        await adminClient.from("user_roles").insert({ user_id: targetUserId, role });
+      }
+
+      // Atualiza o nome no perfil
+      await adminClient.from("profiles").update({ nome }).eq("id", targetUserId);
+
+      // Vincula ao admin (ignora se já vinculado)
+      if (role === "proprietario") {
+        const { data: existingLink } = await adminClient
+          .from("admin_proprietarios")
+          .select("id")
+          .eq("admin_id", callerUser.id)
+          .eq("proprietario_id", targetUserId)
+          .maybeSingle();
+
+        if (!existingLink) {
+          await adminClient.from("admin_proprietarios").insert({
+            admin_id: callerUser.id,
+            proprietario_id: targetUserId,
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, user_id: targetUserId, reused: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    await adminClient.from("user_roles").insert({ user_id: newUser.user.id, role });
-    await adminClient.from("profiles").update({ nome }).eq("id", newUser.user.id);
+    // ── Usuário criado com sucesso ────────────────────────────────────────
+    targetUserId = newUser.user.id;
+
+    await adminClient.from("user_roles").insert({ user_id: targetUserId, role });
+    await adminClient.from("profiles").update({ nome }).eq("id", targetUserId);
 
     // Se o criador é um admin e está criando um proprietário, registra o vínculo
     if (role === "proprietario") {
       await adminClient.from("admin_proprietarios").insert({
         admin_id: callerUser.id,
-        proprietario_id: newUser.user.id,
+        proprietario_id: targetUserId,
       });
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+    return new Response(JSON.stringify({ success: true, user_id: targetUserId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
