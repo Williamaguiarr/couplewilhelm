@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface AdminTheme {
   corPrimaria: string;
   corSecundaria: string;
+  corTexto: string;
   logoUrl: string | null;
   nomeEmpresa: string | null;
   slug: string | null;
