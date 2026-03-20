@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import logoSrc from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -48,6 +47,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
+import { useTheme } from "@/contexts/ThemeContext";
+import { buildPdfPalette } from "@/hooks/use-pdf-theme";
 
 interface Reserva {
   id: string;

@@ -41,7 +41,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoSrc from "@/assets/logo.png";
+import { useTheme } from "@/contexts/ThemeContext";
+import { buildPdfPalette } from "@/hooks/use-pdf-theme";
 import { useToast } from "@/hooks/use-toast";
 
 interface Reserva {
