@@ -129,13 +129,17 @@ const Calendario: React.FC = () => {
   };
 
   const isMesAtual = mes === now.getMonth() && ano === now.getFullYear();
+  // Allow navigation up to 12 months ahead
+  const maxAno = now.getFullYear() + 1;
+  const maxMes = now.getMonth(); // same month next year
+  const isMesMaximo = ano > maxAno || (ano === maxAno && mes >= maxMes);
 
   const navegarMes = (delta: number) => {
     let novoMes = mes + delta;
     let novoAno = ano;
     if (novoMes < 0) { novoMes = 11; novoAno -= 1; }
     if (novoMes > 11) { novoMes = 0; novoAno += 1; }
-    if (novoAno > now.getFullYear() || (novoAno === now.getFullYear() && novoMes > now.getMonth())) return;
+    if (novoAno > maxAno || (novoAno === maxAno && novoMes > maxMes)) return;
     setMes(novoMes);
     setAno(novoAno);
   };
