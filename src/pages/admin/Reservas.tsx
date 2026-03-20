@@ -595,13 +595,14 @@ const Reservas: React.FC = () => {
 
     let matchPeriodo = true;
     if (filterDe || filterAte) {
-      const dataFim = parseISO(r.data_fim + "T12:00:00");
+      const dataFim = parseISO(r.data_fim);
       if (filterDe && filterAte) {
-        matchPeriodo = isWithinInterval(dataFim, { start: filterDe, end: filterAte });
+        // Use endOfDay on filterAte so that a checkout on the last selected day is included
+        matchPeriodo = isWithinInterval(dataFim, { start: filterDe, end: endOfDay(filterAte) });
       } else if (filterDe) {
         matchPeriodo = dataFim >= filterDe;
       } else if (filterAte) {
-        matchPeriodo = dataFim <= filterAte;
+        matchPeriodo = dataFim <= endOfDay(filterAte);
       }
     }
 
