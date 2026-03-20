@@ -50,15 +50,30 @@ function hexToHsl(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+// Darkens HSL lightness by a given amount (clamped to 0)
+function darkenHsl(hsl: string, amount: number): string {
+  const parts = hsl.split(" ");
+  const h = parts[0];
+  const s = parts[1];
+  const l = parseFloat(parts[2]) - amount;
+  return `${h} ${s} ${Math.max(0, l)}%`;
+}
+
 function applyTheme(theme: AdminTheme) {
   const root = document.documentElement;
   try {
     const primaryHsl = hexToHsl(theme.corPrimaria);
     const secondaryHsl = hexToHsl(theme.corSecundaria);
+    // Core theme tokens
     root.style.setProperty("--primary", primaryHsl);
-    root.style.setProperty("--sidebar-primary", primaryHsl);
     root.style.setProperty("--ring", primaryHsl);
     root.style.setProperty("--secondary-accent", secondaryHsl);
+    // Sidebar uses a darkened version of the primary color
+    const sidebarBg = darkenHsl(primaryHsl, 4);
+    root.style.setProperty("--sidebar-background", sidebarBg);
+    root.style.setProperty("--sidebar-primary", secondaryHsl);
+    root.style.setProperty("--sidebar-accent", darkenHsl(primaryHsl, 0) + " / 0.5");
+    root.style.setProperty("--sidebar-ring", secondaryHsl);
   } catch {
     // fallback silencioso
   }

@@ -126,6 +126,7 @@ const AppSidebar: React.FC = () => {
       <SidebarHeader className="px-3 py-3">
         {collapsed ? (
           <div className="flex justify-center">
+            {/* Collapsed: show logo if exists, else initial letter */}
             {(isMasterOnly || customLogo) ? (
               <img
                 src={customLogo || logo}
@@ -134,42 +135,36 @@ const AppSidebar: React.FC = () => {
                 onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
               />
             ) : (
-              <div className="h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                <span className="text-primary font-display text-xs font-bold uppercase">
+              <div className="h-10 w-10 rounded-lg bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center">
+                <span className="text-sidebar-primary font-display text-xs font-bold uppercase">
                   {companyName[0]}
                 </span>
               </div>
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-1">
-            {isMasterOnly || customLogo ? (
+          <div className="flex flex-col items-center gap-1 py-1">
+            {/* Expanded: if master-only → show CW logo; if custom logo exists → show only logo; else → show company name */}
+            {isMasterOnly ? (
               <img
-                src={customLogo || logo}
+                src={logo}
+                alt="Couple Wilhelm"
+                className="h-20 w-20 object-contain rounded-lg"
+              />
+            ) : customLogo ? (
+              <img
+                src={customLogo}
                 alt={companyName}
                 className="h-20 w-20 object-contain rounded-lg"
-                style={{ maxWidth: "80px", maxHeight: "80px" }}
                 onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
               />
             ) : (
               <div className="flex flex-col items-center leading-tight py-2">
-                <span className="font-display text-base tracking-widest text-primary uppercase text-center">
+                <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center">
                   {nameLine1}
                 </span>
                 {nameLine2 && (
-                  <span className="font-display text-base tracking-widest text-primary uppercase text-center">
-                    {nameLine2}
-                  </span>
-                )}
-              </div>
-            )}
-            {customLogo && (
-              <div className="flex flex-col items-center leading-tight">
-                <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
-                  {nameLine1}
-                </span>
-                {nameLine2 && (
-                  <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
+                  <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center">
                     {nameLine2}
                   </span>
                 )}
