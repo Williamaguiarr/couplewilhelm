@@ -270,15 +270,15 @@ const Configuracoes: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-6">
-                  <div className="h-20 w-20 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="h-28 w-28 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
                     {form.logo_url ? (
                       <img
                         src={form.logo_url}
                         alt="Logo"
-                        className="h-full w-full object-contain p-1"
+                        className="h-full w-full object-contain p-2"
                       />
                     ) : (
-                      <Building2 className="h-8 w-8 text-muted-foreground/40" />
+                      <Building2 className="h-10 w-10 text-muted-foreground/40" />
                     )}
                   </div>
                   <div className="space-y-3">
