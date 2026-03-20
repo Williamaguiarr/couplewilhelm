@@ -14,6 +14,7 @@ interface AdminTheme {
 const DEFAULT_THEME: AdminTheme = {
   corPrimaria: "#0A192F",
   corSecundaria: "#A38B5E",
+  corTexto: "#FFFFFF",
   logoUrl: null,
   nomeEmpresa: "Couple Wilhelm",
   slug: null,
@@ -65,8 +66,10 @@ function applyTheme(theme: AdminTheme) {
   try {
     const primaryHsl = hexToHsl(theme.corPrimaria);
     const secondaryHsl = hexToHsl(theme.corSecundaria);
+    const textHsl = hexToHsl(theme.corTexto);
     // Core theme tokens
     root.style.setProperty("--primary", primaryHsl);
+    root.style.setProperty("--primary-foreground", textHsl);
     root.style.setProperty("--ring", primaryHsl);
     root.style.setProperty("--secondary-accent", secondaryHsl);
     // Sidebar uses a darkened version of the primary color
@@ -75,6 +78,7 @@ function applyTheme(theme: AdminTheme) {
     root.style.setProperty("--sidebar-primary", secondaryHsl);
     root.style.setProperty("--sidebar-accent", darkenHsl(primaryHsl, 0) + " / 0.5");
     root.style.setProperty("--sidebar-ring", secondaryHsl);
+    root.style.setProperty("--sidebar-foreground", textHsl);
   } catch {
     // fallback silencioso
   }
@@ -95,7 +99,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (role === "admin") {
       const { data } = await supabase
         .from("admin_configs" as any)
-        .select("cor_primaria, cor_secundaria, logo_url, nome_empresa, slug")
+        .select("cor_primaria, cor_secundaria, cor_texto, logo_url, nome_empresa, slug")
         .eq("admin_id", user.id)
         .maybeSingle();
 
@@ -103,6 +107,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const t: AdminTheme = {
           corPrimaria: (data as any).cor_primaria || DEFAULT_THEME.corPrimaria,
           corSecundaria: (data as any).cor_secundaria || DEFAULT_THEME.corSecundaria,
+          corTexto: (data as any).cor_texto || DEFAULT_THEME.corTexto,
           logoUrl: (data as any).logo_url,
           nomeEmpresa: (data as any).nome_empresa,
           slug: (data as any).slug,
@@ -125,7 +130,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (adminId) {
         const { data } = await supabase
           .from("admin_configs" as any)
-          .select("cor_primaria, cor_secundaria, logo_url, nome_empresa, slug")
+          .select("cor_primaria, cor_secundaria, cor_texto, logo_url, nome_empresa, slug")
           .eq("admin_id", adminId)
           .maybeSingle();
 
@@ -133,6 +138,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const t: AdminTheme = {
             corPrimaria: (data as any).cor_primaria || DEFAULT_THEME.corPrimaria,
             corSecundaria: (data as any).cor_secundaria || DEFAULT_THEME.corSecundaria,
+            corTexto: (data as any).cor_texto || DEFAULT_THEME.corTexto,
             logoUrl: (data as any).logo_url,
             nomeEmpresa: (data as any).nome_empresa,
             slug: (data as any).slug,
