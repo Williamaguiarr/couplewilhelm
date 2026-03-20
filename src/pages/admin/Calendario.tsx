@@ -502,6 +502,18 @@ const Calendario: React.FC = () => {
               </button>
             </div>
 
+            {/* Platform badge */}
+            {(() => {
+              const plataforma = detectPlataforma(tooltip.reserva.observacoes);
+              const cfg = PLATAFORMA_CONFIG[plataforma];
+              return (
+                <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium mb-3 ${cfg.bg} ${cfg.text}`}>
+                  <span>{cfg.icon}</span>
+                  <span>{cfg.label}</span>
+                </div>
+              );
+            })()}
+
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Check-in</span>
@@ -529,11 +541,16 @@ const Calendario: React.FC = () => {
                   </span>
                 </div>
               )}
-              {tooltip.reserva.observacoes && (
-                <p className="text-muted-foreground text-[10px] border-t border-border pt-2 mt-2 italic">
-                  {tooltip.reserva.observacoes}
-                </p>
-              )}
+              {tooltip.reserva.observacoes && (() => {
+                const clean = tooltip.reserva.observacoes
+                  .replace(/^\[(AIRBNB|BOOKING)\]\s*/i, "")
+                  .trim();
+                return clean ? (
+                  <p className="text-muted-foreground text-[10px] border-t border-border pt-2 mt-2 italic">
+                    {clean}
+                  </p>
+                ) : null;
+              })()}
             </div>
           </div>
         </>
