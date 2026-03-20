@@ -126,7 +126,7 @@ const AppSidebar: React.FC = () => {
           <img
             src={logoSrc}
             alt={companyName}
-            className="h-14 w-14 object-contain flex-shrink-0 rounded-lg"
+            className="h-20 w-20 object-contain flex-shrink-0 rounded-lg"
             onError={(e) => {
               (e.target as HTMLImageElement).src = logo;
             }}
