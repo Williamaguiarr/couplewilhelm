@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldCheck,
   ChevronRight,
+  CalendarRange,
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,6 +39,7 @@ const adminItems = [
   { title: "Proprietários", url: "/admin/proprietarios", icon: Users },
   { title: "Imóveis", url: "/admin/imoveis", icon: Building2 },
   { title: "Reservas", url: "/admin/reservas", icon: CalendarDays },
+  { title: "Calendário", url: "/admin/calendario", icon: CalendarRange },
   { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
 ];
 
