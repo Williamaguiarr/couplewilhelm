@@ -62,7 +62,9 @@ const AppSidebar: React.FC = () => {
     return location.pathname.startsWith(url);
   };
 
-  const logoSrc = theme.logoUrl || logo;
+  // Master puro usa a logo CW; admin/proprietário usa a logo própria se houver
+  const isMasterOnly = role === "master" && !hasRole("admin");
+  const customLogo = theme.logoUrl;
   const companyName = theme.nomeEmpresa || "Couple Wilhelm";
   const nameParts = companyName.split(" ");
   const nameLine1 = nameParts.slice(0, Math.ceil(nameParts.length / 2)).join(" ");
@@ -124,32 +126,55 @@ const AppSidebar: React.FC = () => {
       <SidebarHeader className="px-3 py-3">
         {collapsed ? (
           <div className="flex justify-center">
-            <img
-              src={logoSrc}
-              alt={companyName}
-              className="h-10 w-10 object-contain rounded-lg"
-              onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
-            />
+            {(isMasterOnly || customLogo) ? (
+              <img
+                src={customLogo || logo}
+                alt={companyName}
+                className="h-10 w-10 object-contain rounded-lg"
+                onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+              />
+            ) : (
+              <div className="h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center">
+                <span className="text-primary font-display text-xs font-bold uppercase">
+                  {companyName[0]}
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-1">
-            <img
-              src={logoSrc}
-              alt={companyName}
-              className="h-20 w-20 object-contain rounded-lg"
-              style={{ maxWidth: "80px", maxHeight: "80px" }}
-              onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
-            />
-            <div className="flex flex-col items-center leading-tight">
-              <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
-                {nameLine1}
-              </span>
-              {nameLine2 && (
-                <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
-                  {nameLine2}
+            {isMasterOnly || customLogo ? (
+              <img
+                src={customLogo || logo}
+                alt={companyName}
+                className="h-20 w-20 object-contain rounded-lg"
+                style={{ maxWidth: "80px", maxHeight: "80px" }}
+                onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+              />
+            ) : (
+              <div className="flex flex-col items-center leading-tight py-2">
+                <span className="font-display text-base tracking-widest text-primary uppercase text-center">
+                  {nameLine1}
                 </span>
-              )}
-            </div>
+                {nameLine2 && (
+                  <span className="font-display text-base tracking-widest text-primary uppercase text-center">
+                    {nameLine2}
+                  </span>
+                )}
+              </div>
+            )}
+            {customLogo && (
+              <div className="flex flex-col items-center leading-tight">
+                <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
+                  {nameLine1}
+                </span>
+                {nameLine2 && (
+                  <span className="font-display text-xs tracking-widest text-primary uppercase text-center">
+                    {nameLine2}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </SidebarHeader>
