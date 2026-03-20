@@ -21,6 +21,7 @@ export type Database = {
           comissao_cw: number
           cor_primaria: string
           cor_secundaria: string
+          cor_texto: string
           created_at: string
           id: string
           logo_url: string | null
@@ -35,6 +36,7 @@ export type Database = {
           comissao_cw?: number
           cor_primaria?: string
           cor_secundaria?: string
+          cor_texto?: string
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           comissao_cw?: number
           cor_primaria?: string
           cor_secundaria?: string
+          cor_texto?: string
           created_at?: string
           id?: string
           logo_url?: string | null
