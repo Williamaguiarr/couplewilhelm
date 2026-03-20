@@ -40,6 +40,7 @@ import {
   Receipt,
   AlertTriangle,
   ArrowRight,
+  Filter,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,14 @@ import { cn } from "@/lib/utils";
 interface Imovel {
   id: string;
   nome_imovel: string;
+  proprietario_id: string | null;
+  proprietario_id_2: string | null;
+}
+
+interface Proprietario {
+  id: string;
+  nome: string | null;
+  email: string | null;
 }
 
 interface DespesaExtra {
@@ -74,6 +83,11 @@ const tipoLabel = (v: string) => TIPOS.find((t) => t.value === v)?.label ?? v;
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  // Filtro por proprietário
+  const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
+  const [filtroProprietario, setFiltroProprietario] = useState<string>("todos");
+
   const [stats, setStats] = useState({
     totalProprietarios: 0,
     totalImoveis: 0,
@@ -104,11 +118,32 @@ const AdminDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchStats();
+    fetchProprietarios();
     fetchDespesas();
     fetchImoveis();
     fetchReservasSemValores();
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [filtroProprietario, imoveis]);
+
+  const fetchProprietarios = async () => {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "proprietario");
+
+    if (!roles || roles.length === 0) return;
+
+    const ids = roles.map((r) => r.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, nome, email")
+      .in("id", ids);
+
+    setProprietarios(profiles || []);
+  };
 
   const fetchReservasSemValores = async () => {
     const { count } = await supabase
@@ -119,6 +154,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const fetchStats = async () => {
+    setLoading(true);
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
       .toISOString()
@@ -126,6 +162,55 @@ const AdminDashboard: React.FC = () => {
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       .toISOString()
       .split("T")[0];
+
+    // Determinar quais imovel_ids usar com base no filtro
+    let imovelIds: string[] | null = null;
+    if (filtroProprietario !== "todos" && imoveis.length > 0) {
+      imovelIds = imoveis
+        .filter(
+          (im) =>
+            im.proprietario_id === filtroProprietario ||
+            im.proprietario_id_2 === filtroProprietario
+        )
+        .map((im) => im.id);
+    }
+
+    // Se filtrou por proprietário mas ele não tem imóveis, retorna zeros
+    if (imovelIds !== null && imovelIds.length === 0) {
+      setStats({ totalProprietarios: 1, totalImoveis: 0, totalReservas: 0, receitaMes: 0 });
+      setFinanceiro({ valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 });
+      setLoading(false);
+      return;
+    }
+
+    // Queries base
+    let reservasMesQuery = supabase
+      .from("reservas")
+      .select("valor_liquido_proprietario")
+      .gte("data_fim", firstDay)
+      .lte("data_fim", lastDay);
+
+    let reservasDetalhadasQuery = supabase
+      .from("reservas")
+      .select("valor_bruto, taxa_limpeza, valor_liquido_proprietario")
+      .gte("data_fim", firstDay)
+      .lte("data_fim", lastDay);
+
+    let reservaCountQuery = supabase
+      .from("reservas")
+      .select("*", { count: "exact", head: true });
+
+    let imovelCountQuery = supabase
+      .from("imoveis")
+      .select("*", { count: "exact", head: true });
+
+    // Aplicar filtro de imóveis se necessário
+    if (imovelIds) {
+      reservasMesQuery = reservasMesQuery.in("imovel_id", imovelIds);
+      reservasDetalhadasQuery = reservasDetalhadasQuery.in("imovel_id", imovelIds);
+      reservaCountQuery = reservaCountQuery.in("imovel_id", imovelIds);
+      imovelCountQuery = imovelCountQuery.in("id", imovelIds);
+    }
 
     const [
       { count: propCount },
@@ -138,18 +223,10 @@ const AdminDashboard: React.FC = () => {
         .from("user_roles")
         .select("*", { count: "exact", head: true })
         .eq("role", "proprietario"),
-      supabase.from("imoveis").select("*", { count: "exact", head: true }),
-      supabase.from("reservas").select("*", { count: "exact", head: true }),
-      supabase
-        .from("reservas")
-        .select("valor_liquido_proprietario")
-        .gte("data_fim", firstDay)
-        .lte("data_fim", lastDay),
-      supabase
-        .from("reservas")
-        .select("valor_bruto, taxa_limpeza")
-        .gte("data_fim", firstDay)
-        .lte("data_fim", lastDay),
+      imovelCountQuery,
+      reservaCountQuery,
+      reservasMesQuery,
+      reservasDetalhadasQuery,
     ]);
 
     const receitaMes = (reservasMes || []).reduce(
@@ -157,12 +234,19 @@ const AdminDashboard: React.FC = () => {
       0
     );
 
+    // Buscar comissão do admin
+    const { data: adminConfig } = await supabase
+      .from("admin_configs")
+      .select("comissao_cw")
+      .single();
+    const comissaoRate = adminConfig?.comissao_cw ?? 0.25;
+
     const totais = (reservasDetalhadas || []).reduce(
       (acc, r) => {
         const valorBruto = r.valor_bruto || 0;
         const taxaLimpeza = r.taxa_limpeza || 0;
         const valorLiquido = valorBruto - taxaLimpeza;
-        const comissaoCW = valorLiquido * 0.25;
+        const comissaoCW = valorLiquido * comissaoRate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {
           valorBruto: acc.valorBruto + valorBruto,
@@ -176,7 +260,7 @@ const AdminDashboard: React.FC = () => {
     );
 
     setStats({
-      totalProprietarios: propCount || 0,
+      totalProprietarios: filtroProprietario === "todos" ? (propCount || 0) : 1,
       totalImoveis: imovelCount || 0,
       totalReservas: reservaCount || 0,
       receitaMes,
@@ -194,7 +278,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   const fetchImoveis = async () => {
-    const { data } = await supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel");
+    const { data } = await supabase
+      .from("imoveis")
+      .select("id, nome_imovel, proprietario_id, proprietario_id_2")
+      .order("nome_imovel");
     setImoveis(data || []);
   };
 
@@ -219,8 +306,10 @@ const AdminDashboard: React.FC = () => {
     fetchDespesas();
   };
 
+  const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
+
   const cards = [
-    { title: "Proprietários", value: stats.totalProprietarios, icon: Users, format: "number" },
+    { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
     { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
     { title: "Reservas", value: stats.totalReservas, icon: CalendarDays, format: "number" },
     { title: "Repasse a Proprietários", value: stats.receitaMes, icon: TrendingUp, format: "currency" },
@@ -230,7 +319,7 @@ const AdminDashboard: React.FC = () => {
     { title: "Valor Bruto", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
     { title: "Taxa Limpeza", value: financeiro.taxaLimpeza, icon: Percent, description: "Dedução do bruto" },
     { title: "Valor Líquido", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
-    { title: "Comissão CW", value: financeiro.comissaoCW, icon: Percent, description: "25% sobre líquido" },
+    { title: "Comissão CW", value: financeiro.comissaoCW, icon: Percent, description: "Sobre líquido" },
     { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
   ];
 
@@ -243,12 +332,39 @@ const AdminDashboard: React.FC = () => {
     <PageTransition>
       <div className="space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="font-display text-3xl text-foreground tracking-wide">Visão Geral</h1>
-          <p className="text-muted-foreground mt-1">
-            Resumo do mês de{" "}
-            {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl text-foreground tracking-wide">Visão Geral</h1>
+            <p className="text-muted-foreground mt-1">
+              Resumo do mês de{" "}
+              {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+              {filtroProprietario !== "todos" && proprietarioSelecionado && (
+                <span className="ml-2 inline-flex items-center gap-1 text-primary font-medium">
+                  · {proprietarioSelecionado.nome || proprietarioSelecionado.email}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Filtro por proprietário */}
+          {proprietarios.length > 0 && (
+            <div className="flex items-center gap-2 shrink-0">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
+                <SelectTrigger className="w-[200px] bg-background border-border text-sm h-9">
+                  <SelectValue placeholder="Filtrar proprietário…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os proprietários</SelectItem>
+                  {proprietarios.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome || p.email || p.id.slice(0, 8)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Banner: reservas sem valores */}
@@ -271,6 +387,7 @@ const AdminDashboard: React.FC = () => {
             <ArrowRight className="h-4 w-4 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
           </button>
         )}
+
         {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card) => (
