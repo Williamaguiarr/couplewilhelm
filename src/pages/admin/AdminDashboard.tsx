@@ -257,9 +257,8 @@ const AdminDashboard: React.FC = () => {
       { data: reservasDetalhadas },
     ] = await Promise.all([
       supabase
-        .from("user_roles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "proprietario"),
+        .from("admin_proprietarios")
+        .select("*", { count: "exact", head: true }),
       imovelCountQuery,
       reservaCountQuery,
       reservasMesQuery,
