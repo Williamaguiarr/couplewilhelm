@@ -273,7 +273,9 @@ const AdminDashboard: React.FC = () => {
       (acc, r) => {
         const valorBruto = r.valor_bruto || 0;
         const taxaLimpeza = r.taxa_limpeza || 0;
-        const valorLiquido = valorBruto - taxaLimpeza;
+        const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+        // Valor Líquido = Bruto - Taxa de Limpeza - Comissão OTA (plataforma)
+        const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
         const comissaoCW = valorLiquido * comissaoRate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {
