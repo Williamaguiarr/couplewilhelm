@@ -1,0 +1,1 @@
+ALTER TABLE public.admin_configs ADD COLUMN IF NOT EXISTS cor_texto TEXT NOT NULL DEFAULT '#FFFFFF';
