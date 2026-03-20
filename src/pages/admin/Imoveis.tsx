@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,7 @@ interface Proprietario {
 const NONE = "__none__";
 
 const Imoveis: React.FC = () => {
+  const { user } = useAuth();
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,12 +88,12 @@ const Imoveis: React.FC = () => {
   const { toast } = useToast();
 
   const fetchData = async () => {
-    const [{ data: imoveisData }, { data: rolesData }] = await Promise.all([
-      supabase.from("imoveis").select(
-        "*, proprietario:profiles!imoveis_proprietario_id_fkey(nome, email), proprietario2:profiles!imoveis_proprietario_id_2_fkey(nome, email)"
-      ),
-      supabase.from("user_roles").select("user_id").eq("role", "proprietario"),
-    ]);
+    if (!user) return;
+
+    // Imóveis do admin logado (RLS já filtra por admin_id)
+    const { data: imoveisData } = await supabase.from("imoveis").select(
+      "*, proprietario:profiles!imoveis_proprietario_id_fkey(nome, email), proprietario2:profiles!imoveis_proprietario_id_2_fkey(nome, email)"
+    );
 
     setImoveis(
       (imoveisData || []).map((i: any) => ({
@@ -101,13 +103,22 @@ const Imoveis: React.FC = () => {
       }))
     );
 
-    if (rolesData && rolesData.length > 0) {
-      const ids = rolesData.map((r) => r.user_id);
+    // Proprietários: apenas os vinculados a este admin via tabela de vínculo
+    const { data: vinculos } = await supabase
+      .from("admin_proprietarios" as any)
+      .select("proprietario_id")
+      .eq("admin_id", user.id);
+
+    const propIds = (vinculos as any[] || []).map((v) => v.proprietario_id);
+
+    if (propIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, nome, email")
-        .in("id", ids);
+        .in("id", propIds);
       setProprietarios(profiles || []);
+    } else {
+      setProprietarios([]);
     }
 
     setLoading(false);
@@ -115,7 +126,7 @@ const Imoveis: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const resetForm = () =>
     setForm({

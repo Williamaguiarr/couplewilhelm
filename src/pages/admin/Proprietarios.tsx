@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ interface Proprietario {
 }
 
 const Proprietarios: React.FC = () => {
+  const { user } = useAuth();
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,18 +63,21 @@ const Proprietarios: React.FC = () => {
   const { toast } = useToast();
 
   const fetchProprietarios = async () => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "proprietario");
+    if (!user) return;
 
-    if (!data || data.length === 0) {
+    // Busca proprietários vinculados a este admin via tabela de vínculo
+    const { data: vinculos } = await supabase
+      .from("admin_proprietarios" as any)
+      .select("proprietario_id")
+      .eq("admin_id", user.id);
+
+    if (!vinculos || vinculos.length === 0) {
       setProprietarios([]);
       setLoading(false);
       return;
     }
 
-    const ids = data.map((r) => r.user_id);
+    const ids = (vinculos as any[]).map((v) => v.proprietario_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("*")
@@ -84,7 +89,7 @@ const Proprietarios: React.FC = () => {
 
   useEffect(() => {
     fetchProprietarios();
-  }, []);
+  }, [user]);
 
   const getToken = async () => {
     const { data } = await supabase.auth.getSession();
