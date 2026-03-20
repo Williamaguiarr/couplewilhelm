@@ -123,15 +123,14 @@ const AppSidebar: React.FC = () => {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="px-3 py-3">
+      <SidebarHeader className="p-0">
         {collapsed ? (
-          <div className="flex justify-center">
-            {/* Collapsed: show logo if exists, else initial letter */}
+          <div className="flex justify-center py-3 px-2">
             {(isMasterOnly || customLogo) ? (
               <img
                 src={customLogo || logo}
                 alt={companyName}
-                className="h-10 w-10 object-contain rounded-lg"
+                className="h-10 w-10 object-contain"
                 onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
               />
             ) : (
@@ -143,28 +142,31 @@ const AppSidebar: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-1 py-1">
-            {/* Expanded: if master-only → show CW logo; if custom logo exists → show only logo; else → show company name */}
+          <div className="w-full">
             {isMasterOnly ? (
-              <img
-                src={logo}
-                alt="Couple Wilhelm"
-                className="h-20 w-20 object-contain rounded-lg"
-              />
+              <div className="flex items-center justify-center py-4 px-3">
+                <img
+                  src={logo}
+                  alt="Couple Wilhelm"
+                  className="h-16 w-auto max-w-full object-contain"
+                />
+              </div>
             ) : customLogo ? (
-              <img
-                src={customLogo}
-                alt={companyName}
-                className="h-20 w-20 object-contain rounded-lg"
-                onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
-              />
+              <div className="w-full px-2 py-3">
+                <img
+                  src={customLogo}
+                  alt={companyName}
+                  className="w-full h-auto max-h-24 object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+                />
+              </div>
             ) : (
-              <div className="flex flex-col items-center leading-tight py-2">
-                <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center">
+              <div className="flex flex-col items-center justify-center py-5 px-3">
+                <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center leading-snug">
                   {nameLine1}
                 </span>
                 {nameLine2 && (
-                  <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center">
+                  <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center leading-snug">
                     {nameLine2}
                   </span>
                 )}
