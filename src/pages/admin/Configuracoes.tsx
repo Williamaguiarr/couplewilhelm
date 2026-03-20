@@ -105,7 +105,7 @@ const COMISSAO_PRESETS = [10, 15, 20, 25, 30];
 
 // ─── ColorSwatch ───────────────────────────────────────────────────────────
 const ColorSwatch: React.FC<{
-  color: { label: string; value: string };
+  color: { label: string; value: string; group?: string };
   selected: boolean;
   onClick: () => void;
   size?: "sm" | "md";
