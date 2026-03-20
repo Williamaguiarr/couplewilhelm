@@ -65,6 +65,7 @@ interface Proprietario {
 const NONE = "__none__";
 
 const Imoveis: React.FC = () => {
+  const { user } = useAuth();
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,12 +88,12 @@ const Imoveis: React.FC = () => {
   const { toast } = useToast();
 
   const fetchData = async () => {
-    const [{ data: imoveisData }, { data: rolesData }] = await Promise.all([
-      supabase.from("imoveis").select(
-        "*, proprietario:profiles!imoveis_proprietario_id_fkey(nome, email), proprietario2:profiles!imoveis_proprietario_id_2_fkey(nome, email)"
-      ),
-      supabase.from("user_roles").select("user_id").eq("role", "proprietario"),
-    ]);
+    if (!user) return;
+
+    // Imóveis do admin logado (RLS já filtra, mas garantimos admin_id no select)
+    const { data: imoveisData } = await supabase.from("imoveis").select(
+      "*, proprietario:profiles!imoveis_proprietario_id_fkey(nome, email), proprietario2:profiles!imoveis_proprietario_id_2_fkey(nome, email)"
+    );
 
     setImoveis(
       (imoveisData || []).map((i: any) => ({
@@ -102,13 +103,23 @@ const Imoveis: React.FC = () => {
       }))
     );
 
-    if (rolesData && rolesData.length > 0) {
-      const ids = rolesData.map((r) => r.user_id);
+    // Proprietários: apenas os vinculados aos imóveis deste admin
+    const propIds = Array.from(
+      new Set(
+        (imoveisData || []).flatMap((i: any) =>
+          [i.proprietario_id, i.proprietario_id_2].filter(Boolean)
+        )
+      )
+    );
+
+    if (propIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, nome, email")
-        .in("id", ids);
+        .in("id", propIds);
       setProprietarios(profiles || []);
+    } else {
+      setProprietarios([]);
     }
 
     setLoading(false);
@@ -116,7 +127,7 @@ const Imoveis: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const resetForm = () =>
     setForm({
