@@ -219,7 +219,7 @@ const Calendario: React.FC = () => {
                   <SelectItem
                     key={i}
                     value={String(i)}
-                    disabled={ano === now.getFullYear() && i > now.getMonth()}
+                    disabled={ano === maxAno && i > maxMes}
                   >
                     {m}
                   </SelectItem>
