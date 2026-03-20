@@ -166,14 +166,16 @@ const AdminDashboard: React.FC = () => {
   const isMesAtual = mesSelecionado === now.getMonth() && anoSelecionado === now.getFullYear();
 
   const fetchProprietarios = async () => {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "proprietario");
+    const { data: vinculos } = await supabase
+      .from("admin_proprietarios")
+      .select("proprietario_id");
 
-    if (!roles || roles.length === 0) return;
+    if (!vinculos || vinculos.length === 0) {
+      setProprietarios([]);
+      return;
+    }
 
-    const ids = roles.map((r) => r.user_id);
+    const ids = vinculos.map((v) => v.proprietario_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, nome, email")
