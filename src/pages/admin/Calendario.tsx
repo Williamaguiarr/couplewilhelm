@@ -32,7 +32,8 @@ const MESES = [
 ];
 
 const now = new Date();
-const ANOS = Array.from({ length: now.getFullYear() - 2023 + 1 }, (_, i) => 2024 + i);
+// Allow viewing up to 12 months ahead
+const ANOS = Array.from({ length: now.getFullYear() - 2023 + 2 }, (_, i) => 2024 + i);
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -128,13 +129,17 @@ const Calendario: React.FC = () => {
   };
 
   const isMesAtual = mes === now.getMonth() && ano === now.getFullYear();
+  // Allow navigation up to 12 months ahead
+  const maxAno = now.getFullYear() + 1;
+  const maxMes = now.getMonth(); // same month next year
+  const isMesMaximo = ano > maxAno || (ano === maxAno && mes >= maxMes);
 
   const navegarMes = (delta: number) => {
     let novoMes = mes + delta;
     let novoAno = ano;
     if (novoMes < 0) { novoMes = 11; novoAno -= 1; }
     if (novoMes > 11) { novoMes = 0; novoAno += 1; }
-    if (novoAno > now.getFullYear() || (novoAno === now.getFullYear() && novoMes > now.getMonth())) return;
+    if (novoAno > maxAno || (novoAno === maxAno && novoMes > maxMes)) return;
     setMes(novoMes);
     setAno(novoAno);
   };
@@ -214,7 +219,7 @@ const Calendario: React.FC = () => {
                   <SelectItem
                     key={i}
                     value={String(i)}
-                    disabled={ano === now.getFullYear() && i > now.getMonth()}
+                    disabled={ano === maxAno && i > maxMes}
                   >
                     {m}
                   </SelectItem>
@@ -233,10 +238,10 @@ const Calendario: React.FC = () => {
             </Select>
             <button
               onClick={() => navegarMes(1)}
-              disabled={isMesAtual}
+              disabled={isMesMaximo}
               className={cn(
                 "p-1 rounded transition-colors",
-                isMesAtual
+                isMesMaximo
                   ? "text-muted-foreground/30 cursor-not-allowed"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
