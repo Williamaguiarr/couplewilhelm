@@ -32,6 +32,10 @@ const PRESET_COLORS = [
   { label: "Cobre", value: "#7C4A1A" },
   { label: "Cinza", value: "#2D2D2D" },
   { label: "Teal", value: "#1A3A3A" },
+  { label: "Chocolate", value: "#3E1F00" },
+  { label: "Petróleo", value: "#0D3B4A" },
+  { label: "Grafite", value: "#1C1C1C" },
+  { label: "Borgonha", value: "#4A0020" },
 ];
 
 const PRESET_SECONDARY = [
@@ -43,6 +47,10 @@ const PRESET_SECONDARY = [
   { label: "Lavanda", value: "#7B5EA7" },
   { label: "Coral", value: "#C4614A" },
   { label: "Azul", value: "#4A6FA5" },
+  { label: "Terracota", value: "#B55A3A" },
+  { label: "Jade", value: "#3A7D6A" },
+  { label: "Âmbar", value: "#D4A017" },
+  { label: "Rosé", value: "#C7748A" },
 ];
 
 const COMISSAO_PRESETS = [10, 15, 20, 25, 30];
