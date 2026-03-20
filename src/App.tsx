@@ -112,6 +112,16 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/calendario"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AppLayout>
+                      <Calendario />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Rotas Proprietário */}
               <Route
