@@ -308,6 +308,23 @@ const AdminDashboard: React.FC = () => {
 
   const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
 
+  // Imóveis do proprietário selecionado (para filtrar despesas)
+  const imoveisDoProprietario =
+    filtroProprietario === "todos"
+      ? null
+      : imoveis
+          .filter(
+            (im) =>
+              im.proprietario_id === filtroProprietario ||
+              im.proprietario_id_2 === filtroProprietario
+          )
+          .map((im) => im.id);
+
+  const despesasFiltradas =
+    imoveisDoProprietario === null
+      ? despesas
+      : despesas.filter((d) => imoveisDoProprietario.includes(d.imovel_id));
+
   const cards = [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
     { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
