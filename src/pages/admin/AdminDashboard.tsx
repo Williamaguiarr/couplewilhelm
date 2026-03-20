@@ -220,7 +220,7 @@ const AdminDashboard: React.FC = () => {
 
     let reservasDetalhadasQuery = supabase
       .from("reservas")
-      .select("valor_bruto, taxa_limpeza, valor_liquido_proprietario")
+      .select("valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
       .gte("data_fim", firstDay)
       .lte("data_fim", lastDay);
 
