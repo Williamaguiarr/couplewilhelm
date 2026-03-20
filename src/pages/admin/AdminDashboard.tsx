@@ -220,7 +220,7 @@ const AdminDashboard: React.FC = () => {
 
     let reservasDetalhadasQuery = supabase
       .from("reservas")
-      .select("valor_bruto, taxa_limpeza, valor_liquido_proprietario")
+      .select("valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
       .gte("data_fim", firstDay)
       .lte("data_fim", lastDay);
 
@@ -273,7 +273,9 @@ const AdminDashboard: React.FC = () => {
       (acc, r) => {
         const valorBruto = r.valor_bruto || 0;
         const taxaLimpeza = r.taxa_limpeza || 0;
-        const valorLiquido = valorBruto - taxaLimpeza;
+        const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+        // Valor Líquido = Bruto - Taxa de Limpeza - Comissão OTA (plataforma)
+        const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
         const comissaoCW = valorLiquido * comissaoRate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {
