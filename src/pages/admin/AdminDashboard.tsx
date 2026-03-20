@@ -49,6 +49,8 @@ import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useTheme } from "@/contexts/ThemeContext";
+import { buildPdfPalette } from "@/hooks/use-pdf-theme";
 
 interface Imovel {
   id: string;
@@ -100,6 +102,7 @@ const ANOS = Array.from(
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   // Filtro mês/ano
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); // 0-indexed
@@ -347,40 +350,52 @@ const AdminDashboard: React.FC = () => {
         ? "Todos os proprietários"
         : proprietarioSelecionado?.nome || proprietarioSelecionado?.email || "—";
 
-    const primaryColor: [number, number, number] = [10, 25, 47];
-    const accentColor: [number, number, number] = [163, 139, 94];
-    const lightGray: [number, number, number] = [245, 245, 247];
+    const { primary, accent, textOnPrimary, lightGray, bodyText } = buildPdfPalette(
+      theme.corPrimaria,
+      theme.corSecundaria,
+      theme.corTexto,
+    );
+    const companyName = (theme.nomeEmpresa || "Couple Wilhelm").toUpperCase();
 
     // Header background
-    doc.setFillColor(...primaryColor);
+    doc.setFillColor(...primary);
     doc.rect(0, 0, 210, 38, "F");
 
-    doc.setTextColor(255, 255, 255);
+    // Accent line under header
+    doc.setFillColor(...accent);
+    doc.rect(0, 38, 210, 0.8, "F");
+
+    // Logo (if available)
+    if (theme.logoUrl) {
+      try { doc.addImage(theme.logoUrl, "PNG", 10, 4, 40, 30); } catch (_) {}
+    }
+
+    doc.setTextColor(...textOnPrimary);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("Visão Geral — Relatório Financeiro", 14, 16);
+    doc.text("Visão Geral — Relatório Financeiro", theme.logoUrl ? 56 : 14, 16);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Período: ${mesNome} / ${anoSelecionado}`, 14, 25);
-    doc.text(`Proprietário: ${nomeProprietario}`, 14, 32);
+    doc.text(`Período: ${mesNome} / ${anoSelecionado}`, theme.logoUrl ? 56 : 14, 25);
+    doc.text(`Proprietário: ${nomeProprietario}`, theme.logoUrl ? 56 : 14, 32);
 
     // Generated date
     doc.setFontSize(8);
-    doc.setTextColor(180, 180, 180);
+    doc.setTextColor(...textOnPrimary);
+    doc.setGState(new (doc as any).GState({ opacity: 0.6 }));
     doc.text(
       `Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
-      196,
-      32,
-      { align: "right" }
+      196, 32, { align: "right" }
     );
+    doc.setGState(new (doc as any).GState({ opacity: 1 }));
 
     let y = 48;
 
     // ── Estatísticas ──
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...primaryColor);
+    doc.setTextColor(...primary);
     doc.text("Estatísticas do Período", 14, y);
     y += 6;
 
@@ -396,8 +411,8 @@ const AdminDashboard: React.FC = () => {
       head: [["Indicador", "Valor"]],
       body: statsData,
       theme: "grid",
-      headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
-      bodyStyles: { fontSize: 9, textColor: [40, 40, 40] },
+      headStyles: { fillColor: primary, textColor: textOnPrimary, fontSize: 9, fontStyle: "bold" },
+      bodyStyles: { fontSize: 9, textColor: bodyText },
       alternateRowStyles: { fillColor: lightGray },
       columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
       margin: { left: 14, right: 14 },
@@ -408,7 +423,7 @@ const AdminDashboard: React.FC = () => {
     // ── Detalhamento Financeiro ──
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...primaryColor);
+    doc.setTextColor(...primary);
     doc.text("Detalhamento Financeiro", 14, y);
     y += 6;
 
@@ -426,18 +441,17 @@ const AdminDashboard: React.FC = () => {
       head: [["Descrição", "Valor", "Observação"]],
       body: finData,
       theme: "grid",
-      headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
-      bodyStyles: { fontSize: 9, textColor: [40, 40, 40] },
+      headStyles: { fillColor: primary, textColor: textOnPrimary, fontSize: 9, fontStyle: "bold" },
+      bodyStyles: { fontSize: 9, textColor: bodyText },
       alternateRowStyles: { fillColor: lightGray },
       columnStyles: {
         1: { halign: "right", fontStyle: "bold" },
-        2: { textColor: [120, 120, 120], fontSize: 8 },
+        2: { textColor: [120, 120, 120] as [number, number, number], fontSize: 8 },
       },
       didParseCell: (data) => {
-        // Highlight "Repasse ao Proprietário" row
         if (data.row.index === 5) {
-          data.cell.styles.fillColor = accentColor;
-          data.cell.styles.textColor = [255, 255, 255];
+          data.cell.styles.fillColor = accent;
+          data.cell.styles.textColor = textOnPrimary;
           data.cell.styles.fontStyle = "bold";
         }
       },
@@ -448,15 +462,11 @@ const AdminDashboard: React.FC = () => {
 
     // ── Despesas Extras ──
     if (despesasFiltradas.length > 0) {
-      // Check if we need a new page
-      if (y > 220) {
-        doc.addPage();
-        y = 20;
-      }
+      if (y > 220) { doc.addPage(); y = 20; }
 
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...primaryColor);
+      doc.setTextColor(...primary);
       doc.text("Despesas Extras", 14, y);
       y += 6;
 
@@ -473,30 +483,27 @@ const AdminDashboard: React.FC = () => {
         head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor"]],
         body: despesasData,
         theme: "grid",
-        headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
-        bodyStyles: { fontSize: 9, textColor: [40, 40, 40] },
+        headStyles: { fillColor: primary, textColor: textOnPrimary, fontSize: 9, fontStyle: "bold" },
+        bodyStyles: { fontSize: 9, textColor: bodyText },
         alternateRowStyles: { fillColor: lightGray },
         columnStyles: { 4: { halign: "right", fontStyle: "bold" } },
         margin: { left: 14, right: 14 },
-        foot: [[
-          "", "", "", "Total",
-          fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0)),
-        ]],
-        footStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 9 },
+        foot: [["", "", "", "Total", fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0))]],
+        footStyles: { fillColor: primary, textColor: textOnPrimary, fontStyle: "bold", fontSize: 9 },
       });
     }
 
-    // Footer on all pages
+    // Footer em todas as páginas
     const totalPages = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setDrawColor(...accentColor);
+      doc.setDrawColor(...accent);
       doc.setLineWidth(0.5);
       doc.line(14, 285, 196, 285);
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
       doc.setFont("helvetica", "normal");
-      doc.text("Relatório gerado pelo sistema de gestão CoupleWilhelm", 14, 289);
+      doc.text(`${companyName} — Sistema de Gestão de Imóveis`, 14, 289);
       doc.text(`Página ${i} de ${totalPages}`, 196, 289, { align: "right" });
     }
 

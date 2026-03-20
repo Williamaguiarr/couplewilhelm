@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import logoSrc from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -48,6 +47,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
+import { useTheme } from "@/contexts/ThemeContext";
+import { buildPdfPalette } from "@/hooks/use-pdf-theme";
 
 interface Reserva {
   id: string;
@@ -262,6 +263,7 @@ const Reservas: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -281,34 +283,34 @@ const Reservas: React.FC = () => {
     const pageH = doc.internal.pageSize.getHeight();
     const now = new Date();
 
-    // ── Paleta da marca ──────────────────────────────────────────────────────
-    const navy: [number, number, number] = [10, 25, 47];      // #0A192F
-    const gold: [number, number, number] = [163, 163, 139];   // #A3A38B
-    const cream: [number, number, number] = [240, 237, 232];  // #F0EDE8
-    const white: [number, number, number] = [255, 255, 255];
-    const lightGray: [number, number, number] = [245, 244, 241];
+    // ── Paleta do tema do admin ──────────────────────────────────────────────
+    const { primary, accent, textOnPrimary, lightGray, bodyText } = buildPdfPalette(
+      theme.corPrimaria,
+      theme.corSecundaria,
+      theme.corTexto,
+    );
+    const companyName = (theme.nomeEmpresa || "Couple Wilhelm").toUpperCase();
 
-    // ── Fundo header navy ────────────────────────────────────────────────────
-    doc.setFillColor(...navy);
+    // ── Fundo header ─────────────────────────────────────────────────────────
+    doc.setFillColor(...primary);
     doc.rect(0, 0, pageW, 42, "F");
-
-    // Linha dourada sob o header
-    doc.setFillColor(...gold);
+    doc.setFillColor(...accent);
     doc.rect(0, 42, pageW, 0.8, "F");
 
     // ── Logo ─────────────────────────────────────────────────────────────────
-    try {
-      doc.addImage(logoSrc, "PNG", 10, 4, 52, 34);
-    } catch (_) { /* se falhar, continua sem logo */ }
+    const logoUrl = theme.logoUrl;
+    if (logoUrl) {
+      try { doc.addImage(logoUrl, "PNG", 10, 4, 52, 34); } catch (_) {}
+    }
 
-    // ── Título do relatório (direita do header) ───────────────────────────────
+    // ── Título do relatório ───────────────────────────────────────────────────
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(...gold);
+    doc.setTextColor(...accent);
     doc.text("RELATÓRIO DE RESERVAS", pageW - 14, 16, { align: "right" });
 
     doc.setFontSize(7);
-    doc.setTextColor(...cream);
+    doc.setTextColor(...textOnPrimary);
     const imovelNome = filterImovel !== "all"
       ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
       : "Todos os imóveis";
@@ -333,7 +335,7 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const comissao = liquido * 0.25;
+      const comissao = liquido * comissaoRate;
       totalBruto += bruto;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
@@ -350,7 +352,7 @@ const Reservas: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
       { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
       { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
-      { label: "Comissão CW (25%)", value: fmtPDF(totalComissao) },
+      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtPDF(totalComissao) },
       { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
     ];
 
@@ -360,28 +362,24 @@ const Reservas: React.FC = () => {
 
     summaryItems.forEach((item, i) => {
       const x = 14 + i * (cardW + 4);
-      doc.setFillColor(...(item.highlight ? navy : lightGray));
+      doc.setFillColor(...(item.highlight ? primary : lightGray));
       doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "F");
-
       if (item.highlight) {
-        doc.setDrawColor(...gold);
+        doc.setDrawColor(...accent);
         doc.setLineWidth(0.4);
         doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "S");
       }
-
       doc.setFontSize(6.5);
-      doc.setTextColor(...(item.highlight ? gold : [120, 115, 105] as [number, number, number]));
+      doc.setTextColor(...(item.highlight ? accent : [120, 115, 105] as [number, number, number]));
       doc.text(item.label.toUpperCase(), x + cardW / 2, cardY + 8, { align: "center" });
-
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...(item.highlight ? cream : navy));
+      doc.setTextColor(...(item.highlight ? textOnPrimary : primary));
       doc.text(item.value, x + cardW / 2, cardY + 17, { align: "center" });
       doc.setFont("helvetica", "normal");
     });
 
-    // Linha separadora dourada
-    doc.setDrawColor(...gold);
+    doc.setDrawColor(...accent);
     doc.setLineWidth(0.3);
     doc.line(14, cardY + cardH + 4, pageW - 14, cardY + cardH + 4);
 
@@ -391,7 +389,7 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const comissao = liquido * 0.25;
+      const comissao = liquido * comissaoRate;
       const proprietario = liquido - comissao;
       return [
         r.imovel?.nome_imovel || "—",
@@ -409,20 +407,10 @@ const Reservas: React.FC = () => {
 
     autoTable(doc, {
       startY: cardY + cardH + 8,
-      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão OTA", "Base CW", "Comissão CW", "Proprietário", "Obs."]],
+      head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão OTA", "Base Liq.", "Comissão", "Proprietário", "Obs."]],
       body: tableData,
-      headStyles: {
-        fillColor: navy,
-        textColor: gold,
-        fontSize: 7,
-        fontStyle: "bold",
-        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
-      },
-      bodyStyles: {
-        fontSize: 7.5,
-        textColor: [40, 40, 40] as [number, number, number],
-        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
-      },
+      headStyles: { fillColor: primary, textColor: accent, fontSize: 7, fontStyle: "bold", cellPadding: { top: 3, bottom: 3, left: 3, right: 3 } },
+      bodyStyles: { fontSize: 7.5, textColor: bodyText, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } },
       alternateRowStyles: { fillColor: lightGray },
       columnStyles: {
         0: { cellWidth: 28 },
@@ -433,29 +421,23 @@ const Reservas: React.FC = () => {
         5: { cellWidth: 20, halign: "right" },
         6: { cellWidth: 20, halign: "right" },
         7: { cellWidth: 20, halign: "right" },
-        8: { cellWidth: 22, halign: "right", fontStyle: "bold", textColor: navy },
+        8: { cellWidth: 22, halign: "right", fontStyle: "bold", textColor: primary },
         9: { cellWidth: "auto" },
       },
       margin: { left: 14, right: 14 },
       didDrawPage: (data) => {
-        // Footer em cada página
         const footerY = pageH - 8;
-        doc.setFillColor(...navy);
+        doc.setFillColor(...primary);
         doc.rect(0, footerY - 4, pageW, 14, "F");
         doc.setFontSize(6.5);
-        doc.setTextColor(...gold);
-        doc.text("COUPLE WILHELM — Gestão de Imóveis", 14, footerY + 1);
-        doc.setTextColor(...cream);
-        doc.text(
-          `Página ${data.pageNumber}`,
-          pageW - 14,
-          footerY + 1,
-          { align: "right" }
-        );
+        doc.setTextColor(...accent);
+        doc.text(`${companyName} — Gestão de Imóveis`, 14, footerY + 1);
+        doc.setTextColor(...textOnPrimary);
+        doc.text(`Página ${data.pageNumber}`, pageW - 14, footerY + 1, { align: "right" });
       },
     });
 
-    doc.save(`CW-relatorio-reservas-${now.toISOString().split("T")[0]}.pdf`);
+    doc.save(`relatorio-reservas-${now.toISOString().split("T")[0]}.pdf`);
     toast({ title: "Relatório gerado com sucesso!" });
   };
 
