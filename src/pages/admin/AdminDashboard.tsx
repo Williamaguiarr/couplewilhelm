@@ -308,6 +308,23 @@ const AdminDashboard: React.FC = () => {
 
   const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
 
+  // Imóveis do proprietário selecionado (para filtrar despesas)
+  const imoveisDoProprietario =
+    filtroProprietario === "todos"
+      ? null
+      : imoveis
+          .filter(
+            (im) =>
+              im.proprietario_id === filtroProprietario ||
+              im.proprietario_id_2 === filtroProprietario
+          )
+          .map((im) => im.id);
+
+  const despesasFiltradas =
+    imoveisDoProprietario === null
+      ? despesas
+      : despesas.filter((d) => imoveisDoProprietario.includes(d.imovel_id));
+
   const cards = [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
     { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
@@ -468,10 +485,14 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           <div className="border border-border rounded-lg overflow-hidden">
-            {despesas.length === 0 ? (
+            {despesasFiltradas.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
                 <Receipt className="h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">Nenhuma despesa extra registrada</p>
+                <p className="text-sm text-muted-foreground">
+                  {filtroProprietario === "todos"
+                    ? "Nenhuma despesa extra registrada"
+                    : "Nenhuma despesa extra para este proprietário"}
+                </p>
               </div>
             ) : (
               <Table>
@@ -492,7 +513,7 @@ const AdminDashboard: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {despesas.map((d) => (
+                  {despesasFiltradas.map((d) => (
                     <TableRow key={d.id} className="border-border hover:bg-muted/20">
                       <TableCell className="text-foreground font-medium text-sm py-3">
                         {d.imovel?.nome_imovel ?? "—"}
@@ -526,12 +547,12 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          {despesas.length > 0 && (
+          {despesasFiltradas.length > 0 && (
             <div className="mt-2 flex justify-end">
               <p className="text-xs text-muted-foreground">
                 Total:{" "}
                 <span className="text-foreground font-semibold">
-                  {fmt(despesas.reduce((acc, d) => acc + d.valor, 0))}
+                  {fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0))}
                 </span>
               </p>
             </div>
