@@ -62,6 +62,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_proprietarios: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          proprietario_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          proprietario_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          proprietario_id?: string
+        }
+        Relationships: []
+      }
       despesas_extras: {
         Row: {
           created_at: string
