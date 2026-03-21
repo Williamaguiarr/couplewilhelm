@@ -62,8 +62,7 @@ const AppSidebar: React.FC = () => {
     return location.pathname.startsWith(url);
   };
 
-  // Master puro usa a logo CW; admin/proprietário usa a logo própria se houver
-  const isMasterOnly = role === "master" && !hasRole("admin");
+  // Usa logo personalizada se houver; senão, fallback para logo CW
   const customLogo = theme.logoUrl;
   const companyName = theme.nomeEmpresa || "Couple Wilhelm";
   const nameParts = companyName.split(" ");
