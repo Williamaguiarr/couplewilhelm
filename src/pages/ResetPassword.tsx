@@ -67,7 +67,7 @@ const ResetPassword: React.FC = () => {
         <div className="bg-card border border-border rounded-lg p-8 shadow-luxury">
           {success ? (
             <div className="flex flex-col items-center gap-4 py-4 text-center">
-              <CheckCircle className="h-12 w-12 text-green-600" />
+              <CheckCircle className="h-12 w-12 text-primary" />
               <h2 className="font-display text-xl text-foreground">Senha redefinida!</h2>
               <p className="text-muted-foreground text-sm">
                 Sua senha foi atualizada com sucesso. Você será redirecionado para o login.
