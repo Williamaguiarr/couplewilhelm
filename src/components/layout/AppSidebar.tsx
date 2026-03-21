@@ -125,32 +125,24 @@ const AppSidebar: React.FC = () => {
       <SidebarHeader className="p-0">
         {collapsed ? (
           <div className="flex justify-center py-3 px-2">
-            {(isMasterOnly || customLogo) ? (
+            {customLogo ? (
               <img
-                src={customLogo || logo}
+                src={customLogo}
                 alt={companyName}
                 className="h-10 w-10 object-contain"
                 onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
               />
             ) : (
-              <div className="h-10 w-10 rounded-lg bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center">
-                <span className="text-sidebar-primary font-display text-xs font-bold uppercase">
-                  {companyName[0]}
-                </span>
-              </div>
+              <img
+                src={logo}
+                alt="Couple Wilhelm"
+                className="h-10 w-10 object-contain"
+              />
             )}
           </div>
         ) : (
           <div className="w-full">
-            {isMasterOnly ? (
-              <div className="flex items-center justify-center py-4 px-3">
-                <img
-                  src={logo}
-                  alt="Couple Wilhelm"
-                  className="h-16 w-auto max-w-full object-contain"
-                />
-              </div>
-            ) : customLogo ? (
+            {customLogo ? (
               <div className="w-full px-2 py-3">
                 <img
                   src={customLogo}
@@ -160,15 +152,12 @@ const AppSidebar: React.FC = () => {
                 />
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-5 px-3">
-                <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center leading-snug">
-                  {nameLine1}
-                </span>
-                {nameLine2 && (
-                  <span className="font-display text-sm tracking-widest text-sidebar-primary uppercase text-center leading-snug">
-                    {nameLine2}
-                  </span>
-                )}
+              <div className="flex items-center justify-center py-4 px-3">
+                <img
+                  src={logo}
+                  alt="Couple Wilhelm"
+                  className="h-16 w-auto max-w-full object-contain"
+                />
               </div>
             )}
           </div>
