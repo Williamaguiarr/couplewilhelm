@@ -542,17 +542,37 @@ const AdminsList: React.FC = () => {
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label className="text-muted-foreground text-xs uppercase tracking-widest">
-                  Senha temporária
+                  Senha de acesso gerada
                 </Label>
-                <Input
-                  type="password"
-                  value={createForm.password}
-                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  placeholder="Mínimo 6 caracteres"
-                  minLength={6}
-                  required
-                  className="bg-background"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={createForm.password}
+                    readOnly
+                    className="bg-muted font-mono text-sm flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCreateForm({ ...createForm, password: generatePassword() })}
+                    title="Gerar nova senha"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => { navigator.clipboard.writeText(createForm.password); toast({ title: "Senha copiada!" }); }}
+                    title="Copiar senha"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Copie e compartilhe com o admin. Ele poderá redefinir pelo link "Esqueceu a senha".
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground text-xs uppercase tracking-widest">
