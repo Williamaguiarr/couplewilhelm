@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import Proprietarios from "@/pages/admin/Proprietarios";
 import Imoveis from "@/pages/admin/Imoveis";
