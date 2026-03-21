@@ -128,7 +128,7 @@ const Proprietarios: React.FC = () => {
     } else {
       toast({ title: "Proprietário criado!", description: `${createForm.nome} foi adicionado.` });
       setCreateOpen(false);
-      setCreateForm({ nome: "", email: "", password: "" });
+      setCreateForm({ nome: "", email: "", password: generatePassword() });
       fetchProprietarios();
     }
 
