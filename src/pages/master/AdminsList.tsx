@@ -59,6 +59,12 @@ interface AdminConfig {
   profile?: { nome: string | null; email: string | null };
 }
 
+// Gera senha aleatória segura de 12 caracteres
+const generatePassword = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+};
+
 const AdminsList: React.FC = () => {
   const [admins, setAdmins] = useState<AdminConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +73,7 @@ const AdminsList: React.FC = () => {
   const [createForm, setCreateForm] = useState({
     nome: "",
     email: "",
-    password: "",
+    password: generatePassword(),
     slug: "",
     nome_empresa: "",
   });
