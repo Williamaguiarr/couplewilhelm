@@ -14,20 +14,18 @@ const MasterDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchStats = async () => {
+    // Busca IDs dos admins que ainda existem em user_roles
+    const { data: adminRoles } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+
+    const adminIds = (adminRoles || []).map((r) => r.user_id);
+
     const [
-      { count: totalAdmins },
-      { count: adminsAtivos },
       { count: totalProprietarios },
       { count: totalImoveis },
     ] = await Promise.all([
-      supabase
-        .from("user_roles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "admin"),
-      supabase
-        .from("admin_configs" as any)
-        .select("*", { count: "exact", head: true })
-        .eq("ativo", true),
       supabase
         .from("user_roles")
         .select("*", { count: "exact", head: true })
@@ -35,9 +33,20 @@ const MasterDashboard: React.FC = () => {
       supabase.from("imoveis").select("*", { count: "exact", head: true }),
     ]);
 
+    // Admins ativos: cruzamento entre user_roles (admin existente) e admin_configs (ativo=true)
+    let adminsAtivos = 0;
+    if (adminIds.length > 0) {
+      const { count } = await supabase
+        .from("admin_configs" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("ativo", true)
+        .in("admin_id", adminIds);
+      adminsAtivos = count || 0;
+    }
+
     setStats({
-      totalAdmins: totalAdmins || 0,
-      adminsAtivos: adminsAtivos || 0,
+      totalAdmins: adminIds.length,
+      adminsAtivos,
       totalProprietarios: totalProprietarios || 0,
       totalImoveis: totalImoveis || 0,
     });
