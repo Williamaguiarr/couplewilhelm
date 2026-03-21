@@ -33,8 +33,9 @@ const App = () => (
         <AuthProvider>
           <ThemeProvider>
             <Routes>
-              {/* Rota pública */}
+              {/* Rotas públicas */}
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/setup" element={<Setup />} />
 
               {/* Redirecionar raiz para login */}
