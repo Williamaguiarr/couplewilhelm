@@ -203,7 +203,7 @@ const AdminsList: React.FC = () => {
 
     toast({ title: "Admin criado!", description: `${createForm.nome} foi adicionado.` });
     setCreateOpen(false);
-    setCreateForm({ nome: "", email: "", password: "", slug: "", nome_empresa: "" });
+    setCreateForm({ nome: "", email: "", password: generatePassword(), slug: "", nome_empresa: "" });
     fetchAdmins();
     setCreateSubmitting(false);
   };
