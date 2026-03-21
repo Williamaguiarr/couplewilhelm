@@ -13,39 +13,51 @@ const MasterDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const fetchStats = async () => {
+    const [
+      { count: totalAdmins },
+      { count: adminsAtivos },
+      { count: totalProprietarios },
+      { count: totalImoveis },
+    ] = await Promise.all([
+      supabase
+        .from("user_roles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "admin"),
+      supabase
+        .from("admin_configs" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("ativo", true),
+      supabase
+        .from("user_roles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "proprietario"),
+      supabase.from("imoveis").select("*", { count: "exact", head: true }),
+    ]);
+
+    setStats({
+      totalAdmins: totalAdmins || 0,
+      adminsAtivos: adminsAtivos || 0,
+      totalProprietarios: totalProprietarios || 0,
+      totalImoveis: totalImoveis || 0,
+    });
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchStats = async () => {
-      const [
-        { count: totalAdmins },
-        { count: adminsAtivos },
-        { count: totalProprietarios },
-        { count: totalImoveis },
-      ] = await Promise.all([
-        supabase
-          .from("user_roles")
-          .select("*", { count: "exact", head: true })
-          .eq("role", "admin"),
-        supabase
-          .from("admin_configs" as any)
-          .select("*", { count: "exact", head: true })
-          .eq("ativo", true),
-        supabase
-          .from("user_roles")
-          .select("*", { count: "exact", head: true })
-          .eq("role", "proprietario"),
-        supabase.from("imoveis").select("*", { count: "exact", head: true }),
-      ]);
-
-      setStats({
-        totalAdmins: totalAdmins || 0,
-        adminsAtivos: adminsAtivos || 0,
-        totalProprietarios: totalProprietarios || 0,
-        totalImoveis: totalImoveis || 0,
-      });
-      setLoading(false);
-    };
-
     fetchStats();
+
+    // Realtime: atualiza automaticamente ao alterar admins, imóveis ou proprietários
+    const channel = supabase
+      .channel("master-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "imoveis" }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "admin_configs" }, fetchStats)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const cards = [

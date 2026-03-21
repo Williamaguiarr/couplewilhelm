@@ -95,8 +95,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
-    // Admin: carrega sua própria config
-    if (role === "admin") {
+    // Admin (ou master+admin): carrega sua própria config
+    if (role === "admin" || role === "master") {
       const { data } = await supabase
         .from("admin_configs" as any)
         .select("cor_primaria, cor_secundaria, cor_texto, logo_url, nome_empresa, slug")
