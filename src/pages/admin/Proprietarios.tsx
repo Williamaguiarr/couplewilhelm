@@ -41,6 +41,12 @@ interface Proprietario {
   created_at: string;
 }
 
+// Gera senha aleatória segura de 12 caracteres
+const generatePassword = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+};
+
 const Proprietarios: React.FC = () => {
   const { user } = useAuth();
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
@@ -49,7 +55,7 @@ const Proprietarios: React.FC = () => {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
-  const [createForm, setCreateForm] = useState({ nome: "", email: "", password: "" });
+  const [createForm, setCreateForm] = useState({ nome: "", email: "", password: generatePassword() });
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
