@@ -27,7 +27,9 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import logo from "@/assets/logo.png";
+import logoPreta from "@/assets/logo.png";
+import logoBranca from "@/assets/logo_branca.png";
+import logoVerdeClara from "@/assets/logo_verde_clara.png";
 
 const masterItems = [
   { title: "Visão Geral", url: "/master", icon: LayoutDashboard },
