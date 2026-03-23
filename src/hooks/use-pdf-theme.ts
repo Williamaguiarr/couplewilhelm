@@ -1,3 +1,6 @@
+import logoPretaUrl from "@/assets/logo.png";
+import logoVerdeClaraUrl from "@/assets/logo_verde_clara.png";
+
 /**
  * Converte hex (#RRGGBB) para tupla RGB usada no jsPDF.
  */
@@ -24,4 +27,54 @@ export function buildPdfPalette(corPrimaria: string, corSecundaria: string, corT
   const bodyText: [number, number, number] = [40, 40, 40];
 
   return { primary, accent, textOnPrimary, lightGray, bodyText };
+}
+
+/**
+ * Converte uma URL de imagem para base64 via canvas (funciona com assets importados).
+ */
+async function imageUrlToBase64(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+let _cachedLogoPreta: string | null = null;
+let _cachedLogoVerde: string | null = null;
+
+/**
+ * Retorna a logo CW adequada para PDFs com header escuro (verde-clara/dourada).
+ * Usa cache para não reconverter a cada geração.
+ */
+export async function getPdfLogoEscuro(): Promise<string | null> {
+  if (_cachedLogoVerde) return _cachedLogoVerde;
+  try {
+    _cachedLogoVerde = await imageUrlToBase64(logoVerdeClaraUrl);
+    return _cachedLogoVerde;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Retorna a logo CW adequada para PDFs com fundo claro (logo preta).
+ */
+export async function getPdfLogoClaro(): Promise<string | null> {
+  if (_cachedLogoPreta) return _cachedLogoPreta;
+  try {
+    _cachedLogoPreta = await imageUrlToBase64(logoPretaUrl);
+    return _cachedLogoPreta;
+  } catch {
+    return null;
+  }
 }
