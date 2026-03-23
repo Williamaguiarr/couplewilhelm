@@ -132,11 +132,11 @@ const AppSidebar: React.FC = () => {
                 src={customLogo}
                 alt={companyName}
                 className="h-10 w-10 object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+                onError={(e) => { (e.target as HTMLImageElement).src = logoVerdeClara; }}
               />
             ) : (
               <img
-                src={logo}
+                src={logoVerdeClara}
                 alt="Couple Wilhelm"
                 className="h-10 w-10 object-contain"
               />
@@ -150,13 +150,13 @@ const AppSidebar: React.FC = () => {
                   src={customLogo}
                   alt={companyName}
                   className="w-full h-auto max-h-24 object-contain"
-                  onError={(e) => { (e.target as HTMLImageElement).src = logo; }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = logoVerdeClara; }}
                 />
               </div>
             ) : (
               <div className="flex items-center justify-center py-4 px-3">
                 <img
-                  src={logo}
+                  src={logoVerdeClara}
                   alt="Couple Wilhelm"
                   className="h-16 w-auto max-w-full object-contain"
                 />
