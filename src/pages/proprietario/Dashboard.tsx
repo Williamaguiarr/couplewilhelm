@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette } from "@/hooks/use-pdf-theme";
+import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
 import { useToast } from "@/hooks/use-toast";
 
 interface Reserva {
@@ -267,7 +267,7 @@ const ProprietarioDashboard: React.FC = () => {
 
   const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
 
-  const gerarPDF = () => {
+  const gerarPDF = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -287,9 +287,10 @@ const ProprietarioDashboard: React.FC = () => {
     doc.setFillColor(...accent);
     doc.rect(0, 42, pageW, 0.8, "F");
 
-    // Logo
-    if (theme.logoUrl) {
-      try { doc.addImage(theme.logoUrl, "PNG", 10, 4, 52, 34); } catch (_) {}
+    // Logo (personalizada ou CW como fallback)
+    const logoData = theme.logoUrl || await getPdfLogoEscuro();
+    if (logoData) {
+      try { doc.addImage(logoData, "PNG", 10, 4, 52, 34); } catch (_) {}
     }
 
     // Título
