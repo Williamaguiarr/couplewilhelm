@@ -343,7 +343,7 @@ const AdminDashboard: React.FC = () => {
     fetchDespesas();
   };
 
-  const gerarPDF = () => {
+  const gerarPDF = async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const mesNome = MESES[mesSelecionado];
     const nomeProprietario =
@@ -366,20 +366,21 @@ const AdminDashboard: React.FC = () => {
     doc.setFillColor(...accent);
     doc.rect(0, 38, 210, 0.8, "F");
 
-    // Logo (if available)
-    if (theme.logoUrl) {
-      try { doc.addImage(theme.logoUrl, "PNG", 10, 4, 40, 30); } catch (_) {}
+    // Logo (personalizada ou CW como fallback)
+    const logoData = theme.logoUrl || await getPdfLogoEscuro();
+    if (logoData) {
+      try { doc.addImage(logoData, "PNG", 10, 4, 40, 30); } catch (_) {}
     }
 
     doc.setTextColor(...textOnPrimary);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("Visão Geral — Relatório Financeiro", theme.logoUrl ? 56 : 14, 16);
+    doc.text("Visão Geral — Relatório Financeiro", logoData ? 56 : 14, 16);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Período: ${mesNome} / ${anoSelecionado}`, theme.logoUrl ? 56 : 14, 25);
-    doc.text(`Proprietário: ${nomeProprietario}`, theme.logoUrl ? 56 : 14, 32);
+    doc.text(`Período: ${mesNome} / ${anoSelecionado}`, logoData ? 56 : 14, 25);
+    doc.text(`Proprietário: ${nomeProprietario}`, logoData ? 56 : 14, 32);
 
     // Generated date
     doc.setFontSize(8);

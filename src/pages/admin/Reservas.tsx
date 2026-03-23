@@ -277,7 +277,7 @@ const Reservas: React.FC = () => {
 
   const { toast } = useToast();
 
-  const gerarPDF = () => {
+  const gerarPDF = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -298,7 +298,7 @@ const Reservas: React.FC = () => {
     doc.rect(0, 42, pageW, 0.8, "F");
 
     // ── Logo ─────────────────────────────────────────────────────────────────
-    const logoUrl = theme.logoUrl;
+    const logoUrl = theme.logoUrl || await getPdfLogoEscuro();
     if (logoUrl) {
       try { doc.addImage(logoUrl, "PNG", 10, 4, 52, 34); } catch (_) {}
     }
