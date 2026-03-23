@@ -79,7 +79,7 @@ const Login: React.FC = () => {
           <img
             src={logo}
             alt="Couple Wilhelm"
-            className="h-16 w-auto object-contain mb-4"
+            className="h-24 w-auto object-contain mb-4"
           />
           <p className="text-muted-foreground text-sm tracking-wider">
             Gestão de Aluguéis
