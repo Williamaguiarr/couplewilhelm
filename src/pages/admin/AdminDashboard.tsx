@@ -50,7 +50,7 @@ import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette } from "@/hooks/use-pdf-theme";
+import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
 
 interface Imovel {
   id: string;

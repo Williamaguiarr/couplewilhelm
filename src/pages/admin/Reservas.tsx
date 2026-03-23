@@ -48,7 +48,7 @@ import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette } from "@/hooks/use-pdf-theme";
+import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
 
 interface Reserva {
   id: string;
