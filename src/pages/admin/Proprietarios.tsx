@@ -179,6 +179,12 @@ const Proprietarios: React.FC = () => {
         variant: "destructive",
       });
     } else {
+      // Atualizar comissão no perfil
+      const comissaoVal = parseFloat(editForm.comissao) || 25;
+      await supabase
+        .from("profiles")
+        .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
+        .eq("id", editTarget.id);
       toast({ title: "Proprietário atualizado!" });
       setEditOpen(false);
       setEditTarget(null);
