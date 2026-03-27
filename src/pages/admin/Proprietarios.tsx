@@ -56,7 +56,7 @@ const Proprietarios: React.FC = () => {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
-  const [createForm, setCreateForm] = useState({ nome: "", email: "", password: generatePassword() });
+  const [createForm, setCreateForm] = useState({ nome: "", email: "", password: generatePassword(), comissao: "25" });
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
