@@ -428,6 +428,22 @@ const Proprietarios: React.FC = () => {
                 className="bg-background"
               />
             </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Comissão CW (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={editForm.comissao}
+                onChange={(e) => setEditForm({ ...editForm, comissao: e.target.value })}
+                placeholder="25"
+                className="bg-background"
+              />
+              <p className="text-xs text-muted-foreground">
+                Percentual de comissão aplicado sobre o valor base líquido (0 a 100).
+              </p>
+            </div>
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar
