@@ -148,7 +148,7 @@ const Proprietarios: React.FC = () => {
   // ── EDIT ──────────────────────────────────────────────
   const openEdit = (p: Proprietario) => {
     setEditTarget(p);
-    setEditForm({ nome: p.nome || "", email: p.email || "", password: "" });
+    setEditForm({ nome: p.nome || "", email: p.email || "", password: "", comissao: String(p.comissao_percentual ?? 25) });
     setEditOpen(true);
   };
 
