@@ -346,6 +346,7 @@ const Proprietarios: React.FC = () => {
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Nome</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">E-mail</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Cadastrado em</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-20"></TableHead>
                 </TableRow>
@@ -355,6 +356,7 @@ const Proprietarios: React.FC = () => {
                   <TableRow key={p.id} className="border-border hover:bg-muted/30">
                     <TableCell className="text-foreground font-medium">{p.nome || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{p.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.comissao_percentual ?? 25}%</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {new Date(p.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
