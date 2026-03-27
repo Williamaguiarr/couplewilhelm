@@ -297,6 +297,21 @@ const Proprietarios: React.FC = () => {
                     Copie e compartilhe com o proprietário. Ele poderá redefinir pelo link "Esqueceu a senha".
                   </p>
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Comissão CW (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={createForm.comissao}
+                    onChange={(e) => setCreateForm({ ...createForm, comissao: e.target.value })}
+                    placeholder="25"
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Percentual de comissão aplicado sobre o valor base líquido (0 a 100).
+                  </p>
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="flex-1">
                     Cancelar
