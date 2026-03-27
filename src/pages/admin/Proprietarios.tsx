@@ -127,9 +127,18 @@ const Proprietarios: React.FC = () => {
         variant: "destructive",
       });
     } else {
+      // Atualizar comissão no perfil do proprietário criado
+      const newUserId = res.data?.userId;
+      if (newUserId) {
+        const comissaoVal = parseFloat(createForm.comissao) || 25;
+        await supabase
+          .from("profiles")
+          .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
+          .eq("id", newUserId);
+      }
       toast({ title: "Proprietário criado!", description: `${createForm.nome} foi adicionado.` });
       setCreateOpen(false);
-      setCreateForm({ nome: "", email: "", password: generatePassword() });
+      setCreateForm({ nome: "", email: "", password: generatePassword(), comissao: "25" });
       fetchProprietarios();
     }
 
