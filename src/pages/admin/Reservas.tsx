@@ -492,6 +492,15 @@ const Reservas: React.FC = () => {
     setLoading(false);
   };
 
+  // Helper: get commission rate for a given imovel_id based on owner
+  const getRateForImovel = (imovelId: string): number => {
+    const im = imoveis.find((i) => i.id === imovelId);
+    if (im?.proprietario_id && ownerRates[im.proprietario_id] != null) {
+      return ownerRates[im.proprietario_id];
+    }
+    return comissaoRate; // fallback to admin rate
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -500,11 +509,12 @@ const Reservas: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
 
+    const rate = getRateForImovel(form.imovel_id);
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
     const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
+    const valorProprietario = calcValorProprietario(valorLiquido, rate);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
