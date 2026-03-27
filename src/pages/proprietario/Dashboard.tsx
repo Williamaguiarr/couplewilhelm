@@ -139,6 +139,16 @@ const ProprietarioDashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
+      // Buscar comissão do próprio proprietário
+      const { data: myProfile } = await supabase
+        .from("profiles")
+        .select("comissao_percentual")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (myProfile && (myProfile as any).comissao_percentual != null) {
+        setComissaoRate((myProfile as any).comissao_percentual / 100);
+      }
+
       const { data: imoveisData } = await supabase
         .from("imoveis")
         .select("id, nome_imovel, admin_id")
@@ -150,17 +160,16 @@ const ProprietarioDashboard: React.FC = () => {
         setFilterImovel(imoveisData[0].id);
       }
 
-      // Buscar comissão do admin responsável (usa o admin_id do primeiro imóvel)
+      // Buscar nome do admin para exibição
       const adminId = imoveisData?.[0]?.admin_id;
       if (adminId) {
         const { data: configData } = await supabase
           .from("admin_configs" as any)
-          .select("comissao_cw, nome_empresa")
+          .select("nome_empresa")
           .eq("admin_id", adminId)
           .maybeSingle();
         if (configData) {
           const cfg = configData as any;
-          if (cfg.comissao_cw != null) setComissaoRate(cfg.comissao_cw);
           if (cfg.nome_empresa) setNomeAdmin(cfg.nome_empresa);
         }
       }

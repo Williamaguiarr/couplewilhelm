@@ -228,7 +228,7 @@ const AdminDashboard: React.FC = () => {
 
     let reservasDetalhadasQuery = supabase
       .from("reservas")
-      .select("valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
+      .select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
       .gte("data_fim", firstDay)
       .lte("data_fim", lastDay);
 
@@ -274,15 +274,40 @@ const AdminDashboard: React.FC = () => {
       .from("admin_configs")
       .select("comissao_cw")
       .single();
-    const comissaoRate = adminConfig?.comissao_cw ?? 0.25;
+    const adminRate = adminConfig?.comissao_cw ?? 0.25;
+
+    // Buscar comissão por proprietário
+    const ownerIds = new Set<string>();
+    imoveis.forEach((im) => {
+      if (im.proprietario_id) ownerIds.add(im.proprietario_id);
+      if (im.proprietario_id_2) ownerIds.add(im.proprietario_id_2);
+    });
+    let ownerRatesMap: Record<string, number> = {};
+    if (ownerIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, comissao_percentual")
+        .in("id", Array.from(ownerIds));
+      (profiles || []).forEach((p: any) => {
+        ownerRatesMap[p.id] = (p.comissao_percentual ?? 25) / 100;
+      });
+    }
+
+    const getOwnerRate = (imovelId: string): number => {
+      const im = imoveis.find((i) => i.id === imovelId);
+      if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) {
+        return ownerRatesMap[im.proprietario_id];
+      }
+      return adminRate;
+    };
 
     const totais = (reservasDetalhadas || []).reduce(
       (acc, r) => {
         const valorBruto = r.valor_bruto || 0;
         const taxaLimpeza = r.taxa_limpeza || 0;
         const comissaoPlataforma = (r as any).comissao_plataforma || 0;
-        // Valor Líquido = Bruto - Taxa de Limpeza - Comissão OTA (plataforma)
         const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+        const comissaoRate = getOwnerRate((r as any).imovel_id);
         const comissaoCW = valorLiquido * comissaoRate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {

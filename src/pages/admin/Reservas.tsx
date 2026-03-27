@@ -66,6 +66,8 @@ interface Reserva {
 interface Imovel {
   id: string;
   nome_imovel: string;
+  proprietario_id: string | null;
+  proprietario_id_2: string | null;
 }
 
 const fmt = (v: number | null) =>
@@ -223,7 +225,7 @@ const ReservaFormFields = ({
           </div>
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão CW (25% sobre base)</Label>
+          <Label className="text-muted-foreground">Comissão CW ({pct}% sobre base)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
@@ -256,6 +258,7 @@ const Reservas: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [comissaoRate, setComissaoRate] = useState<number>(0.25);
+  const [ownerRates, setOwnerRates] = useState<Record<string, number>>({});
   const [filterImovel, setFilterImovel] = useState("all");
   const [filterDe, setFilterDe] = useState<Date | undefined>(startOfMonth(new Date()));
   const [filterAte, setFilterAte] = useState<Date | undefined>(endOfMonth(new Date()));
@@ -335,7 +338,8 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const comissao = liquido * comissaoRate;
+      const rate = getRateForImovel(r.imovel_id);
+      const comissao = liquido * rate;
       totalBruto += bruto;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
@@ -352,7 +356,7 @@ const Reservas: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
       { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
       { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
-      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtPDF(totalComissao) },
+      { label: "Comissão CW", value: fmtPDF(totalComissao) },
       { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
     ];
 
@@ -389,7 +393,8 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const comissao = liquido * comissaoRate;
+      const rate = getRateForImovel(r.imovel_id);
+      const comissao = liquido * rate;
       const proprietario = liquido - comissao;
       return [
         r.imovel?.nome_imovel || "—",
@@ -447,7 +452,7 @@ const Reservas: React.FC = () => {
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
-      supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2").order("nome_imovel"),
     ]);
 
     setReservas(
@@ -455,6 +460,7 @@ const Reservas: React.FC = () => {
     );
     setImoveis(imoveisData || []);
 
+    // Buscar comissão do admin como fallback
     if (user) {
       const { data: configData } = await supabase
         .from("admin_configs" as any)
@@ -467,7 +473,34 @@ const Reservas: React.FC = () => {
       }
     }
 
+    // Buscar comissão por proprietário
+    const ownerIds = new Set<string>();
+    (imoveisData || []).forEach((im: any) => {
+      if (im.proprietario_id) ownerIds.add(im.proprietario_id);
+      if (im.proprietario_id_2) ownerIds.add(im.proprietario_id_2);
+    });
+    if (ownerIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, comissao_percentual")
+        .in("id", Array.from(ownerIds));
+      const rates: Record<string, number> = {};
+      (profiles || []).forEach((p: any) => {
+        rates[p.id] = (p.comissao_percentual ?? 25) / 100;
+      });
+      setOwnerRates(rates);
+    }
+
     setLoading(false);
+  };
+
+  // Helper: get commission rate for a given imovel_id based on owner
+  const getRateForImovel = (imovelId: string): number => {
+    const im = imoveis.find((i) => i.id === imovelId);
+    if (im?.proprietario_id && ownerRates[im.proprietario_id] != null) {
+      return ownerRates[im.proprietario_id];
+    }
+    return comissaoRate; // fallback to admin rate
   };
 
   useEffect(() => {
@@ -478,11 +511,12 @@ const Reservas: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
 
+    const rate = getRateForImovel(form.imovel_id);
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
     const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
+    const valorProprietario = calcValorProprietario(valorLiquido, rate);
 
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
@@ -526,11 +560,12 @@ const Reservas: React.FC = () => {
     if (!editingReserva) return;
     setEditSubmitting(true);
 
+    const rate = getRateForImovel(editForm.imovel_id);
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
+    const valorProprietario = calcValorProprietario(valorLiquido, rate);
 
     const { error } = await supabase
       .from("reservas")
@@ -616,7 +651,7 @@ const Reservas: React.FC = () => {
                 <DialogTitle className="font-display text-xl text-foreground">Cadastrar Reserva</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSave} className="space-y-4 mt-2">
-                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={comissaoRate} />
+                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={getRateForImovel(form.imovel_id)} />
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
                     Cancelar
@@ -775,8 +810,9 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
               {filteredReservas.map((r) => {
+                  const rateForRow = getRateForImovel(r.imovel_id);
                   const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-                  const comissao = calcComissao(valorLiquido, comissaoRate);
+                  const comissao = calcComissao(valorLiquido, rateForRow);
                   const semValores = r.valor_bruto == null;
                   return (
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
@@ -821,7 +857,7 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={comissaoRate} />
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} />
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar

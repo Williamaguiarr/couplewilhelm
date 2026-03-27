@@ -39,6 +39,7 @@ interface Proprietario {
   nome: string | null;
   email: string | null;
   created_at: string;
+  comissao_percentual: number;
 }
 
 // Gera senha aleatória segura de 12 caracteres
@@ -55,13 +56,13 @@ const Proprietarios: React.FC = () => {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
-  const [createForm, setCreateForm] = useState({ nome: "", email: "", password: generatePassword() });
+  const [createForm, setCreateForm] = useState({ nome: "", email: "", password: generatePassword(), comissao: "25" });
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editTarget, setEditTarget] = useState<Proprietario | null>(null);
-  const [editForm, setEditForm] = useState({ nome: "", email: "", password: "" });
+  const [editForm, setEditForm] = useState({ nome: "", email: "", password: "", comissao: "25" });
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Proprietario | null>(null);
@@ -126,9 +127,18 @@ const Proprietarios: React.FC = () => {
         variant: "destructive",
       });
     } else {
+      // Atualizar comissão no perfil do proprietário criado
+      const newUserId = res.data?.userId;
+      if (newUserId) {
+        const comissaoVal = parseFloat(createForm.comissao) || 25;
+        await supabase
+          .from("profiles")
+          .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
+          .eq("id", newUserId);
+      }
       toast({ title: "Proprietário criado!", description: `${createForm.nome} foi adicionado.` });
       setCreateOpen(false);
-      setCreateForm({ nome: "", email: "", password: generatePassword() });
+      setCreateForm({ nome: "", email: "", password: generatePassword(), comissao: "25" });
       fetchProprietarios();
     }
 
@@ -138,7 +148,7 @@ const Proprietarios: React.FC = () => {
   // ── EDIT ──────────────────────────────────────────────
   const openEdit = (p: Proprietario) => {
     setEditTarget(p);
-    setEditForm({ nome: p.nome || "", email: p.email || "", password: "" });
+    setEditForm({ nome: p.nome || "", email: p.email || "", password: "", comissao: String(p.comissao_percentual ?? 25) });
     setEditOpen(true);
   };
 
@@ -169,6 +179,12 @@ const Proprietarios: React.FC = () => {
         variant: "destructive",
       });
     } else {
+      // Atualizar comissão no perfil
+      const comissaoVal = parseFloat(editForm.comissao) || 25;
+      await supabase
+        .from("profiles")
+        .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
+        .eq("id", editTarget.id);
       toast({ title: "Proprietário atualizado!" });
       setEditOpen(false);
       setEditTarget(null);
@@ -281,6 +297,22 @@ const Proprietarios: React.FC = () => {
                     Copie e compartilhe com o proprietário. Ele poderá redefinir pelo link "Esqueceu a senha".
                   </p>
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Comissão CW (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={createForm.comissao}
+                    onChange={(e) => setCreateForm({ ...createForm, comissao: e.target.value })}
+                    placeholder="25"
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Percentual de comissão aplicado sobre o valor base líquido (0 a 100).
+                  </p>
+                </div>
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="flex-1">
                     Cancelar
@@ -314,6 +346,7 @@ const Proprietarios: React.FC = () => {
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Nome</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">E-mail</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Cadastrado em</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-20"></TableHead>
                 </TableRow>
@@ -323,6 +356,7 @@ const Proprietarios: React.FC = () => {
                   <TableRow key={p.id} className="border-border hover:bg-muted/30">
                     <TableCell className="text-foreground font-medium">{p.nome || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{p.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.comissao_percentual ?? 25}%</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {new Date(p.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
@@ -396,6 +430,22 @@ const Proprietarios: React.FC = () => {
                 minLength={editForm.password ? 6 : undefined}
                 className="bg-background"
               />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Comissão CW (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={editForm.comissao}
+                onChange={(e) => setEditForm({ ...editForm, comissao: e.target.value })}
+                placeholder="25"
+                className="bg-background"
+              />
+              <p className="text-xs text-muted-foreground">
+                Percentual de comissão aplicado sobre o valor base líquido (0 a 100).
+              </p>
             </div>
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
