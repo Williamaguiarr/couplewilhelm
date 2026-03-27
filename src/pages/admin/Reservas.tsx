@@ -338,7 +338,8 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const comissao = liquido * comissaoRate;
+      const rate = getRateForImovel(r.imovel_id);
+      const comissao = liquido * rate;
       totalBruto += bruto;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
