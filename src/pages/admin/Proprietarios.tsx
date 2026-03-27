@@ -62,7 +62,7 @@ const Proprietarios: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editTarget, setEditTarget] = useState<Proprietario | null>(null);
-  const [editForm, setEditForm] = useState({ nome: "", email: "", password: "" });
+  const [editForm, setEditForm] = useState({ nome: "", email: "", password: "", comissao: "25" });
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Proprietario | null>(null);
