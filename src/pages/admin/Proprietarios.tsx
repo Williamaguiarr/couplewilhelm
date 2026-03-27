@@ -312,6 +312,7 @@ const Proprietarios: React.FC = () => {
                   <p className="text-xs text-muted-foreground">
                     Percentual de comissão aplicado sobre o valor base líquido (0 a 100).
                   </p>
+                </div>
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="flex-1">
                     Cancelar
