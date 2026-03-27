@@ -177,18 +177,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          comissao_percentual: number
           created_at: string | null
           email: string | null
           id: string
           nome: string | null
         }
         Insert: {
+          comissao_percentual?: number
           created_at?: string | null
           email?: string | null
           id: string
           nome?: string | null
         }
         Update: {
+          comissao_percentual?: number
           created_at?: string | null
           email?: string | null
           id?: string
