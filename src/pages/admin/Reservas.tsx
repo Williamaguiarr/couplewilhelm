@@ -450,7 +450,7 @@ const Reservas: React.FC = () => {
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
-      supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2").order("nome_imovel"),
     ]);
 
     setReservas(
@@ -458,6 +458,7 @@ const Reservas: React.FC = () => {
     );
     setImoveis(imoveisData || []);
 
+    // Buscar comissão do admin como fallback
     if (user) {
       const { data: configData } = await supabase
         .from("admin_configs" as any)
@@ -468,6 +469,24 @@ const Reservas: React.FC = () => {
         const cfg = configData as any;
         if (cfg.comissao_cw != null) setComissaoRate(cfg.comissao_cw);
       }
+    }
+
+    // Buscar comissão por proprietário
+    const ownerIds = new Set<string>();
+    (imoveisData || []).forEach((im: any) => {
+      if (im.proprietario_id) ownerIds.add(im.proprietario_id);
+      if (im.proprietario_id_2) ownerIds.add(im.proprietario_id_2);
+    });
+    if (ownerIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, comissao_percentual")
+        .in("id", Array.from(ownerIds));
+      const rates: Record<string, number> = {};
+      (profiles || []).forEach((p: any) => {
+        rates[p.id] = (p.comissao_percentual ?? 25) / 100;
+      });
+      setOwnerRates(rates);
     }
 
     setLoading(false);
