@@ -225,7 +225,7 @@ const ReservaFormFields = ({
           </div>
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão CW (25% sobre base)</Label>
+          <Label className="text-muted-foreground">Comissão CW ({pct}% sobre base)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
