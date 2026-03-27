@@ -39,6 +39,7 @@ interface Proprietario {
   nome: string | null;
   email: string | null;
   created_at: string;
+  comissao_percentual: number;
 }
 
 // Gera senha aleatória segura de 12 caracteres
