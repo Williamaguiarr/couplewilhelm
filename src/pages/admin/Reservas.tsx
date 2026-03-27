@@ -356,7 +356,7 @@ const Reservas: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
       { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
       { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
-      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtPDF(totalComissao) },
+      { label: "Comissão CW", value: fmtPDF(totalComissao) },
       { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
     ];
 
