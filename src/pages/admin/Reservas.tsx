@@ -66,6 +66,8 @@ interface Reserva {
 interface Imovel {
   id: string;
   nome_imovel: string;
+  proprietario_id: string | null;
+  proprietario_id_2: string | null;
 }
 
 const fmt = (v: number | null) =>
