@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   ChevronRight,
   CalendarRange,
+  Calculator,
 } from "lucide-react";
 import {
   Sidebar,
