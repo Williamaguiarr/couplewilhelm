@@ -766,6 +766,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Taxa de Ocupação */}
+        <OccupancyComparison
+          mes={mesSelecionado}
+          ano={anoSelecionado}
+          imovelIds={filtroProprietario !== "todos" ? (imoveisDoProprietario ?? undefined) : undefined}
+        />
+
         {/* Despesas Extras */}
         <div>
           <div className="flex items-center justify-between mb-4">
