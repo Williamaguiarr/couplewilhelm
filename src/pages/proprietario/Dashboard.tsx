@@ -498,6 +498,12 @@ const ProprietarioDashboard: React.FC = () => {
             icon={<CalendarCheck className="h-4 w-4" />}
           />
         </div>
+        {/* Taxa de Ocupação */}
+        <OccupancyComparison
+          mes={filterMes}
+          ano={filterAno}
+          imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
+        />
 
         {/* Extrato */}
         <section className="border border-border rounded-lg overflow-hidden">
