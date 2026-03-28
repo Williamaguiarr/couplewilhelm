@@ -125,6 +125,16 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/simulador"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AppLayout>
+                      <SimuladorDiaria />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Rotas Proprietário */}
               <Route
