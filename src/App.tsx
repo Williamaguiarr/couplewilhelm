@@ -15,6 +15,7 @@ import Imoveis from "@/pages/admin/Imoveis";
 import Reservas from "@/pages/admin/Reservas";
 import Configuracoes from "@/pages/admin/Configuracoes";
 import Calendario from "@/pages/admin/Calendario";
+import SimuladorDiaria from "@/pages/admin/SimuladorDiaria";
 import ProprietarioDashboard from "@/pages/proprietario/Dashboard";
 import MeusImoveis from "@/pages/proprietario/MeusImoveis";
 import AdminsList from "@/pages/master/AdminsList";
@@ -120,6 +121,16 @@ const App = () => (
                   <ProtectedRoute requiredRole="admin">
                     <AppLayout>
                       <Calendario />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/simulador"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AppLayout>
+                      <SimuladorDiaria />
                     </AppLayout>
                   </ProtectedRoute>
                 }
