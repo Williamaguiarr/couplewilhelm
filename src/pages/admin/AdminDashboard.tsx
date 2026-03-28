@@ -46,6 +46,7 @@ import {
   FileDown,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
+import OccupancyComparison from "@/components/OccupancyComparison";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -764,6 +765,13 @@ const AdminDashboard: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* Taxa de Ocupação */}
+        <OccupancyComparison
+          mes={mesSelecionado}
+          ano={anoSelecionado}
+          imovelIds={filtroProprietario !== "todos" ? (imoveisDoProprietario ?? undefined) : undefined}
+        />
 
         {/* Despesas Extras */}
         <div>
