@@ -22,8 +22,6 @@ import {
   Legend,
   Tooltip,
   LabelList,
-  ComposedChart,
-  Line,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
