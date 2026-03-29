@@ -183,6 +183,30 @@ const ReservaFormFields = ({
         </div>
       </div>
 
+      {/* Duração da estadia */}
+      {(() => {
+        const duracao = calcDuracaoEstadia(form.data_inicio, form.data_fim);
+        return duracao != null ? (
+          <div className="rounded-md border border-border bg-muted/20 px-4 py-2 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            <span className="text-sm text-foreground font-medium">Duração da estadia: {duracao} {duracao === 1 ? 'dia' : 'dias'}</span>
+          </div>
+        ) : null;
+      })()}
+
+      {/* Número de hóspedes */}
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Nº de Hóspedes</Label>
+        <Input
+          type="number"
+          min="1"
+          value={form.num_hospedes}
+          onChange={(e) => setForm({ ...form, num_hospedes: e.target.value })}
+          placeholder="Ex: 2"
+          className="bg-background"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
