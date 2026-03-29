@@ -871,6 +871,8 @@ const Reservas: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.num_hospedes ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(r.taxa_limpeza)}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(comissao)}</TableCell>
