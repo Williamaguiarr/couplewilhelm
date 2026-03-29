@@ -604,6 +604,7 @@ const Reservas: React.FC = () => {
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido, rate);
+    const numHospedes = editForm.num_hospedes ? parseInt(editForm.num_hospedes) : null;
 
     const { error } = await supabase
       .from("reservas")
@@ -616,7 +617,8 @@ const Reservas: React.FC = () => {
         taxa_limpeza: taxaLimpeza,
         comissao_plataforma: comissaoPlataforma,
         observacoes: editForm.observacoes || null,
-      })
+        num_hospedes: numHospedes,
+      } as any)
       .eq("id", editingReserva.id);
 
     if (error) {
