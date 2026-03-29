@@ -185,28 +185,36 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     const load = async () => {
       setLoading(true);
 
-      // Fetch all 12 months of selected year
-      const promises: Promise<MonthData>[] = [];
-      for (let m = 0; m < 12; m++) {
-        promises.push(fetchMonthData(m, ano, imovelIds));
-      }
-      // Also fetch prior year same months for comparison
-      const priorPromises: Promise<MonthData>[] = [];
-      for (let m = 0; m < 12; m++) {
-        priorPromises.push(fetchMonthData(m, ano - 1, imovelIds));
+      // Fetch current year, prior year, and next year to support all filters
+      const years = [ano - 1, ano, ano + 1];
+      const allPromises: Promise<MonthData>[] = [];
+      for (const y of years) {
+        for (let m = 0; m < 12; m++) {
+          allPromises.push(fetchMonthData(m, y, imovelIds));
+        }
       }
 
-      const [current, prior] = await Promise.all([
-        Promise.all(promises),
-        Promise.all(priorPromises),
-      ]);
+      const allResults = await Promise.all(allPromises);
 
-      // Attach prior data for comparison
-      const enriched = current.map((m, i) => ({
+      // Group by year
+      const priorYear = allResults.slice(0, 12);
+      const currentYearData = allResults.slice(12, 24);
+      const nextYearData = allResults.slice(24, 36);
+
+      // Enrich current year with prior for YoY comparison
+      const enriched = currentYearData.map((m, i) => ({
         ...m,
-        _prior: prior[i],
+        _prior: priorYear[i],
       }));
 
+      // Store all data for flexible filtering
+      const allEnriched = {
+        prior: priorYear.map((m, i) => ({ ...m, _prior: priorYear[i] })),
+        current: enriched,
+        next: nextYearData.map((m, i) => ({ ...m, _prior: currentYearData[i] })),
+      };
+
+      setAllData(allEnriched as any);
       setMonthsData(enriched as any);
       setLoading(false);
     };
