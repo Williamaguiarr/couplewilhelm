@@ -774,6 +774,12 @@ const AdminDashboard: React.FC = () => {
           imovelIds={filtroProprietario !== "todos" ? (imoveisDoProprietario ?? undefined) : undefined}
         />
 
+        {/* Comparativo Financeiro Anual */}
+        <FinancialYearComparison
+          imovelIds={filtroProprietario !== "todos" ? (imoveisDoProprietario ?? undefined) : undefined}
+          imoveis={imoveis}
+        />
+
         {/* Despesas Extras */}
         <div>
           <div className="flex items-center justify-between mb-4">
