@@ -799,7 +799,7 @@ const AdminDashboard: React.FC = () => {
             </Button>
           </div>
 
-          <div className="border border-border rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-x-auto">
             {despesasFiltradas.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
                 <Receipt className="h-8 w-8 text-muted-foreground/40" />
