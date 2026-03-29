@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,7 +14,6 @@ import {
 import {
   Calculator,
   MapPin,
-  Users,
   Bed,
   Star,
   Wifi,
@@ -26,9 +24,6 @@ import {
   Info,
   Calendar,
   ShowerHead,
-  RefreshCw,
-  Globe,
-  Loader2,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
@@ -39,9 +34,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -103,171 +95,11 @@ const DEFAULT: FormState = {
   taxaLimpeza: 120,
 };
 
-interface PriceLabsListing {
-  id: string;
-  pms: string;
-  name: string;
-  min: number;
-  base: number;
-  max: number;
-}
-
-interface PriceLabsPriceData {
-  id: string;
-  pms: string;
-  currency: string;
-  data: Array<{ date: string; price: number; min_stay: number }>;
-}
-
 const SimuladorDiaria: React.FC = () => {
   const [form, setForm] = useState<FormState>(DEFAULT);
 
-  // PriceLabs state
-  const [plListings, setPlListings] = useState<PriceLabsListing[]>([]);
-  const [plSelectedListing, setPlSelectedListing] = useState<string>("");
-  const [plPrices, setPlPrices] = useState<PriceLabsPriceData | null>(null);
-  const [plLoading, setPlLoading] = useState(false);
-  const [plPricesLoading, setPlPricesLoading] = useState(false);
-  const [plNeighborhood, setPlNeighborhood] = useState<any>(null);
-  const [plNeighborhoodLoading, setPlNeighborhoodLoading] = useState(false);
-
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
-
-  // ---------- PriceLabs integration ----------
-  const fetchListings = useCallback(async () => {
-    setPlLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("pricelabs-proxy", {
-        body: { action: "listings" },
-      });
-      if (error) throw error;
-      if (data?.listings) {
-        setPlListings(data.listings);
-        if (data.listings.length > 0 && !plSelectedListing) {
-          setPlSelectedListing(data.listings[0].id);
-        }
-        toast.success(`${data.listings.length} imóveis encontrados no PriceLabs`);
-      } else if (data?.error) {
-        toast.error(`PriceLabs: ${data.error}`);
-      }
-    } catch (err: any) {
-      console.error("PriceLabs listings error:", err);
-      toast.error("Erro ao buscar imóveis do PriceLabs");
-    } finally {
-      setPlLoading(false);
-    }
-  }, [plSelectedListing]);
-
-  const fetchPrices = useCallback(async () => {
-    if (!plSelectedListing) return;
-    const listing = plListings.find((l) => l.id === plSelectedListing);
-    if (!listing) return;
-
-    setPlPricesLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("pricelabs-proxy", {
-        body: {
-          action: "prices",
-          listing_ids: [{ id: listing.id, pms: listing.pms }],
-        },
-      });
-      if (error) throw error;
-      if (Array.isArray(data) && data.length > 0) {
-        setPlPrices(data[0]);
-        toast.success("Preços de mercado carregados com sucesso");
-      } else if (data?.error) {
-        toast.error(`PriceLabs: ${data.error}`);
-      }
-    } catch (err: any) {
-      console.error("PriceLabs prices error:", err);
-      toast.error("Erro ao buscar preços do PriceLabs");
-    } finally {
-      setPlPricesLoading(false);
-    }
-  }, [plSelectedListing, plListings]);
-
-  const fetchNeighborhood = useCallback(async () => {
-    if (!plSelectedListing) return;
-    const listing = plListings.find((l) => l.id === plSelectedListing);
-    if (!listing) return;
-
-    setPlNeighborhoodLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("pricelabs-proxy", {
-        body: {
-          action: "neighborhood_data",
-          listing_id: listing.id,
-          pms: listing.pms,
-        },
-      });
-      if (error) throw error;
-      if (data && !data.error) {
-        setPlNeighborhood(data);
-        toast.success("Dados de vizinhança carregados");
-      } else if (data?.error) {
-        toast.error(`PriceLabs: ${data.error}`);
-      }
-    } catch (err: any) {
-      console.error("PriceLabs neighborhood error:", err);
-      toast.error("Erro ao buscar dados de vizinhança");
-    } finally {
-      setPlNeighborhoodLoading(false);
-    }
-  }, [plSelectedListing, plListings]);
-
-  // Auto-fetch prices when listing changes
-  useEffect(() => {
-    if (plSelectedListing && plListings.length > 0) {
-      fetchPrices();
-      fetchNeighborhood();
-    }
-  }, [plSelectedListing]);
-
-  // ---------- PriceLabs computed stats ----------
-  const plStats = useMemo(() => {
-    if (!plPrices?.data || plPrices.data.length === 0) return null;
-
-    const prices = plPrices.data.map((d) => d.price).filter((p) => p > 0);
-    if (prices.length === 0) return null;
-
-    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-
-    // Next 7 days average
-    const today = new Date();
-    const next7 = plPrices.data
-      .filter((d) => {
-        const dt = new Date(d.date);
-        const diff = (dt.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-        return diff >= 0 && diff <= 7;
-      })
-      .map((d) => d.price)
-      .filter((p) => p > 0);
-
-    const avg7 = next7.length > 0 ? next7.reduce((a, b) => a + b, 0) / next7.length : null;
-
-    // Next 30 days average
-    const next30 = plPrices.data
-      .filter((d) => {
-        const dt = new Date(d.date);
-        const diff = (dt.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-        return diff >= 0 && diff <= 30;
-      })
-      .map((d) => d.price)
-      .filter((p) => p > 0);
-
-    const avg30 = next30.length > 0 ? next30.reduce((a, b) => a + b, 0) / next30.length : null;
-
-    return { avg: Math.round(avg), min, max, avg7: avg7 ? Math.round(avg7) : null, avg30: avg30 ? Math.round(avg30) : null, totalDays: prices.length };
-  }, [plPrices]);
-
-  // Selected listing base price
-  const selectedListingBase = useMemo(() => {
-    if (!plSelectedListing) return null;
-    return plListings.find((l) => l.id === plSelectedListing) ?? null;
-  }, [plSelectedListing, plListings]);
 
   // ---------- Calculation ----------
   const resultado = useMemo(() => {
@@ -294,38 +126,21 @@ const SimuladorDiaria: React.FC = () => {
       (form.cozinhaEquipada ? 20 : 0) +
       (form.lavanderia ? 10 : 0);
 
-    let diaria = Math.round(
+    const diaria = Math.round(
       base * tipoMult * localMult * temporadaMult * guestMult * duracaoMult * ratingMult + amenities
     );
-
-    // If PriceLabs data available, blend with market data
-    let priceLabsAdjusted = false;
-    if (plStats) {
-      const marketRef = plStats.avg7 ?? plStats.avg30 ?? plStats.avg;
-      // Weighted blend: 40% simulator, 60% market
-      diaria = Math.round(diaria * 0.4 + marketRef * 0.6);
-      priceLabsAdjusted = true;
-    }
 
     const diariaMin = Math.round(diaria * 0.85);
     const diariaMax = Math.round(diaria * 1.15);
 
     const receitaMensal = Math.round(diaria * 30 * 0.7);
 
-    return { diaria: Math.max(50, diaria), diariaMin, diariaMax, receitaMensal, priceLabsAdjusted };
-  }, [form, plStats]);
+    return { diaria: Math.max(50, diaria), diariaMin, diariaMax, receitaMensal };
+  }, [form]);
 
   // ---------- Tips ----------
   const dicas = useMemo(() => {
     const tips: { icon: React.ReactNode; text: string; type: "success" | "info" | "warning" }[] = [];
-
-    if (resultado.priceLabsAdjusted && plStats) {
-      tips.push({
-        icon: <Globe className="h-4 w-4" />,
-        text: `Preço ajustado com dados de mercado PriceLabs (média ${fmt(plStats.avg)}, faixa ${fmt(plStats.min)}–${fmt(plStats.max)}).`,
-        type: "success",
-      });
-    }
 
     if (!form.wifi)
       tips.push({ icon: <Wifi className="h-4 w-4" />, text: "Wi-Fi é essencial — 95% dos hóspedes consideram obrigatório. Adicionar pode aumentar a diária em até R$10.", type: "warning" });
@@ -355,7 +170,7 @@ const SimuladorDiaria: React.FC = () => {
       tips.push({ icon: <Car className="h-4 w-4" />, text: "Fora do centro, estacionamento é altamente desejável. Considere incluir.", type: "info" });
 
     return tips;
-  }, [form, resultado.priceLabsAdjusted, plStats]);
+  }, [form]);
 
   // ---------- Competitiveness score ----------
   const competitividadeScore = useMemo(() => {
@@ -393,7 +208,7 @@ const SimuladorDiaria: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-6 max-w-6xl">
+      <div className="space-y-6 max-w-6xl w-full overflow-x-hidden">
         {/* Header */}
         <div className="pb-2 border-b border-border">
           <div className="flex items-center gap-2">
@@ -403,120 +218,9 @@ const SimuladorDiaria: React.FC = () => {
             </h1>
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Configure os parâmetros do imóvel para calcular a diária sugerida com base no mercado
+            Configure os parâmetros do imóvel para calcular a diária sugerida
           </p>
         </div>
-
-        {/* PriceLabs Integration Card */}
-        <Card className="bg-card border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
-              <Globe className="h-4 w-4 text-primary" />
-              Dados de Mercado — PriceLabs
-              {resultado.priceLabsAdjusted && (
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 text-[10px] ml-2">
-                  Conectado
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap items-end gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchListings}
-                disabled={plLoading}
-                className="gap-2"
-              >
-                {plLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                {plListings.length > 0 ? "Atualizar Imóveis" : "Carregar Imóveis PriceLabs"}
-              </Button>
-
-              {plListings.length > 0 && (
-                <div className="flex items-end gap-2 flex-1 min-w-[200px]">
-                  <div className="space-y-1.5 flex-1">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-widest">
-                      Imóvel PriceLabs
-                    </Label>
-                    <Select value={plSelectedListing} onValueChange={setPlSelectedListing}>
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Selecione um imóvel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {plListings.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            {l.name} ({l.pms})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      fetchPrices();
-                      fetchNeighborhood();
-                    }}
-                    disabled={plPricesLoading || plNeighborhoodLoading}
-                    className="gap-1"
-                  >
-                    {(plPricesLoading || plNeighborhoodLoading) ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    Atualizar
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* PriceLabs Stats */}
-            {(plPricesLoading || plNeighborhoodLoading) && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-16 rounded-lg" />
-                ))}
-              </div>
-            )}
-
-            {plStats && !plPricesLoading && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="rounded-lg border border-border p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Média Geral</p>
-                  <p className="text-lg font-bold text-foreground">{fmt(plStats.avg)}</p>
-                </div>
-                {plStats.avg7 !== null && (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Próx. 7 dias</p>
-                    <p className="text-lg font-bold text-primary">{fmt(plStats.avg7)}</p>
-                  </div>
-                )}
-                {plStats.avg30 !== null && (
-                  <div className="rounded-lg border border-border p-3 text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Próx. 30 dias</p>
-                    <p className="text-lg font-bold text-foreground">{fmt(plStats.avg30)}</p>
-                  </div>
-                )}
-                <div className="rounded-lg border border-border p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Faixa Mercado</p>
-                  <p className="text-sm font-semibold text-foreground">{fmt(plStats.min)} — {fmt(plStats.max)}</p>
-                </div>
-              </div>
-            )}
-
-            {selectedListingBase && !plPricesLoading && (
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <span>Base PriceLabs: <strong className="text-foreground">{fmt(selectedListingBase.base)}</strong></span>
-                <span>Mínimo: <strong className="text-foreground">{fmt(selectedListingBase.min)}</strong></span>
-                <span>Máximo: <strong className="text-foreground">{fmt(selectedListingBase.max)}</strong></span>
-                <span>PMS: <strong className="text-foreground">{selectedListingBase.pms}</strong></span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT: Form inputs */}
@@ -748,12 +452,6 @@ const SimuladorDiaria: React.FC = () => {
                 <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
                   Diária Sugerida
-                  {resultado.priceLabsAdjusted && (
-                    <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30 ml-auto">
-                      <Globe className="h-3 w-3 mr-1" />
-                      PriceLabs
-                    </Badge>
-                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
