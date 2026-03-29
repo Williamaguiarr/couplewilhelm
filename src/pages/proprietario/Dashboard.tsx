@@ -506,7 +506,7 @@ const ProprietarioDashboard: React.FC = () => {
         />
 
         {/* Extrato */}
-        <section className="border border-border rounded-lg overflow-hidden">
+        <section className="border border-border rounded-lg overflow-x-auto">
           <button
             onClick={() => setExtratoAberto((v) => !v)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
