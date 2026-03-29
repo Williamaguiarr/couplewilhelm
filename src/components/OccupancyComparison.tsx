@@ -159,7 +159,7 @@ const ChangeIndicator: React.FC<{ current: number; previous: number; format?: "c
   }
 
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", isPositive ? "text-emerald-600" : "text-red-500")}>
+    <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", isPositive ? "text-primary" : "text-destructive")}>
       {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {display}
     </span>
