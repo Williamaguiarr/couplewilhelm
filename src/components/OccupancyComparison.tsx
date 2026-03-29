@@ -375,9 +375,12 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
               <p className="font-display text-2xl text-foreground font-bold">
                 {fmtCompact(totalReceita)} BRL
               </p>
-              <ChangeIndicator current={totalReceita} previous={priorReceita} format="currency" />
+              <div className="flex items-center gap-1.5">
+                <ChangeIndicator current={totalReceita} previous={priorReceita} format="currency" />
+                <span className="text-[10px] text-muted-foreground/70 font-medium">MEAP</span>
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Receita <InfoIcon tooltip="Total de receita bruta no período selecionado" />
+                Receita <InfoIcon tooltip="MEAP = Mesma época no ano passado. A receita proveniente do valor das diárias, excluindo impostos, taxas e outros encargos." />
               </p>
             </div>
 
@@ -386,9 +389,12 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
               <p className="font-display text-2xl text-foreground font-bold">
                 {avgOccupancy.toFixed(0)}%
               </p>
-              <ChangeIndicator current={avgOccupancy} previous={priorAvgOccupancy} format="percent" />
+              <div className="flex items-center gap-1.5">
+                <ChangeIndicator current={avgOccupancy} previous={priorAvgOccupancy} format="percent" />
+                <span className="text-[10px] text-muted-foreground/70 font-medium">MEAP</span>
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Ocupação <InfoIcon tooltip="Percentual de dias ocupados no período" />
+                Ocupação <InfoIcon tooltip="MEAP = Mesma época no ano passado. Ocupação = (Noites reservadas + noites bloqueadas) / Total de noites. Ocupação reservada = Noites reservadas / Total de noites. Ocupação bloqueada = Noites bloqueadas / Total de noites." />
               </p>
             </div>
 
@@ -397,9 +403,12 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
               <p className="font-display text-2xl text-foreground font-bold">
                 {fmtCurrency(avgDailyRate)} BRL
               </p>
-              <ChangeIndicator current={avgDailyRate} previous={priorAvgDailyRate} format="currency" />
+              <div className="flex items-center gap-1.5">
+                <ChangeIndicator current={avgDailyRate} previous={priorAvgDailyRate} format="currency" />
+                <span className="text-[10px] text-muted-foreground/70 font-medium">MEAP</span>
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Preço médio da diária <InfoIcon tooltip="Receita dividida pelo total de dias ocupados" />
+                Preço médio da diária <InfoIcon tooltip="MEAP = Mesma época no ano passado. Preço médio da diária = Receita de aluguel / Duração da estadia. A receita proveniente do valor das diárias, excluindo impostos, taxas e outros encargos." />
               </p>
             </div>
           </div>
