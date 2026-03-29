@@ -60,6 +60,7 @@ interface Reserva {
   comissao_plataforma: number | null;
   observacoes: string | null;
   imovel_id: string;
+  num_hospedes: number | null;
   imovel?: { nome_imovel: string };
 }
 
