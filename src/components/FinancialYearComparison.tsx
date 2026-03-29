@@ -71,8 +71,8 @@ const now = new Date();
 const currentYear = now.getFullYear();
 const availableYears = Array.from({ length: currentYear - 2023 }, (_, i) => 2024 + i);
 
-const BRAND_BLUE = "#1E3A8A";
-const BRAND_GOLD = "#D4AF37";
+const BRAND_BLUE = "#0A192F";
+const BRAND_GOLD = "#C5A059";
 
 const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
   const [anoBase, setAnoBase] = useState(currentYear);
