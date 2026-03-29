@@ -209,16 +209,14 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     reservas: m.reservas,
   }));
 
-  // --- Chart 3 & 4: Comparison data with evolution line ---
+  // --- Chart 3 & 4: Comparison data with year-over-year evolution line ---
   const comparisonData = dataBase.months.map((m, i) => {
     const compVal = dataComparacao.months[i].valorBruto;
     const compRes = dataComparacao.months[i].reservas;
 
-    // Evolution %: month-over-month for anoBase
-    const prevVal = i > 0 ? dataBase.months[i - 1].valorBruto : 0;
-    const prevRes = i > 0 ? dataBase.months[i - 1].reservas : 0;
-    const evolValor = i === 0 ? 0 : prevVal ? ((m.valorBruto - prevVal) / prevVal) * 100 : (m.valorBruto > 0 ? 100 : 0);
-    const evolReservas = i === 0 ? 0 : prevRes ? ((m.reservas - prevRes) / prevRes) * 100 : (m.reservas > 0 ? 100 : 0);
+    // Year-over-year difference % (anoBase vs anoComparacao)
+    const evolValor = compVal === 0 ? (m.valorBruto > 0 ? 100 : 0) : ((m.valorBruto - compVal) / compVal) * 100;
+    const evolReservas = compRes === 0 ? (m.reservas > 0 ? 100 : 0) : ((m.reservas - compRes) / compRes) * 100;
 
     return {
       mes: m.mes,
@@ -226,8 +224,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       ...(sameYear ? {} : { [`valor_${anoComparacao}`]: compVal }),
       [`reservas_${anoBase}`]: m.reservas,
       ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: compRes }),
-      evolValor: Math.round(evolValor * 10) / 10,
-      evolReservas: Math.round(evolReservas * 10) / 10,
+      evolValor: Math.round(evolValor * 100) / 100,
+      evolReservas: Math.round(evolReservas * 100) / 100,
     };
   });
 
