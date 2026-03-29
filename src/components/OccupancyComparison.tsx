@@ -166,7 +166,7 @@ const ChangeIndicator: React.FC<{ current: number; previous: number; format?: "c
   );
 };
 
-type PeriodFilter = "ytd" | "last12";
+type PeriodFilter = "ytd" | "last_year" | "last3_next9" | "last12" | "next12";
 
 const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   mes,
@@ -174,6 +174,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   imovelIds,
 }) => {
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
+  const [allData, setAllData] = useState<{ prior: any[]; current: any[]; next: any[] }>({ prior: [], current: [], next: [] });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodFilter>("ytd");
 
@@ -185,28 +186,36 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     const load = async () => {
       setLoading(true);
 
-      // Fetch all 12 months of selected year
-      const promises: Promise<MonthData>[] = [];
-      for (let m = 0; m < 12; m++) {
-        promises.push(fetchMonthData(m, ano, imovelIds));
-      }
-      // Also fetch prior year same months for comparison
-      const priorPromises: Promise<MonthData>[] = [];
-      for (let m = 0; m < 12; m++) {
-        priorPromises.push(fetchMonthData(m, ano - 1, imovelIds));
+      // Fetch current year, prior year, and next year to support all filters
+      const years = [ano - 1, ano, ano + 1];
+      const allPromises: Promise<MonthData>[] = [];
+      for (const y of years) {
+        for (let m = 0; m < 12; m++) {
+          allPromises.push(fetchMonthData(m, y, imovelIds));
+        }
       }
 
-      const [current, prior] = await Promise.all([
-        Promise.all(promises),
-        Promise.all(priorPromises),
-      ]);
+      const allResults = await Promise.all(allPromises);
 
-      // Attach prior data for comparison
-      const enriched = current.map((m, i) => ({
+      // Group by year
+      const priorYear = allResults.slice(0, 12);
+      const currentYearData = allResults.slice(12, 24);
+      const nextYearData = allResults.slice(24, 36);
+
+      // Enrich current year with prior for YoY comparison
+      const enriched = currentYearData.map((m, i) => ({
         ...m,
-        _prior: prior[i],
+        _prior: priorYear[i],
       }));
 
+      // Store all data for flexible filtering
+      const allEnriched = {
+        prior: priorYear.map((m, i) => ({ ...m, _prior: priorYear[i] })),
+        current: enriched,
+        next: nextYearData.map((m, i) => ({ ...m, _prior: currentYearData[i] })),
+      };
+
+      setAllData(allEnriched as any);
       setMonthsData(enriched as any);
       setLoading(false);
     };
@@ -235,14 +244,70 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }
 
   // Filter months based on period
-  const filteredMonths = period === "ytd"
-    ? monthsData.filter((m) => {
-        if (ano === currentYear) return m.month <= currentMonth;
-        return true;
-      })
-    : monthsData;
+  let filteredMonths: any[];
+  if (period === "ytd") {
+    filteredMonths = monthsData.filter((m) => {
+      if (ano === currentYear) return m.month <= currentMonth;
+      return true;
+    });
+  } else if (period === "last_year") {
+    filteredMonths = allData.prior;
+  } else if (period === "last3_next9") {
+    // Last 3 months + next 9 months from current month
+    const result: any[] = [];
+    for (let i = -3; i < 9; i++) {
+      let targetMonth = currentMonth + i;
+      let targetYear = currentYear;
+      if (targetMonth < 0) { targetMonth += 12; targetYear--; }
+      if (targetMonth > 11) { targetMonth -= 12; targetYear++; }
+      
+      let source: any[];
+      if (targetYear === ano - 1) source = allData.prior;
+      else if (targetYear === ano) source = monthsData;
+      else if (targetYear === ano + 1) source = allData.next;
+      else continue;
+      
+      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      if (found) result.push(found);
+    }
+    filteredMonths = result;
+  } else if (period === "last12") {
+    // Last 12 months from current month
+    const result: any[] = [];
+    for (let i = -11; i <= 0; i++) {
+      let targetMonth = currentMonth + i;
+      let targetYear = currentYear;
+      while (targetMonth < 0) { targetMonth += 12; targetYear--; }
+      
+      let source: any[];
+      if (targetYear === ano - 1) source = allData.prior;
+      else if (targetYear === ano) source = monthsData;
+      else continue;
+      
+      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      if (found) result.push(found);
+    }
+    filteredMonths = result;
+  } else {
+    // next12
+    const result: any[] = [];
+    for (let i = 1; i <= 12; i++) {
+      let targetMonth = currentMonth + i;
+      let targetYear = currentYear;
+      while (targetMonth > 11) { targetMonth -= 12; targetYear++; }
+      
+      let source: any[];
+      if (targetYear === ano) source = monthsData;
+      else if (targetYear === ano + 1) source = allData.next;
+      else continue;
+      
+      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      if (found) result.push(found);
+    }
+    filteredMonths = result;
+  }
 
-  // Calculate KPIs (YTD or full year)
+  // Calculate KPIs
   const totalReceita = filteredMonths.reduce((s, m) => s + m.receita, 0);
   const totalOccupiedDays = filteredMonths.reduce((s, m) => s + m.occupiedDays, 0);
   const totalDays = filteredMonths.reduce((s, m) => s + m.totalDays, 0);
@@ -250,14 +315,21 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
 
   // Prior year KPIs for same period
-  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData);
+  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
   const priorReceita = priorMonths.reduce((s, m) => s + m.receita, 0);
   const priorOccupiedDays = priorMonths.reduce((s, m) => s + m.occupiedDays, 0);
   const priorTotalDays = priorMonths.reduce((s, m) => s + m.totalDays, 0);
   const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
   const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
 
-  const periodLabel = period === "ytd" ? `${ano} até hoje` : `${ano} completo`;
+  const periodLabels: Record<PeriodFilter, string> = {
+    ytd: `${ano} até hoje`,
+    last_year: `${ano - 1} completo`,
+    last3_next9: "Últimos 3 e próximos 9 meses",
+    last12: "Últimos 12 meses",
+    next12: "Próximos 12 meses",
+  };
+  const periodLabel = periodLabels[period];
 
   return (
     <div className="space-y-4">
@@ -274,8 +346,11 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ytd">Este ano até hoje</SelectItem>
-                <SelectItem value="last12">Ano completo</SelectItem>
+                <SelectItem value="ytd">Este ano</SelectItem>
+                <SelectItem value="last_year">Ano passado</SelectItem>
+                <SelectItem value="last3_next9">Últimos 3 e próximos 9 meses</SelectItem>
+                <SelectItem value="last12">Últimos 12 meses</SelectItem>
+                <SelectItem value="next12">Próximos 12 meses</SelectItem>
               </SelectContent>
             </Select>
           </div>
