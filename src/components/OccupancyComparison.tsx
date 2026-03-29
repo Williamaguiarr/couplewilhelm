@@ -308,9 +308,9 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }
 
   // Calculate KPIs
-  const totalReceita = filteredMonths.reduce((s, m) => s + m.receita, 0);
-  const totalOccupiedDays = filteredMonths.reduce((s, m) => s + m.occupiedDays, 0);
-  const totalDays = filteredMonths.reduce((s, m) => s + m.totalDays, 0);
+  const totalReceita = filteredMonths.reduce((s, m) => s + (Number(m.receita) || 0), 0);
+  const totalOccupiedDays = filteredMonths.reduce((s, m) => s + (Number(m.occupiedDays) || 0), 0);
+  const totalDays = filteredMonths.reduce((s, m) => s + (Number(m.totalDays) || 0), 0);
   const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
   const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
 
