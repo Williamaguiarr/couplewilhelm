@@ -320,9 +320,11 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
               <Bar dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
                 <LabelList dataKey={`reservas_${anoBase}`} position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
               </Bar>
-              <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 }} />
-              </Bar>
+              {!sameYear && (
+                <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 }} />
+                </Bar>
+              )}
             </BarChart>
           </ChartContainer>
         </div>
