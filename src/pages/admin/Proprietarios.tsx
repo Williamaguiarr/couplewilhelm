@@ -298,7 +298,7 @@ const Proprietarios: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Comissão CW (%)</Label>
+                  <Label className="text-muted-foreground">Comissão ADM (%)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -432,7 +432,7 @@ const Proprietarios: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Comissão CW (%)</Label>
+              <Label className="text-muted-foreground">Comissão ADM (%)</Label>
               <Input
                 type="number"
                 step="0.1"

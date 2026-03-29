@@ -236,7 +236,7 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
 
   const summaryCards = [
     { label: "Receita Bruta", base: dataBase.totalBruto, comp: dataComparacao.totalBruto, var: varBruto },
-    { label: "Comissão CW", base: dataBase.totalComissao, comp: dataComparacao.totalComissao, var: varComissao },
+    { label: "Comissão ADM", base: dataBase.totalComissao, comp: dataComparacao.totalComissao, var: varComissao },
     { label: "Repasse", base: dataBase.totalRepasse, comp: dataComparacao.totalRepasse, var: varRepasse },
   ];
 

@@ -225,7 +225,7 @@ const ReservaFormFields = ({
           </div>
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão CW ({pct}% sobre base)</Label>
+          <Label className="text-muted-foreground">Comissão ADM ({pct}% sobre base)</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(comissao) : "—"}
           </div>
@@ -356,7 +356,7 @@ const Reservas: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
       { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
       { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
-      { label: "Comissão CW", value: fmtPDF(totalComissao) },
+      { label: "Comissão ADM", value: fmtPDF(totalComissao) },
       { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
     ];
 
@@ -803,7 +803,7 @@ const Reservas: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-out</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Bruto</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Tx. Limpeza</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão CW</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão ADM</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>

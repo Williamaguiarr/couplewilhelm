@@ -461,8 +461,8 @@ const AdminDashboard: React.FC = () => {
       ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
       ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma (Airbnb, Booking...)"],
       ["= Valor Líquido", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
-      ["(−) Comissão CW", fmt(financeiro.comissaoCW), "Comissão de gestão"],
-      ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão CW"],
+      ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
+      ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão ADM"],
     ];
 
     autoTable(doc, {
@@ -569,7 +569,7 @@ const AdminDashboard: React.FC = () => {
     { title: "Valor Bruto", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
     { title: "Taxa Limpeza", value: financeiro.taxaLimpeza, icon: Percent, description: "Dedução do bruto" },
     { title: "Valor Líquido", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
-    { title: "Comissão CW", value: financeiro.comissaoCW, icon: Percent, description: "Sobre líquido" },
+    { title: "Comissão ADM", value: financeiro.comissaoCW, icon: Percent, description: "Sobre líquido" },
     { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
   ];
 
