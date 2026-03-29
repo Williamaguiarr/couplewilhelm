@@ -73,7 +73,6 @@ const availableYears = Array.from({ length: currentYear - 2023 }, (_, i) => 2024
 
 const BRAND_BLUE = "#1E3A8A";
 const BRAND_GOLD = "#D4AF37";
-const EVOLUTION_COLOR = "#10B981";
 
 const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
   const [anoBase, setAnoBase] = useState(currentYear);
