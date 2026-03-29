@@ -1,56 +1,83 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { CalendarDays, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CalendarDays, TrendingUp, TrendingDown, Info, DollarSign, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
+const MESES_CURTOS = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+];
+
 interface OccupancyComparisonProps {
-  /** 0-indexed month */
   mes: number;
   ano: number;
-  /** If provided, only count reservations for these property IDs */
   imovelIds?: string[] | null;
 }
 
-interface MonthOccupancy {
+interface MonthData {
+  month: number;
+  year: number;
   label: string;
+  receita: number;
   occupiedDays: number;
   totalDays: number;
-  rate: number;
+  occupancyRate: number;
+  avgDailyRate: number;
+  reservationCount: number;
 }
 
 function daysInMonth(month: number, year: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-function getMonthRange(month: number, year: number) {
-  let m = month;
-  let y = year;
-  if (m < 0) { m = 11; y -= 1; }
-  if (m > 11) { m = 0; y += 1; }
-  return { m, y };
+function fmtCompact(v: number): string {
+  if (v >= 1000) return `${(v / 1000).toFixed(2)}K`;
+  return v.toFixed(2);
 }
 
-async function fetchOccupiedDays(
+function fmtCurrency(v: number): string {
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function fetchMonthData(
   month: number,
   year: number,
   imovelIds?: string[] | null,
-): Promise<number> {
+): Promise<MonthData> {
   const firstDay = new Date(year, month, 1).toISOString().split("T")[0];
   const lastDay = new Date(year, month + 1, 0).toISOString().split("T")[0];
   const total = daysInMonth(month, year);
 
-  // Fetch reservations that overlap with this month
-  // A reservation overlaps if data_inicio < lastDay+1 AND data_fim > firstDay
   let query = supabase
     .from("reservas")
-    .select("data_inicio, data_fim")
+    .select("data_inicio, data_fim, valor_bruto, taxa_limpeza")
     .lte("data_inicio", lastDay)
     .gt("data_fim", firstDay);
 
@@ -59,96 +86,147 @@ async function fetchOccupiedDays(
   }
 
   const { data } = await query;
-  if (!data || data.length === 0) return 0;
 
-  // Count unique occupied days within the month
+  let receita = 0;
+  let reservationCount = 0;
   const occupiedSet = new Set<string>();
   const monthStart = new Date(year, month, 1);
   const monthEnd = new Date(year, month + 1, 0);
 
-  data.forEach((r) => {
-    const start = new Date(r.data_inicio + "T12:00:00");
-    const end = new Date(r.data_fim + "T12:00:00"); // checkout day is free
+  if (data && data.length > 0) {
+    reservationCount = data.length;
+    data.forEach((r) => {
+      receita += (r.valor_bruto || 0);
 
-    const from = start < monthStart ? monthStart : start;
-    const to = end > monthEnd ? new Date(monthEnd.getTime() + 86400000) : end;
-
-    const current = new Date(from);
-    while (current < to) {
-      if (current.getMonth() === month && current.getFullYear() === year) {
-        occupiedSet.add(current.toISOString().split("T")[0]);
+      const start = new Date(r.data_inicio + "T12:00:00");
+      const end = new Date(r.data_fim + "T12:00:00");
+      const from = start < monthStart ? monthStart : start;
+      const to = end > monthEnd ? new Date(monthEnd.getTime() + 86400000) : end;
+      const current = new Date(from);
+      while (current < to) {
+        if (current.getMonth() === month && current.getFullYear() === year) {
+          occupiedSet.add(current.toISOString().split("T")[0]);
+        }
+        current.setDate(current.getDate() + 1);
       }
-      current.setDate(current.getDate() + 1);
-    }
-  });
+    });
+  }
 
-  return Math.min(occupiedSet.size, total);
+  const occupiedDays = Math.min(occupiedSet.size, total);
+  const occupancyRate = total > 0 ? (occupiedDays / total) * 100 : 0;
+  const avgDailyRate = occupiedDays > 0 ? receita / occupiedDays : 0;
+
+  return {
+    month,
+    year,
+    label: `${MESES_CURTOS[month]} ${year}`,
+    receita,
+    occupiedDays,
+    totalDays: total,
+    occupancyRate,
+    avgDailyRate,
+    reservationCount,
+  };
 }
+
+const InfoIcon: React.FC<{ tooltip: string }> = ({ tooltip }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+    </TooltipTrigger>
+    <TooltipContent side="top" className="text-xs max-w-[200px]">
+      {tooltip}
+    </TooltipContent>
+  </Tooltip>
+);
+
+const ChangeIndicator: React.FC<{ current: number; previous: number; format?: "currency" | "percent" | "number" }> = ({ current, previous, format = "number" }) => {
+  if (previous === 0 && current === 0) return <span className="text-muted-foreground">-</span>;
+
+  const diff = current - previous;
+  const isPositive = diff > 0;
+  const isZero = diff === 0;
+
+  if (isZero) return <span className="text-muted-foreground">-</span>;
+
+  let display: string;
+  if (format === "percent") {
+    display = `${Math.abs(diff).toFixed(0)}%`;
+  } else if (format === "currency") {
+    display = fmtCompact(Math.abs(diff));
+  } else {
+    display = Math.abs(diff).toFixed(0);
+  }
+
+  return (
+    <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", isPositive ? "text-emerald-600" : "text-red-500")}>
+      {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {display}
+    </span>
+  );
+};
+
+type PeriodFilter = "ytd" | "last12";
 
 const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   mes,
   ano,
   imovelIds,
 }) => {
-  const [months, setMonths] = useState<MonthOccupancy[]>([]);
+  const [monthsData, setMonthsData] = useState<MonthData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodFilter>("ytd");
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
 
-      const prev = getMonthRange(mes - 1, ano);
-      const next = getMonthRange(mes + 1, ano);
+      // Fetch all 12 months of selected year
+      const promises: Promise<MonthData>[] = [];
+      for (let m = 0; m < 12; m++) {
+        promises.push(fetchMonthData(m, ano, imovelIds));
+      }
+      // Also fetch prior year same months for comparison
+      const priorPromises: Promise<MonthData>[] = [];
+      for (let m = 0; m < 12; m++) {
+        priorPromises.push(fetchMonthData(m, ano - 1, imovelIds));
+      }
 
-      const [prevDays, currDays, nextDays] = await Promise.all([
-        fetchOccupiedDays(prev.m, prev.y, imovelIds),
-        fetchOccupiedDays(mes, ano, imovelIds),
-        fetchOccupiedDays(next.m, next.y, imovelIds),
+      const [current, prior] = await Promise.all([
+        Promise.all(promises),
+        Promise.all(priorPromises),
       ]);
 
-      const prevTotal = daysInMonth(prev.m, prev.y);
-      const currTotal = daysInMonth(mes, ano);
-      const nextTotal = daysInMonth(next.m, next.y);
+      // Attach prior data for comparison
+      const enriched = current.map((m, i) => ({
+        ...m,
+        _prior: prior[i],
+      }));
 
-      setMonths([
-        {
-          label: `${MESES[prev.m].slice(0, 3)}/${prev.y}`,
-          occupiedDays: prevDays,
-          totalDays: prevTotal,
-          rate: prevTotal > 0 ? (prevDays / prevTotal) * 100 : 0,
-        },
-        {
-          label: `${MESES[mes].slice(0, 3)}/${ano}`,
-          occupiedDays: currDays,
-          totalDays: currTotal,
-          rate: currTotal > 0 ? (currDays / currTotal) * 100 : 0,
-        },
-        {
-          label: `${MESES[next.m].slice(0, 3)}/${next.y}`,
-          occupiedDays: nextDays,
-          totalDays: nextTotal,
-          rate: nextTotal > 0 ? (nextDays / nextTotal) * 100 : 0,
-        },
-      ]);
+      setMonthsData(enriched as any);
       setLoading(false);
     };
 
     load();
-  }, [mes, ano, JSON.stringify(imovelIds)]);
+  }, [ano, JSON.stringify(imovelIds)]);
 
   if (loading) {
     return (
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-primary" />
-            Taxa de Ocupação
+            <BarChart3 className="h-4 w-4 text-primary" />
+            Indicadores de Desempenho
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
             ))}
           </div>
         </CardContent>
@@ -156,75 +234,177 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     );
   }
 
-  const current = months[1];
-  const prev = months[0];
-  const diff = current.rate - prev.rate;
+  // Filter months based on period
+  const filteredMonths = period === "ytd"
+    ? monthsData.filter((m) => {
+        if (ano === currentYear) return m.month <= currentMonth;
+        return true;
+      })
+    : monthsData;
 
-  const TrendIcon =
-    diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus;
-  const trendColor =
-    diff > 0
-      ? "text-emerald-500"
-      : diff < 0
-        ? "text-destructive"
-        : "text-muted-foreground";
+  // Calculate KPIs (YTD or full year)
+  const totalReceita = filteredMonths.reduce((s, m) => s + m.receita, 0);
+  const totalOccupiedDays = filteredMonths.reduce((s, m) => s + m.occupiedDays, 0);
+  const totalDays = filteredMonths.reduce((s, m) => s + m.totalDays, 0);
+  const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
+  const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
+
+  // Prior year KPIs for same period
+  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData);
+  const priorReceita = priorMonths.reduce((s, m) => s + m.receita, 0);
+  const priorOccupiedDays = priorMonths.reduce((s, m) => s + m.occupiedDays, 0);
+  const priorTotalDays = priorMonths.reduce((s, m) => s + m.totalDays, 0);
+  const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
+  const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
+
+  const periodLabel = period === "ytd" ? `${ano} até hoje` : `${ano} completo`;
 
   return (
-    <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* KPI Header */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              KPIs (Indicadores-chave de desempenho) - {periodLabel}
+            </CardTitle>
+            <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ytd">Este ano até hoje</SelectItem>
+                <SelectItem value="last12">Ano completo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Receita */}
+            <div className="border border-border rounded-lg p-4 space-y-1">
+              <p className="font-display text-2xl text-foreground font-bold">
+                {fmtCompact(totalReceita)} BRL
+              </p>
+              <ChangeIndicator current={totalReceita} previous={priorReceita} format="currency" />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                Receita <InfoIcon tooltip="Total de receita bruta no período selecionado" />
+              </p>
+            </div>
+
+            {/* Ocupação */}
+            <div className="border border-border rounded-lg p-4 space-y-1">
+              <p className="font-display text-2xl text-foreground font-bold">
+                {avgOccupancy.toFixed(0)}%
+              </p>
+              <ChangeIndicator current={avgOccupancy} previous={priorAvgOccupancy} format="percent" />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                Ocupação <InfoIcon tooltip="Percentual de dias ocupados no período" />
+              </p>
+            </div>
+
+            {/* Preço médio da diária */}
+            <div className="border border-border rounded-lg p-4 space-y-1">
+              <p className="font-display text-2xl text-foreground font-bold">
+                {fmtCurrency(avgDailyRate)} BRL
+              </p>
+              <ChangeIndicator current={avgDailyRate} previous={priorAvgDailyRate} format="currency" />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                Preço médio da diária <InfoIcon tooltip="Receita dividida pelo total de dias ocupados" />
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Monthly Trends Table */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" />
-            Taxa de Ocupação
+            Tendências mensais de desempenho
           </CardTitle>
-          <div className={cn("flex items-center gap-1 text-xs font-medium", trendColor)}>
-            <TrendIcon className="h-3.5 w-3.5" />
-            {diff > 0 ? "+" : ""}
-            {diff.toFixed(1)}% vs mês anterior
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {months.map((m, i) => {
-          const isCurrent = i === 1;
-          return (
-            <div key={m.label} className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span
-                  className={cn(
-                    "text-xs tracking-wide",
-                    isCurrent
-                      ? "text-foreground font-semibold"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {m.label}
-                  {isCurrent && (
-                    <span className="ml-1.5 text-[10px] text-primary font-medium uppercase">
-                      Atual
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border">
+                  <TableHead className="text-muted-foreground text-xs font-medium">Mês</TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium text-right">
+                    <span className="flex items-center justify-end gap-1">
+                      Receita <InfoIcon tooltip="Valor bruto das reservas" />
                     </span>
-                  )}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs tabular-nums",
-                    isCurrent
-                      ? "text-foreground font-semibold"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {m.occupiedDays}/{m.totalDays} dias ({m.rate.toFixed(0)}%)
-                </span>
-              </div>
-              <Progress
-                value={m.rate}
-                className={cn("h-2", isCurrent ? "[&>div]:bg-primary" : "[&>div]:bg-muted-foreground/30")}
-              />
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium text-right">
+                    <span className="flex items-center justify-end gap-1">
+                      Ocupação <InfoIcon tooltip="Percentual de dias ocupados no mês" />
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium text-right">
+                    <span className="flex items-center justify-end gap-1">
+                      Preço médio da diária <InfoIcon tooltip="Receita / dias ocupados" />
+                    </span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMonths.map((m: any, idx: number) => {
+                  const prior = m._prior as MonthData;
+                  const isCurrent = m.month === currentMonth && m.year === currentYear;
+
+                  return (
+                    <TableRow key={m.label} className="border-border hover:bg-muted/30">
+                      <TableCell className="text-sm text-foreground font-medium">
+                        <span className="flex items-center gap-2">
+                          {m.label}
+                          {isCurrent && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary font-medium">
+                              Atual
+                            </Badge>
+                          )}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="text-sm text-foreground tabular-nums">
+                            {m.receita > 0 ? fmtCompact(m.receita) : "-"}
+                          </span>
+                          <div className="w-16 text-right">
+                            <ChangeIndicator current={m.receita} previous={prior.receita} format="currency" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="text-sm text-foreground tabular-nums">
+                            {m.occupancyRate.toFixed(0)}%
+                          </span>
+                          <div className="w-16 text-right">
+                            <ChangeIndicator current={m.occupancyRate} previous={prior.occupancyRate} format="percent" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="text-sm text-foreground tabular-nums">
+                            {m.avgDailyRate > 0 ? fmtCurrency(m.avgDailyRate) : "-"}
+                          </span>
+                          <div className="w-16 text-right">
+                            <ChangeIndicator current={m.avgDailyRate} previous={prior.avgDailyRate} format="currency" />
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
