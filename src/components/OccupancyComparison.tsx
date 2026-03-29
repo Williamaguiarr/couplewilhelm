@@ -166,7 +166,7 @@ const ChangeIndicator: React.FC<{ current: number; previous: number; format?: "c
   );
 };
 
-type PeriodFilter = "ytd" | "last12";
+type PeriodFilter = "ytd" | "last_year" | "last3_next9" | "last12" | "next12";
 
 const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   mes,
