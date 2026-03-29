@@ -891,6 +891,7 @@ const Reservas: React.FC = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>
