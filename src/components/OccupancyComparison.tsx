@@ -316,9 +316,9 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
 
   // Prior year KPIs for same period
   const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
-  const priorReceita = priorMonths.reduce((s, m) => s + m.receita, 0);
-  const priorOccupiedDays = priorMonths.reduce((s, m) => s + m.occupiedDays, 0);
-  const priorTotalDays = priorMonths.reduce((s, m) => s + m.totalDays, 0);
+  const priorReceita = priorMonths.reduce((s, m) => s + (Number(m?.receita) || 0), 0);
+  const priorOccupiedDays = priorMonths.reduce((s, m) => s + (Number(m?.occupiedDays) || 0), 0);
+  const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
   const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
   const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
 
