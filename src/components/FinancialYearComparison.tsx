@@ -227,11 +227,14 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       <Minus className="h-3.5 w-3.5 text-muted-foreground" />
     );
 
+  const BRAND_BLUE = "#1E3A8A";
+  const BRAND_GOLD = "#D4AF37";
+
   const chartConfig = {
-    [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: "hsl(var(--primary))" },
-    ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: "hsl(var(--muted-foreground))" } }),
-    [`valor_${anoBase}`]: { label: `Valor ${anoBase}`, color: "hsl(142 71% 45%)" },
-    ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: "hsl(var(--muted-foreground))" } }),
+    [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: BRAND_BLUE },
+    ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: BRAND_GOLD } }),
+    [`valor_${anoBase}`]: { label: `Valor ${anoBase}`, color: BRAND_BLUE },
+    ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: BRAND_GOLD } }),
   };
 
   const summaryCards = [
