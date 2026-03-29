@@ -222,8 +222,6 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       ...(sameYear ? {} : { [`valor_${anoComparacao}`]: compVal }),
       [`reservas_${anoBase}`]: m.reservas,
       ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: compRes }),
-      evolValor: Math.round(evolValor * 100) / 100,
-      evolReservas: Math.round(evolReservas * 100) / 100,
     };
   });
 
