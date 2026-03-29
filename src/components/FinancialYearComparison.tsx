@@ -15,15 +15,13 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
-  LineChart,
-  Line,
   Legend,
+  Tooltip,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
