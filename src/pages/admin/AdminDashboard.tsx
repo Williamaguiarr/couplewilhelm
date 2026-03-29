@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/OccupancyComparison";
+import FinancialYearComparison from "@/components/FinancialYearComparison";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
