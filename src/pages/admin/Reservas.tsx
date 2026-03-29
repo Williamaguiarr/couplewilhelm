@@ -707,13 +707,13 @@ const Reservas: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="flex flex-wrap items-end gap-4">
+        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
             {/* Filtro por imóvel */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-full sm:w-auto">
               <Label className="text-muted-foreground text-xs uppercase tracking-wide">Imóvel</Label>
               <Select value={filterImovel} onValueChange={setFilterImovel}>
-                <SelectTrigger className="w-52 bg-background border-border">
+                <SelectTrigger className="w-full sm:w-52 bg-background border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
