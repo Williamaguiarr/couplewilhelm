@@ -229,9 +229,9 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
 
   const chartConfig = {
     [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: "hsl(var(--primary))" },
-    [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: "hsl(var(--muted-foreground))" },
+    ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: "hsl(var(--muted-foreground))" } }),
     [`valor_${anoBase}`]: { label: `Valor ${anoBase}`, color: "hsl(142 71% 45%)" },
-    [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: "hsl(var(--muted-foreground))" },
+    ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: "hsl(var(--muted-foreground))" } }),
   };
 
   const summaryCards = [
