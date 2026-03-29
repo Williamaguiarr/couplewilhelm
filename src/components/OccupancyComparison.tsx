@@ -244,14 +244,70 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }
 
   // Filter months based on period
-  const filteredMonths = period === "ytd"
-    ? monthsData.filter((m) => {
-        if (ano === currentYear) return m.month <= currentMonth;
-        return true;
-      })
-    : monthsData;
+  let filteredMonths: any[];
+  if (period === "ytd") {
+    filteredMonths = monthsData.filter((m) => {
+      if (ano === currentYear) return m.month <= currentMonth;
+      return true;
+    });
+  } else if (period === "last_year") {
+    filteredMonths = allData.prior;
+  } else if (period === "last3_next9") {
+    // Last 3 months + next 9 months from current month
+    const result: any[] = [];
+    for (let i = -3; i < 9; i++) {
+      let targetMonth = currentMonth + i;
+      let targetYear = currentYear;
+      if (targetMonth < 0) { targetMonth += 12; targetYear--; }
+      if (targetMonth > 11) { targetMonth -= 12; targetYear++; }
+      
+      let source: any[];
+      if (targetYear === ano - 1) source = allData.prior;
+      else if (targetYear === ano) source = monthsData;
+      else if (targetYear === ano + 1) source = allData.next;
+      else continue;
+      
+      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      if (found) result.push(found);
+    }
+    filteredMonths = result;
+  } else if (period === "last12") {
+    // Last 12 months from current month
+    const result: any[] = [];
+    for (let i = -11; i <= 0; i++) {
+      let targetMonth = currentMonth + i;
+      let targetYear = currentYear;
+      while (targetMonth < 0) { targetMonth += 12; targetYear--; }
+      
+      let source: any[];
+      if (targetYear === ano - 1) source = allData.prior;
+      else if (targetYear === ano) source = monthsData;
+      else continue;
+      
+      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      if (found) result.push(found);
+    }
+    filteredMonths = result;
+  } else {
+    // next12
+    const result: any[] = [];
+    for (let i = 1; i <= 12; i++) {
+      let targetMonth = currentMonth + i;
+      let targetYear = currentYear;
+      while (targetMonth > 11) { targetMonth -= 12; targetYear++; }
+      
+      let source: any[];
+      if (targetYear === ano) source = monthsData;
+      else if (targetYear === ano + 1) source = allData.next;
+      else continue;
+      
+      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      if (found) result.push(found);
+    }
+    filteredMonths = result;
+  }
 
-  // Calculate KPIs (YTD or full year)
+  // Calculate KPIs
   const totalReceita = filteredMonths.reduce((s, m) => s + m.receita, 0);
   const totalOccupiedDays = filteredMonths.reduce((s, m) => s + m.occupiedDays, 0);
   const totalDays = filteredMonths.reduce((s, m) => s + m.totalDays, 0);
@@ -259,14 +315,21 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
 
   // Prior year KPIs for same period
-  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData);
+  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
   const priorReceita = priorMonths.reduce((s, m) => s + m.receita, 0);
   const priorOccupiedDays = priorMonths.reduce((s, m) => s + m.occupiedDays, 0);
   const priorTotalDays = priorMonths.reduce((s, m) => s + m.totalDays, 0);
   const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
   const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
 
-  const periodLabel = period === "ytd" ? `${ano} até hoje` : `${ano} completo`;
+  const periodLabels: Record<PeriodFilter, string> = {
+    ytd: `${ano} até hoje`,
+    last_year: `${ano - 1} completo`,
+    last3_next9: "Últimos 3 e próximos 9 meses",
+    last12: "Últimos 12 meses",
+    next12: "Próximos 12 meses",
+  };
+  const periodLabel = periodLabels[period];
 
   return (
     <div className="space-y-4">
