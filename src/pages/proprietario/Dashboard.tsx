@@ -464,7 +464,7 @@ const ProprietarioDashboard: React.FC = () => {
       <div className="space-y-6 w-full max-w-5xl overflow-x-hidden">
 
         {/* Header */}
-        <div className="pb-2 border-b border-border flex items-end justify-between">
+        <div className="pb-2 border-b border-border flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl text-foreground tracking-wide">Dashboard</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
