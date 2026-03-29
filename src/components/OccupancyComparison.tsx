@@ -174,6 +174,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   imovelIds,
 }) => {
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
+  const [allData, setAllData] = useState<{ prior: any[]; current: any[]; next: any[] }>({ prior: [], current: [], next: [] });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodFilter>("ytd");
 
