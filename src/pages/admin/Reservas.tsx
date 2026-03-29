@@ -60,6 +60,7 @@ interface Reserva {
   comissao_plataforma: number | null;
   observacoes: string | null;
   imovel_id: string;
+  num_hospedes: number | null;
   imovel?: { nome_imovel: string };
 }
 
@@ -110,6 +111,15 @@ const emptyForm = {
   taxa_limpeza: "",
   comissao_plataforma: "",
   observacoes: "",
+  num_hospedes: "",
+};
+
+const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null => {
+  if (!dataInicio || !dataFim) return null;
+  const start = new Date(`${dataInicio}T12:00:00`);
+  const end = new Date(`${dataFim}T12:00:00`);
+  const diff = Math.round((end.getTime() - start.getTime()) / 86400000);
+  return diff > 0 ? diff : null;
 };
 
 type FormState = typeof emptyForm;
@@ -171,6 +181,30 @@ const ReservaFormFields = ({
             className="bg-background"
           />
         </div>
+      </div>
+
+      {/* Duração da estadia */}
+      {(() => {
+        const duracao = calcDuracaoEstadia(form.data_inicio, form.data_fim);
+        return duracao != null ? (
+          <div className="rounded-md border border-border bg-muted/20 px-4 py-2 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            <span className="text-sm text-foreground font-medium">Duração da estadia: {duracao} {duracao === 1 ? 'dia' : 'dias'}</span>
+          </div>
+        ) : null;
+      })()}
+
+      {/* Número de hóspedes */}
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Nº de Hóspedes</Label>
+        <Input
+          type="number"
+          min="1"
+          value={form.num_hospedes}
+          onChange={(e) => setForm({ ...form, num_hospedes: e.target.value })}
+          placeholder="Ex: 2"
+          className="bg-background"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -518,6 +552,8 @@ const Reservas: React.FC = () => {
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido, rate);
 
+    const numHospedes = form.num_hospedes ? parseInt(form.num_hospedes) : null;
+
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
       data_inicio: form.data_inicio,
@@ -527,7 +563,8 @@ const Reservas: React.FC = () => {
       taxa_limpeza: taxaLimpeza,
       comissao_plataforma: comissaoPlataforma,
       observacoes: form.observacoes || null,
-    });
+      num_hospedes: numHospedes,
+    } as any);
 
     if (error) {
       toast({ title: "Erro ao criar reserva", description: error.message, variant: "destructive" });
@@ -551,6 +588,7 @@ const Reservas: React.FC = () => {
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
       comissao_plataforma: r.comissao_plataforma != null ? String(r.comissao_plataforma) : "",
       observacoes: r.observacoes || "",
+      num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
     });
     setEditOpen(true);
   };
@@ -566,6 +604,7 @@ const Reservas: React.FC = () => {
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido, rate);
+    const numHospedes = editForm.num_hospedes ? parseInt(editForm.num_hospedes) : null;
 
     const { error } = await supabase
       .from("reservas")
@@ -578,7 +617,8 @@ const Reservas: React.FC = () => {
         taxa_limpeza: taxaLimpeza,
         comissao_plataforma: comissaoPlataforma,
         observacoes: editForm.observacoes || null,
-      })
+        num_hospedes: numHospedes,
+      } as any)
       .eq("id", editingReserva.id);
 
     if (error) {
@@ -801,6 +841,8 @@ const Reservas: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-in</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-out</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Duração</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Hóspedes</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Bruto</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Tx. Limpeza</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão ADM</TableHead>
@@ -829,6 +871,8 @@ const Reservas: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.num_hospedes ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(r.taxa_limpeza)}</TableCell>
                       <TableCell className="text-muted-foreground">{fmt(comissao)}</TableCell>

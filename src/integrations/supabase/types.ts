@@ -207,6 +207,7 @@ export type Database = {
           data_inicio: string
           id: string
           imovel_id: string
+          num_hospedes: number | null
           observacoes: string | null
           taxa_limpeza: number | null
           valor_bruto: number | null
@@ -219,6 +220,7 @@ export type Database = {
           data_inicio: string
           id?: string
           imovel_id: string
+          num_hospedes?: number | null
           observacoes?: string | null
           taxa_limpeza?: number | null
           valor_bruto?: number | null
@@ -231,6 +233,7 @@ export type Database = {
           data_inicio?: string
           id?: string
           imovel_id?: string
+          num_hospedes?: number | null
           observacoes?: string | null
           taxa_limpeza?: number | null
           valor_bruto?: number | null

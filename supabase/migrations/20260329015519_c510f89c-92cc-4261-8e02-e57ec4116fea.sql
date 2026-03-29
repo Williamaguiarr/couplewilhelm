@@ -1,0 +1,1 @@
+ALTER TABLE public.reservas ADD COLUMN num_hospedes integer DEFAULT NULL;
