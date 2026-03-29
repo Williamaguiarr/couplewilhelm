@@ -250,8 +250,6 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `${anoComparacao}`, color: BRAND_GOLD } }),
     [`reservas_${anoBase}`]: { label: `${anoBase}`, color: BRAND_BLUE },
     ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `${anoComparacao}`, color: BRAND_GOLD } }),
-    evolValor: { label: "Evolução %", color: EVOLUTION_COLOR },
-    evolReservas: { label: "Evolução %", color: EVOLUTION_COLOR },
   };
 
   return (
