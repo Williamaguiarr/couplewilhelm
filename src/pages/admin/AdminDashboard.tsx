@@ -457,7 +457,7 @@ const AdminDashboard: React.FC = () => {
     y += 6;
 
     const finData = [
-      ["Valor Bruto", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
+      ["Receita Bruta", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
       ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
       ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma (Airbnb, Booking...)"],
       ["= Valor Líquido", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
