@@ -53,8 +53,14 @@ interface MonthData {
   reservationCount: number;
 }
 
+const DAY_MS = 86400000;
+
 function daysInMonth(month: number, year: number): number {
   return new Date(year, month + 1, 0).getDate();
+}
+
+function atNoon(year: number, month: number, day: number): Date {
+  return new Date(year, month, day, 12, 0, 0, 0);
 }
 
 function fmtCompact(v: number): string {
