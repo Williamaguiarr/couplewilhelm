@@ -824,7 +824,7 @@ const Reservas: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="bg-card border border-border rounded-lg overflow-x-auto">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
