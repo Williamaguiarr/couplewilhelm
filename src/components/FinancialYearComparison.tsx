@@ -381,35 +381,30 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
           </ChartContainer>
         </div>
 
-        {/* Gráfico 4: Comparativo Anual de Reservas + Linha de Evolução % */}
+        {/* Gráfico 4: Comparativo Anual de Reservas */}
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-2">
             Comparativo de Reservas — {anoBase} vs {anoComparacao}
           </h3>
           <ChartContainer config={compConfig} className="h-[320px] w-full">
-            <ComposedChart data={comparisonData} barCategoryGap="25%">
+            <BarChart data={comparisonData} barCategoryGap="25%">
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <YAxis yAxisId="left" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={30} />
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} tick={{ fill: EVOLUTION_COLOR, fontSize: 11 }} width={45} />
+              <YAxis allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={30} />
               <Tooltip
-                formatter={(value: number, name: string) => {
-                  if (name === "Evolução %") return [`${value.toFixed(1)}%`, name];
-                  return [value, name];
-                }}
+                formatter={(value: number) => [value, "Reservas"]}
                 contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
               />
               <Legend />
-              <Bar yAxisId="left" dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
+              <Bar dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
                 <LabelList dataKey={`reservas_${anoBase}`} position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
               </Bar>
               {!sameYear && (
-                <Bar yAxisId="left" dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
+                <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
                   <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: BRAND_GOLD, fontSize: 11, fontWeight: 600 }} />
                 </Bar>
               )}
-              <Line yAxisId="right" type="monotone" dataKey="evolReservas" name="Evolução %" stroke={EVOLUTION_COLOR} strokeWidth={2} dot={{ r: 3, fill: EVOLUTION_COLOR }} />
-            </ComposedChart>
+            </BarChart>
           </ChartContainer>
         </div>
 
