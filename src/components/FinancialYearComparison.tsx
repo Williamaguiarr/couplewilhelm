@@ -198,11 +198,13 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     );
   }
 
-  // Merge data for dual-axis chart: reservas + valor bruto por mês
+  // Merge data for comparison: two columns per month
   const chartData = dataBase.months.map((m, i) => ({
     mes: m.mes,
-    reservas: m.reservas,
-    valorTotal: m.valorBruto,
+    [`reservas_${anoBase}`]: m.reservas,
+    [`reservas_${anoComparacao}`]: dataComparacao.months[i].reservas,
+    [`valor_${anoBase}`]: m.valorBruto,
+    [`valor_${anoComparacao}`]: dataComparacao.months[i].valorBruto,
   }));
 
   const variacao = (atual: number, anterior: number) => {
@@ -224,8 +226,10 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     );
 
   const chartConfig = {
-    reservas: { label: "Reservas", color: "hsl(var(--primary))" },
-    valorTotal: { label: "Valor Total (R$)", color: "hsl(142 71% 45%)" },
+    [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: "hsl(var(--primary))" },
+    [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: "hsl(var(--muted-foreground))" },
+    [`valor_${anoBase}`]: { label: `Valor ${anoBase}`, color: "hsl(142 71% 45%)" },
+    [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: "hsl(var(--muted-foreground))" },
   };
 
   const summaryCards = [
@@ -310,9 +314,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                   fontSize: "12px",
                 }}
               />
-              <Legend formatter={() => "Reservas"} />
-              <Bar dataKey="reservas" name="reservas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="reservas" position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
+              <Legend />
+              <Bar dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={`reservas_${anoBase}`} position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
+              </Bar>
+              <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 }} />
               </Bar>
             </BarChart>
           </ChartContainer>
@@ -335,14 +342,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                   fontSize: "12px",
                 }}
               />
-              <Legend formatter={() => "Valor Total (R$)"} />
-              <Bar dataKey="valorTotal" name="valorTotal" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]}>
-                <LabelList
-                  dataKey="valorTotal"
-                  position="top"
-                  formatter={(v: number) => fmtCompact(v)}
-                  style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }}
-                />
+              <Legend />
+              <Bar dataKey={`valor_${anoBase}`} name={String(anoBase)} fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={`valor_${anoBase}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }} />
+              </Bar>
+              <Bar dataKey={`valor_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={`valor_${anoComparacao}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 600 }} />
               </Bar>
             </BarChart>
           </ChartContainer>
