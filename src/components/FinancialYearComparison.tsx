@@ -227,11 +227,14 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       <Minus className="h-3.5 w-3.5 text-muted-foreground" />
     );
 
+  const BRAND_BLUE = "#1E3A8A";
+  const BRAND_GOLD = "#D4AF37";
+
   const chartConfig = {
-    [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: "hsl(var(--primary))" },
-    ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: "hsl(var(--muted-foreground))" } }),
-    [`valor_${anoBase}`]: { label: `Valor ${anoBase}`, color: "hsl(142 71% 45%)" },
-    ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: "hsl(var(--muted-foreground))" } }),
+    [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: BRAND_BLUE },
+    ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: BRAND_GOLD } }),
+    [`valor_${anoBase}`]: { label: `Valor ${anoBase}`, color: BRAND_BLUE },
+    ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `Valor ${anoComparacao}`, color: BRAND_GOLD } }),
   };
 
   const summaryCards = [
@@ -317,12 +320,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                 }}
               />
               <Legend />
-              <Bar dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
+              <Bar dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
                 <LabelList dataKey={`reservas_${anoBase}`} position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
               </Bar>
               {!sameYear && (
-                <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 }} />
+                <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: BRAND_GOLD, fontSize: 11, fontWeight: 600 }} />
                 </Bar>
               )}
             </BarChart>
@@ -347,12 +350,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                 }}
               />
               <Legend />
-              <Bar dataKey={`valor_${anoBase}`} name={String(anoBase)} fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]}>
+              <Bar dataKey={`valor_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
                 <LabelList dataKey={`valor_${anoBase}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }} />
               </Bar>
               {!sameYear && (
-                <Bar dataKey={`valor_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey={`valor_${anoComparacao}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 600 }} />
+                <Bar dataKey={`valor_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey={`valor_${anoComparacao}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: BRAND_GOLD, fontSize: 10, fontWeight: 600 }} />
                 </Bar>
               )}
             </BarChart>
