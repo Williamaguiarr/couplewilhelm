@@ -670,23 +670,23 @@ const Reservas: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-[100vw] overflow-x-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl text-foreground tracking-wide">Reservas</h1>
-            <p className="text-muted-foreground mt-1">Gerencie as reservas de todos os imóveis</p>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">Reservas</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Gerencie as reservas de todos os imóveis</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={gerarPDF} disabled={filteredReservas.length === 0} className="gap-2">
-              <FileText className="h-4 w-4" /> Gerar PDF
+            <Button variant="outline" size="sm" onClick={gerarPDF} disabled={filteredReservas.length === 0} className="gap-2">
+              <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Gerar</span> PDF
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" /> Nova Reserva
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> Reserva
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border max-w-lg">
+            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">Cadastrar Reserva</DialogTitle>
               </DialogHeader>
@@ -707,13 +707,13 @@ const Reservas: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="flex flex-wrap items-end gap-4">
+        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
             {/* Filtro por imóvel */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-full sm:w-auto">
               <Label className="text-muted-foreground text-xs uppercase tracking-wide">Imóvel</Label>
               <Select value={filterImovel} onValueChange={setFilterImovel}>
-                <SelectTrigger className="w-52 bg-background border-border">
+                <SelectTrigger className="w-full sm:w-52 bg-background border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
@@ -824,7 +824,7 @@ const Reservas: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="bg-card border border-border rounded-lg overflow-x-auto">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -835,6 +835,7 @@ const Reservas: React.FC = () => {
               <p className="text-muted-foreground">Nenhuma reserva encontrada</p>
             </div>
           ) : (
+            <div className="min-w-[900px]">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
@@ -890,13 +891,14 @@ const Reservas: React.FC = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>
 
       {/* Dialog Editar Reserva */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="bg-card border-border max-w-lg">
+        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>

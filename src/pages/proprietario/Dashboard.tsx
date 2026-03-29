@@ -461,10 +461,10 @@ const ProprietarioDashboard: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6 w-full max-w-5xl overflow-x-hidden">
 
         {/* Header */}
-        <div className="pb-2 border-b border-border flex items-end justify-between">
+        <div className="pb-2 border-b border-border flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl text-foreground tracking-wide">Dashboard</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
@@ -506,7 +506,7 @@ const ProprietarioDashboard: React.FC = () => {
         />
 
         {/* Extrato */}
-        <section className="border border-border rounded-lg overflow-hidden">
+        <section className="border border-border rounded-lg overflow-x-auto">
           <button
             onClick={() => setExtratoAberto((v) => !v)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
@@ -668,7 +668,7 @@ const ProprietarioDashboard: React.FC = () => {
         </section>
 
         {/* Despesas Extras */}
-        <section className="border border-border rounded-lg overflow-hidden">
+        <section className="border border-border rounded-lg overflow-x-auto">
           <button
             onClick={() => setDespesasAberto((v) => !v)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"

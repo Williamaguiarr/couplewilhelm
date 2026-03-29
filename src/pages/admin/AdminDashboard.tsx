@@ -580,7 +580,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-8 w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
@@ -782,7 +782,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* Despesas Extras */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div>
               <h2 className="font-display text-xl text-foreground tracking-wide">Despesas Extras</h2>
               <p className="text-muted-foreground text-sm mt-0.5">
@@ -799,7 +799,7 @@ const AdminDashboard: React.FC = () => {
             </Button>
           </div>
 
-          <div className="border border-border rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-x-auto">
             {despesasFiltradas.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
                 <Receipt className="h-8 w-8 text-muted-foreground/40" />
