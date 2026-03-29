@@ -53,8 +53,14 @@ interface MonthData {
   reservationCount: number;
 }
 
+const DAY_MS = 86400000;
+
 function daysInMonth(month: number, year: number): number {
   return new Date(year, month + 1, 0).getDate();
+}
+
+function atNoon(year: number, month: number, day: number): Date {
+  return new Date(year, month, day, 12, 0, 0, 0);
 }
 
 function fmtCompact(v: number): string {
@@ -90,34 +96,27 @@ async function fetchMonthData(
   let receita = 0;
   let reservationCount = 0;
   const occupiedSet = new Set<string>();
-  const monthStart = new Date(year, month, 1);
-  const monthEnd = new Date(year, month + 1, 0);
+  const monthStart = atNoon(year, month, 1);
+  const nextMonthStart = atNoon(year, month + 1, 1);
 
   if (data && data.length > 0) {
     reservationCount = data.length;
     data.forEach((r) => {
-      const start = new Date(r.data_inicio + "T12:00:00");
-      const end = new Date(r.data_fim + "T12:00:00");
+      const start = new Date(`${r.data_inicio}T12:00:00`);
+      const end = new Date(`${r.data_fim}T12:00:00`);
+      const totalNights = Math.max(1, Math.round((end.getTime() - start.getTime()) / DAY_MS));
 
-      // Calculate total nights of this reservation
-      const totalNights = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+      const overlapStart = new Date(Math.max(start.getTime(), monthStart.getTime()));
+      const overlapEnd = new Date(Math.min(end.getTime(), nextMonthStart.getTime()));
+      const nightsInMonth = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS));
 
-      // Calculate nights that fall within this month
-      const from = start < monthStart ? monthStart : start;
-      const to = end > new Date(monthEnd.getTime() + 86400000) ? new Date(monthEnd.getTime() + 86400000) : end;
-      const current = new Date(from);
-      let nightsInMonth = 0;
-      while (current < to) {
-        if (current.getMonth() === month && current.getFullYear() === year) {
-          occupiedSet.add(current.toISOString().split("T")[0]);
-          nightsInMonth++;
-        }
-        current.setDate(current.getDate() + 1);
+      for (let i = 0; i < nightsInMonth; i++) {
+        const occupiedDate = new Date(overlapStart.getTime() + i * DAY_MS);
+        occupiedSet.add(occupiedDate.toISOString().split("T")[0]);
       }
 
-      // Prorate revenue proportionally to nights in this month
       const valorBruto = Number(r.valor_bruto) || 0;
-      receita += (nightsInMonth / totalNights) * valorBruto;
+      receita += valorBruto * (nightsInMonth / totalNights);
     });
   }
 
