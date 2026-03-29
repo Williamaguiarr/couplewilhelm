@@ -457,10 +457,10 @@ const AdminDashboard: React.FC = () => {
     y += 6;
 
     const finData = [
-      ["Valor Bruto", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
+      ["Receita Bruta", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
       ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
       ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma (Airbnb, Booking...)"],
-      ["= Valor Líquido", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
+      ["= Receita Líquida", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
       ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
       ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão ADM"],
     ];
@@ -566,9 +566,9 @@ const AdminDashboard: React.FC = () => {
   ];
 
   const financeiroCards = [
-    { title: "Valor Bruto", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
+    { title: "Receita Bruta", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
     { title: "Taxa Limpeza", value: financeiro.taxaLimpeza, icon: Percent, description: "Dedução do bruto" },
-    { title: "Valor Líquido", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
+    { title: "Receita Líquida", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
     { title: "Comissão ADM", value: financeiro.comissaoCW, icon: Percent, description: "Sobre líquido" },
     { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
   ];
