@@ -461,7 +461,7 @@ const ProprietarioDashboard: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-6 w-full max-w-5xl overflow-x-hidden">
 
         {/* Header */}
         <div className="pb-2 border-b border-border flex items-end justify-between">
