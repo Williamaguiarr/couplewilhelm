@@ -552,6 +552,8 @@ const Reservas: React.FC = () => {
     const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
     const valorProprietario = calcValorProprietario(valorLiquido, rate);
 
+    const numHospedes = form.num_hospedes ? parseInt(form.num_hospedes) : null;
+
     const { error } = await supabase.from("reservas").insert({
       imovel_id: form.imovel_id,
       data_inicio: form.data_inicio,
@@ -561,7 +563,8 @@ const Reservas: React.FC = () => {
       taxa_limpeza: taxaLimpeza,
       comissao_plataforma: comissaoPlataforma,
       observacoes: form.observacoes || null,
-    });
+      num_hospedes: numHospedes,
+    } as any);
 
     if (error) {
       toast({ title: "Erro ao criar reserva", description: error.message, variant: "destructive" });
