@@ -197,17 +197,11 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     );
   }
 
-  // Merge data for charts
+  // Merge data for dual-axis chart: reservas + valor bruto por mês
   const chartData = dataBase.months.map((m, i) => ({
     mes: m.mes,
-    [`bruto_${anoBase}`]: m.valorBruto,
-    [`bruto_${anoComparacao}`]: dataComparacao.months[i].valorBruto,
-    [`comissao_${anoBase}`]: m.comissaoCW,
-    [`comissao_${anoComparacao}`]: dataComparacao.months[i].comissaoCW,
-    [`repasse_${anoBase}`]: m.repasseProprietario,
-    [`repasse_${anoComparacao}`]: dataComparacao.months[i].repasseProprietario,
-    [`reservas_${anoBase}`]: m.reservas,
-    [`reservas_${anoComparacao}`]: dataComparacao.months[i].reservas,
+    reservas: m.reservas,
+    valorTotal: m.valorBruto,
   }));
 
   const variacao = (atual: number, anterior: number) => {
