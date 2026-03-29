@@ -608,7 +608,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão CW", "Repasse"].map((h, i) => (
+                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão ADM", "Repasse"].map((h, i) => (
                           <TableHead
                             key={h}
                             className={cn(
@@ -655,7 +655,7 @@ const ProprietarioDashboard: React.FC = () => {
                     {totais.plataforma > 0 && (
                       <TotalItem label="Com. OTA" value={fmt(totais.plataforma)} />
                     )}
-                    <TotalItem label="Comissão CW" value={fmt(totais.comissao)} />
+                    <TotalItem label="Comissão ADM" value={fmt(totais.comissao)} />
                     <div className="pl-6 border-l border-border">
                       <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Repasse</p>
                       <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
