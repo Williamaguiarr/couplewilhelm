@@ -96,19 +96,28 @@ async function fetchMonthData(
   if (data && data.length > 0) {
     reservationCount = data.length;
     data.forEach((r) => {
-      receita += (r.valor_bruto || 0);
-
       const start = new Date(r.data_inicio + "T12:00:00");
       const end = new Date(r.data_fim + "T12:00:00");
+
+      // Calculate total nights of this reservation
+      const totalNights = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000));
+
+      // Calculate nights that fall within this month
       const from = start < monthStart ? monthStart : start;
-      const to = end > monthEnd ? new Date(monthEnd.getTime() + 86400000) : end;
+      const to = end > new Date(monthEnd.getTime() + 86400000) ? new Date(monthEnd.getTime() + 86400000) : end;
       const current = new Date(from);
+      let nightsInMonth = 0;
       while (current < to) {
         if (current.getMonth() === month && current.getFullYear() === year) {
           occupiedSet.add(current.toISOString().split("T")[0]);
+          nightsInMonth++;
         }
         current.setDate(current.getDate() + 1);
       }
+
+      // Prorate revenue proportionally to nights in this month
+      const valorBruto = Number(r.valor_bruto) || 0;
+      receita += (nightsInMonth / totalNights) * valorBruto;
     });
   }
 
