@@ -426,11 +426,11 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
               </TableHeader>
               <TableBody>
                 {filteredMonths.map((m: any, idx: number) => {
-                  const prior = m._prior as MonthData;
+                  const prior = (m._prior as MonthData) || { receita: 0, occupancyRate: 0, avgDailyRate: 0, occupiedDays: 0, totalDays: 0, reservationCount: 0 };
                   const isCurrent = m.month === currentMonth && m.year === currentYear;
 
                   return (
-                    <TableRow key={m.label} className="border-border hover:bg-muted/30">
+                    <TableRow key={`${m.year}-${m.month}`} className="border-border hover:bg-muted/30">
                       <TableCell className="text-sm text-foreground font-medium">
                         <span className="flex items-center gap-2">
                           {m.label}
@@ -444,30 +444,30 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-3">
                           <span className="text-sm text-foreground tabular-nums">
-                            {m.receita > 0 ? fmtCompact(m.receita) : "-"}
+                            {(m.receita || 0) > 0 ? fmtCompact(m.receita) : "-"}
                           </span>
                           <div className="w-16 text-right">
-                            <ChangeIndicator current={m.receita} previous={prior.receita} format="currency" />
+                            <ChangeIndicator current={m.receita || 0} previous={prior.receita || 0} format="currency" />
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-3">
                           <span className="text-sm text-foreground tabular-nums">
-                            {m.occupancyRate.toFixed(0)}%
+                            {(m.occupancyRate || 0).toFixed(0)}%
                           </span>
                           <div className="w-16 text-right">
-                            <ChangeIndicator current={m.occupancyRate} previous={prior.occupancyRate} format="percent" />
+                            <ChangeIndicator current={m.occupancyRate || 0} previous={prior.occupancyRate || 0} format="percent" />
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-3">
                           <span className="text-sm text-foreground tabular-nums">
-                            {m.avgDailyRate > 0 ? fmtCurrency(m.avgDailyRate) : "-"}
+                            {(m.avgDailyRate || 0) > 0 ? fmtCurrency(m.avgDailyRate) : "-"}
                           </span>
                           <div className="w-16 text-right">
-                            <ChangeIndicator current={m.avgDailyRate} previous={prior.avgDailyRate} format="currency" />
+                            <ChangeIndicator current={m.avgDailyRate || 0} previous={prior.avgDailyRate || 0} format="currency" />
                           </div>
                         </div>
                       </TableCell>
