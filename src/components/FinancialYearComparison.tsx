@@ -22,8 +22,6 @@ import {
   Legend,
   Tooltip,
   LabelList,
-  ComposedChart,
-  Line,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,7 +73,6 @@ const availableYears = Array.from({ length: currentYear - 2023 }, (_, i) => 2024
 
 const BRAND_BLUE = "#1E3A8A";
 const BRAND_GOLD = "#D4AF37";
-const EVOLUTION_COLOR = "#10B981";
 
 const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
   const [anoBase, setAnoBase] = useState(currentYear);
@@ -214,18 +211,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     const compVal = dataComparacao.months[i].valorBruto;
     const compRes = dataComparacao.months[i].reservas;
 
-    // Year-over-year difference % (anoBase vs anoComparacao)
-    const evolValor = compVal === 0 ? (m.valorBruto > 0 ? 100 : 0) : ((m.valorBruto - compVal) / compVal) * 100;
-    const evolReservas = compRes === 0 ? (m.reservas > 0 ? 100 : 0) : ((m.reservas - compRes) / compRes) * 100;
-
     return {
       mes: m.mes,
       [`valor_${anoBase}`]: m.valorBruto,
       ...(sameYear ? {} : { [`valor_${anoComparacao}`]: compVal }),
       [`reservas_${anoBase}`]: m.reservas,
       ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: compRes }),
-      evolValor: Math.round(evolValor * 100) / 100,
-      evolReservas: Math.round(evolReservas * 100) / 100,
     };
   });
 
@@ -259,8 +250,6 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     ...(sameYear ? {} : { [`valor_${anoComparacao}`]: { label: `${anoComparacao}`, color: BRAND_GOLD } }),
     [`reservas_${anoBase}`]: { label: `${anoBase}`, color: BRAND_BLUE },
     ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: { label: `${anoComparacao}`, color: BRAND_GOLD } }),
-    evolValor: { label: "Evolução %", color: EVOLUTION_COLOR },
-    evolReservas: { label: "Evolução %", color: EVOLUTION_COLOR },
   };
 
   return (
@@ -354,67 +343,57 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
           </ChartContainer>
         </div>
 
-        {/* Gráfico 3: Comparativo Anual de Valor + Linha de Evolução % */}
+        {/* Gráfico 3: Comparativo Anual de Valor */}
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-2">
             Comparativo de Valor Financeiro — {anoBase} vs {anoComparacao}
           </h3>
           <ChartContainer config={compConfig} className="h-[320px] w-full">
-            <ComposedChart data={comparisonData} barCategoryGap="25%">
+            <BarChart data={comparisonData} barCategoryGap="25%">
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <YAxis yAxisId="left" tickFormatter={(v) => `R$ ${fmtCompact(v)}`} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={60} />
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} tick={{ fill: EVOLUTION_COLOR, fontSize: 11 }} width={45} />
+              <YAxis tickFormatter={(v) => `R$ ${fmtCompact(v)}`} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={60} />
               <Tooltip
-                formatter={(value: number, name: string) => {
-                  if (name === "Evolução %") return [`${value.toFixed(1)}%`, name];
-                  return [fmt(value), name];
-                }}
+                formatter={(value: number) => [fmt(value), "Valor"]}
                 contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
               />
               <Legend />
-              <Bar yAxisId="left" dataKey={`valor_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
+              <Bar dataKey={`valor_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
                 <LabelList dataKey={`valor_${anoBase}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }} />
               </Bar>
               {!sameYear && (
-                <Bar yAxisId="left" dataKey={`valor_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
+                <Bar dataKey={`valor_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
                   <LabelList dataKey={`valor_${anoComparacao}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: BRAND_GOLD, fontSize: 10, fontWeight: 600 }} />
                 </Bar>
               )}
-              <Line yAxisId="right" type="monotone" dataKey="evolValor" name="Evolução %" stroke={EVOLUTION_COLOR} strokeWidth={2} dot={{ r: 3, fill: EVOLUTION_COLOR }} />
-            </ComposedChart>
+            </BarChart>
           </ChartContainer>
         </div>
 
-        {/* Gráfico 4: Comparativo Anual de Reservas + Linha de Evolução % */}
+        {/* Gráfico 4: Comparativo Anual de Reservas */}
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-2">
             Comparativo de Reservas — {anoBase} vs {anoComparacao}
           </h3>
           <ChartContainer config={compConfig} className="h-[320px] w-full">
-            <ComposedChart data={comparisonData} barCategoryGap="25%">
+            <BarChart data={comparisonData} barCategoryGap="25%">
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <YAxis yAxisId="left" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={30} />
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} tick={{ fill: EVOLUTION_COLOR, fontSize: 11 }} width={45} />
+              <YAxis allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={30} />
               <Tooltip
-                formatter={(value: number, name: string) => {
-                  if (name === "Evolução %") return [`${value.toFixed(1)}%`, name];
-                  return [value, name];
-                }}
+                formatter={(value: number) => [value, "Reservas"]}
                 contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
               />
               <Legend />
-              <Bar yAxisId="left" dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
+              <Bar dataKey={`reservas_${anoBase}`} name={String(anoBase)} fill={BRAND_BLUE} radius={[4, 4, 0, 0]}>
                 <LabelList dataKey={`reservas_${anoBase}`} position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
               </Bar>
               {!sameYear && (
-                <Bar yAxisId="left" dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
+                <Bar dataKey={`reservas_${anoComparacao}`} name={String(anoComparacao)} fill={BRAND_GOLD} radius={[4, 4, 0, 0]}>
                   <LabelList dataKey={`reservas_${anoComparacao}`} position="top" style={{ fill: BRAND_GOLD, fontSize: 11, fontWeight: 600 }} />
                 </Bar>
               )}
-              <Line yAxisId="right" type="monotone" dataKey="evolReservas" name="Evolução %" stroke={EVOLUTION_COLOR} strokeWidth={2} dot={{ r: 3, fill: EVOLUTION_COLOR }} />
-            </ComposedChart>
+            </BarChart>
           </ChartContainer>
         </div>
 
