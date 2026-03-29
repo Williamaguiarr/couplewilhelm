@@ -104,8 +104,8 @@ async function fetchMonthData(
     data.forEach((r) => {
       const start = new Date(`${r.data_inicio}T12:00:00`);
       const end = new Date(`${r.data_fim}T12:00:00`);
-      const totalNights = Math.max(1, Math.round((end.getTime() - start.getTime()) / DAY_MS));
 
+      // Calculate occupied days that overlap this month
       const overlapStart = new Date(Math.max(start.getTime(), monthStart.getTime()));
       const overlapEnd = new Date(Math.min(end.getTime(), nextMonthStart.getTime()));
       const nightsInMonth = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS));
@@ -115,8 +115,13 @@ async function fetchMonthData(
         occupiedSet.add(occupiedDate.toISOString().split("T")[0]);
       }
 
-      const valorBruto = Number(r.valor_bruto) || 0;
-      receita += valorBruto * (nightsInMonth / totalNights);
+      // Revenue is recognized in the checkout month (cash-based)
+      const checkoutDate = end;
+      const checkoutMonth = checkoutDate.getMonth();
+      const checkoutYear = checkoutDate.getFullYear();
+      if (checkoutMonth === month && checkoutYear === year) {
+        receita += Number(r.valor_bruto) || 0;
+      }
     });
   }
 
