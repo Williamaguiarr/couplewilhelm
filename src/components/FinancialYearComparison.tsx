@@ -14,13 +14,15 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
-  ComposedChart,
+  BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Legend,
   Tooltip,
+  LabelList,
+  ResponsiveContainer,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -291,46 +293,60 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
           ))}
         </div>
 
-        {/* Dual-axis chart: Reservas + Valor Total */}
-        <ChartContainer config={chartConfig} className="h-[350px] w-full">
-          <ComposedChart data={chartData} barGap={4} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-            <YAxis
-              yAxisId="left"
-              allowDecimals={false}
-              tick={{ fill: "hsl(var(--primary))", fontSize: 11 }}
-              width={40}
-              label={{ value: "Reservas", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tickFormatter={(v) => `R$ ${fmtCompact(v)}`}
-              tick={{ fill: "hsl(142 71% 45%)", fontSize: 11 }}
-              width={70}
-              label={{ value: "Valor Total", angle: 90, position: "insideRight", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-            />
-            <Tooltip
-              formatter={(value: number, name: string) =>
-                name === "valorTotal"
-                  ? [fmt(value), "Valor Total"]
-                  : [value, "Reservas"]
-              }
-              contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-                fontSize: "12px",
-              }}
-            />
-            <Legend
-              formatter={(value) => (value === "reservas" ? "Reservas" : "Valor Total (R$)")}
-            />
-            <Bar yAxisId="left" dataKey="reservas" name="reservas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            <Bar yAxisId="right" dataKey="valorTotal" name="valorTotal" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]} />
-          </ComposedChart>
-        </ChartContainer>
+        {/* Gráfico 1: Quantidade de Reservas */}
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Quantidade de Reservas por Mês</h3>
+          <ChartContainer config={chartConfig} className="h-[280px] w-full">
+            <BarChart data={chartData} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+              <YAxis allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={30} />
+              <Tooltip
+                formatter={(value: number) => [value, "Reservas"]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
+              <Legend formatter={() => "Reservas"} />
+              <Bar dataKey="reservas" name="reservas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="reservas" position="top" style={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 600 }} />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+        </div>
+
+        {/* Gráfico 2: Valor Total */}
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Valor Total (R$) por Mês</h3>
+          <ChartContainer config={chartConfig} className="h-[280px] w-full">
+            <BarChart data={chartData} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+              <YAxis tickFormatter={(v) => `R$ ${fmtCompact(v)}`} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={60} />
+              <Tooltip
+                formatter={(value: number) => [fmt(value), "Valor Total"]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              />
+              <Legend formatter={() => "Valor Total (R$)"} />
+              <Bar dataKey="valorTotal" name="valorTotal" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]}>
+                <LabelList
+                  dataKey="valorTotal"
+                  position="top"
+                  formatter={(v: number) => fmtCompact(v)}
+                  style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }}
+                />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+        </div>
 
         {/* Monthly detail table */}
         <div className="overflow-x-auto">
