@@ -841,6 +841,8 @@ const Reservas: React.FC = () => {
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-in</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-out</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Duração</TableHead>
+                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Hóspedes</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Bruto</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Tx. Limpeza</TableHead>
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão ADM</TableHead>
