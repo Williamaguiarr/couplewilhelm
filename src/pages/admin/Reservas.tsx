@@ -835,6 +835,7 @@ const Reservas: React.FC = () => {
               <p className="text-muted-foreground">Nenhuma reserva encontrada</p>
             </div>
           ) : (
+            <div className="min-w-[900px]">
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
