@@ -782,7 +782,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* Despesas Extras */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div>
               <h2 className="font-display text-xl text-foreground tracking-wide">Despesas Extras</h2>
               <p className="text-muted-foreground text-sm mt-0.5">
