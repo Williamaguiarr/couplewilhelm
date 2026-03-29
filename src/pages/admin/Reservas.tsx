@@ -111,6 +111,15 @@ const emptyForm = {
   taxa_limpeza: "",
   comissao_plataforma: "",
   observacoes: "",
+  num_hospedes: "",
+};
+
+const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null => {
+  if (!dataInicio || !dataFim) return null;
+  const start = new Date(`${dataInicio}T12:00:00`);
+  const end = new Date(`${dataFim}T12:00:00`);
+  const diff = Math.round((end.getTime() - start.getTime()) / 86400000);
+  return diff > 0 ? diff : null;
 };
 
 type FormState = typeof emptyForm;
