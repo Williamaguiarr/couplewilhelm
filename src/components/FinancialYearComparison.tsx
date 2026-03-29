@@ -342,14 +342,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                   fontSize: "12px",
                 }}
               />
-              <Legend formatter={() => "Valor Total (R$)"} />
-              <Bar dataKey="valorTotal" name="valorTotal" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]}>
-                <LabelList
-                  dataKey="valorTotal"
-                  position="top"
-                  formatter={(v: number) => fmtCompact(v)}
-                  style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }}
-                />
+              <Legend />
+              <Bar dataKey={`valor_${anoBase}`} name={String(anoBase)} fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={`valor_${anoBase}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 600 }} />
+              </Bar>
+              <Bar dataKey={`valor_${anoComparacao}`} name={String(anoComparacao)} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={`valor_${anoComparacao}`} position="top" formatter={(v: number) => fmtCompact(v)} style={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 600 }} />
               </Bar>
             </BarChart>
           </ChartContainer>
