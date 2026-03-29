@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,15 +14,13 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
-  LineChart,
-  Line,
   Legend,
+  Tooltip,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -199,17 +196,11 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     );
   }
 
-  // Merge data for charts
+  // Merge data for dual-axis chart: reservas + valor bruto por mês
   const chartData = dataBase.months.map((m, i) => ({
     mes: m.mes,
-    [`bruto_${anoBase}`]: m.valorBruto,
-    [`bruto_${anoComparacao}`]: dataComparacao.months[i].valorBruto,
-    [`comissao_${anoBase}`]: m.comissaoCW,
-    [`comissao_${anoComparacao}`]: dataComparacao.months[i].comissaoCW,
-    [`repasse_${anoBase}`]: m.repasseProprietario,
-    [`repasse_${anoComparacao}`]: dataComparacao.months[i].repasseProprietario,
-    [`reservas_${anoBase}`]: m.reservas,
-    [`reservas_${anoComparacao}`]: dataComparacao.months[i].reservas,
+    reservas: m.reservas,
+    valorTotal: m.valorBruto,
   }));
 
   const variacao = (atual: number, anterior: number) => {
@@ -231,14 +222,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     );
 
   const chartConfig = {
-    [`bruto_${anoBase}`]: { label: `Bruto ${anoBase}`, color: "hsl(var(--primary))" },
-    [`bruto_${anoComparacao}`]: { label: `Bruto ${anoComparacao}`, color: "hsl(var(--primary) / 0.35)" },
-    [`comissao_${anoBase}`]: { label: `Comissão ${anoBase}`, color: "hsl(var(--primary))" },
-    [`comissao_${anoComparacao}`]: { label: `Comissão ${anoComparacao}`, color: "hsl(var(--primary) / 0.35)" },
-    [`repasse_${anoBase}`]: { label: `Repasse ${anoBase}`, color: "hsl(var(--primary))" },
-    [`repasse_${anoComparacao}`]: { label: `Repasse ${anoComparacao}`, color: "hsl(var(--primary) / 0.35)" },
-    [`reservas_${anoBase}`]: { label: `Reservas ${anoBase}`, color: "hsl(var(--primary))" },
-    [`reservas_${anoComparacao}`]: { label: `Reservas ${anoComparacao}`, color: "hsl(var(--primary) / 0.35)" },
+    reservas: { label: "Reservas", color: "hsl(var(--primary))" },
+    valorTotal: { label: "Valor Total (R$)", color: "hsl(142 71% 45%)" },
   };
 
   const summaryCards = [
@@ -306,55 +291,46 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
           ))}
         </div>
 
-        {/* Chart tabs */}
-        <Tabs defaultValue="bruto" className="w-full">
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="bruto">Receita Bruta</TabsTrigger>
-            <TabsTrigger value="comissao">Comissão CW</TabsTrigger>
-            <TabsTrigger value="repasse">Repasse</TabsTrigger>
-            <TabsTrigger value="reservas">Reservas</TabsTrigger>
-          </TabsList>
-
-          {(["bruto", "comissao", "repasse", "reservas"] as const).map((metric) => (
-            <TabsContent key={metric} value={metric}>
-              <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <BarChart data={chartData} barGap={2} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="mes" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis
-                    tickFormatter={(v) => metric === "reservas" ? v : fmtCompact(v)}
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    width={50}
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value, name) => {
-                          const v = Number(value);
-                          return metric === "reservas" ? v : fmt(v);
-                        }}
-                      />
-                    }
-                  />
-                  <Bar
-                    dataKey={`${metric}_${anoBase}`}
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                    name={String(anoBase)}
-                  />
-                  <Bar
-                    dataKey={`${metric}_${anoComparacao}`}
-                    fill="hsl(var(--primary) / 0.3)"
-                    radius={[4, 4, 0, 0]}
-                    name={String(anoComparacao)}
-                  />
-                  <Legend />
-                </BarChart>
-              </ChartContainer>
-            </TabsContent>
-          ))}
-        </Tabs>
+        {/* Dual-axis chart: Reservas + Valor Total */}
+        <ChartContainer config={chartConfig} className="h-[350px] w-full">
+          <ComposedChart data={chartData} barGap={4} barCategoryGap="20%">
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+            <YAxis
+              yAxisId="left"
+              allowDecimals={false}
+              tick={{ fill: "hsl(var(--primary))", fontSize: 11 }}
+              width={40}
+              label={{ value: "Reservas", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={(v) => `R$ ${fmtCompact(v)}`}
+              tick={{ fill: "hsl(142 71% 45%)", fontSize: 11 }}
+              width={70}
+              label={{ value: "Valor Total", angle: 90, position: "insideRight", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+            />
+            <Tooltip
+              formatter={(value: number, name: string) =>
+                name === "valorTotal"
+                  ? [fmt(value), "Valor Total"]
+                  : [value, "Reservas"]
+              }
+              contentStyle={{
+                backgroundColor: "hsl(var(--background))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "8px",
+                fontSize: "12px",
+              }}
+            />
+            <Legend
+              formatter={(value) => (value === "reservas" ? "Reservas" : "Valor Total (R$)")}
+            />
+            <Bar yAxisId="left" dataKey="reservas" name="reservas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="right" dataKey="valorTotal" name="valorTotal" fill="hsl(142 71% 45%)" radius={[4, 4, 0, 0]} />
+          </ComposedChart>
+        </ChartContainer>
 
         {/* Monthly detail table */}
         <div className="overflow-x-auto">
