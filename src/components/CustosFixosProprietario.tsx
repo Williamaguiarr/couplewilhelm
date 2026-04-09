@@ -25,6 +25,7 @@ import {
   Wifi,
   Save,
   Loader2,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -177,11 +178,11 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
 
   return (
     <section className="border border-border rounded-lg overflow-hidden">
-      <button
-        onClick={() => setAberto((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
-      >
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-5 py-4">
+        <button
+          onClick={() => setAberto((v) => !v)}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
           <Home className="h-4 w-4 text-primary" />
           <span className="font-display text-base text-foreground tracking-wide">
             Custos Fixos Mensais
@@ -191,13 +192,22 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
               ({fmt(totalCustos)}/mês)
             </span>
           )}
-        </div>
-        {aberto ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        )}
-      </button>
+          {aberto ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 text-xs"
+          onClick={() => setAberto(true)}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Adicionar Custos Fixos
+        </Button>
+      </div>
 
       {aberto && (
         <div className="border-t border-border px-5 py-4 space-y-5">
