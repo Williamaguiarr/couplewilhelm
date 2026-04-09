@@ -45,6 +45,7 @@ import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
 import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
 import { useToast } from "@/hooks/use-toast";
+import CustosFixosProprietario from "@/components/CustosFixosProprietario";
 
 interface Reserva {
   id: string;
@@ -132,6 +133,7 @@ const ProprietarioDashboard: React.FC = () => {
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [despesasAberto, setDespesasAberto] = useState(true);
+  const [totalCustosFixos, setTotalCustosFixos] = useState(0);
 
   // Gera lista de anos disponíveis: 2 anos atrás até 1 ano à frente
   const anoAtual = now.getFullYear();
@@ -331,7 +333,8 @@ const ProprietarioDashboard: React.FC = () => {
       { label: "Comissão OTA", value: fmtPDF(totais.plataforma) },
       { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtPDF(totais.comissao) },
       { label: "Despesas Extras", value: fmtPDF(totalDespesas) },
-      { label: "Repasse Líquido", value: fmtPDF(totalLiquido), highlight: true },
+      { label: "Custos Fixos", value: fmtPDF(totalCustosFixos) },
+      { label: "Líquido Final", value: fmtPDF(totalLiquido - totalCustosFixos), highlight: true },
     ];
 
     const cardW = (pageW - 28 - (summaryItems.length - 1) * 4) / summaryItems.length;
@@ -750,6 +753,14 @@ const ProprietarioDashboard: React.FC = () => {
           )}
         </section>
 
+        {/* Custos Fixos Mensais */}
+        <CustosFixosProprietario
+          imoveis={imoveis}
+          repasseMensal={totais.proprietario - totalDespesas}
+          filterImovel={filterImovel}
+          onTotalChange={setTotalCustosFixos}
+        />
+
         {/* Resumo Líquido Final */}
         {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
           <div className="border border-primary/20 rounded-lg px-5 py-4 bg-primary/5 flex items-center justify-between">
@@ -757,14 +768,14 @@ const ProprietarioDashboard: React.FC = () => {
               <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">
                 Líquido Final — {MESES[filterMes]} {filterAno}
               </p>
-              <p className="text-xs text-muted-foreground">Repasse − Despesas Extras</p>
+              <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
             </div>
             <div className="text-right">
               <p className={cn(
                 "font-display text-2xl font-semibold",
-                totalLiquido >= 0 ? "text-primary" : "text-destructive"
+                (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
               )}>
-                {fmt(totalLiquido)}
+                {fmt(totalLiquido - totalCustosFixos)}
               </p>
             </div>
           </div>

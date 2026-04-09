@@ -83,6 +83,47 @@ export type Database = {
         }
         Relationships: []
       }
+      custos_fixos_proprietario: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          imovel_id: string
+          proprietario_id: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          imovel_id: string
+          proprietario_id: string
+          tipo: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          imovel_id?: string
+          proprietario_id?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custos_fixos_proprietario_imovel_id_fkey"
+            columns: ["imovel_id"]
+            isOneToOne: false
+            referencedRelation: "imoveis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       despesas_extras: {
         Row: {
           created_at: string
