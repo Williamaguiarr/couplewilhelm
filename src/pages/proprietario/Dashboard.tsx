@@ -752,6 +752,14 @@ const ProprietarioDashboard: React.FC = () => {
           )}
         </section>
 
+        {/* Custos Fixos Mensais */}
+        <CustosFixosProprietario
+          imoveis={imoveis}
+          repasseMensal={totais.proprietario - totalDespesas}
+          filterImovel={filterImovel}
+          onTotalChange={setTotalCustosFixos}
+        />
+
         {/* Resumo Líquido Final */}
         {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
           <div className="border border-primary/20 rounded-lg px-5 py-4 bg-primary/5 flex items-center justify-between">
@@ -759,14 +767,14 @@ const ProprietarioDashboard: React.FC = () => {
               <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">
                 Líquido Final — {MESES[filterMes]} {filterAno}
               </p>
-              <p className="text-xs text-muted-foreground">Repasse − Despesas Extras</p>
+              <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
             </div>
             <div className="text-right">
               <p className={cn(
                 "font-display text-2xl font-semibold",
-                totalLiquido >= 0 ? "text-primary" : "text-destructive"
+                (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
               )}>
-                {fmt(totalLiquido)}
+                {fmt(totalLiquido - totalCustosFixos)}
               </p>
             </div>
           </div>
