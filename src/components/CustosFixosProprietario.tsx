@@ -28,7 +28,6 @@ import {
   Plus,
   MoreHorizontal,
   Trash2,
-  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +60,10 @@ interface CustosFixosProprietarioProps {
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+const getCustomIndex = (tipo: string) => Number(tipo.split("_")[1] || 0);
+
+const getDefaultCustomLabel = (tipo: string) => `Outro ${getCustomIndex(tipo) || 1}`;
+
 const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
   imoveis,
   repasseMensal,
@@ -73,11 +76,9 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
   const [selectedImovel, setSelectedImovel] = useState<string>("");
   const [custos, setCustos] = useState<Record<string, CustoFixo>>({});
   const [customItems, setCustomItems] = useState<string[]>([]);
-  const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Set default selected property
   useEffect(() => {
     if (filterImovel && filterImovel !== "todos") {
       setSelectedImovel(filterImovel);
@@ -86,11 +87,12 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
     } else if (imoveis.length > 0 && !selectedImovel) {
       setSelectedImovel(imoveis[0].id);
     }
-  }, [filterImovel, imoveis]);
+  }, [filterImovel, imoveis, selectedImovel]);
 
   const fetchCustos = useCallback(async () => {
     if (!user || !selectedImovel) return;
     setLoading(true);
+
     const { data } = await supabase
       .from("custos_fixos_proprietario" as any)
       .select("*")
@@ -100,7 +102,6 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
     const map: Record<string, CustoFixo> = {};
     const customs: string[] = [];
 
-    // Init fixed types
     TIPOS_FIXOS.forEach(({ key }) => {
       map[key] = { tipo: key, valor: 0, ativo: false };
     });
@@ -108,33 +109,34 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
     if (data) {
       (data as any[]).forEach((row) => {
         const isCustom = row.tipo.startsWith("outros_");
+
         map[row.tipo] = {
           id: row.id,
           tipo: row.tipo,
           valor: Number(row.valor),
           ativo: row.ativo,
-          label: row.label || undefined,
+          label: row.label || (isCustom ? getDefaultCustomLabel(row.tipo) : undefined),
         };
-        if (isCustom) {
-          customs.push(row.tipo);
-        }
+
+        if (isCustom) customs.push(row.tipo);
       });
     }
 
+    customs.sort((a, b) => getCustomIndex(a) - getCustomIndex(b));
     setCustos(map);
     setCustomItems(customs);
     setLoading(false);
-  }, [user, selectedImovel]);
+  }, [selectedImovel, user]);
 
   useEffect(() => {
     fetchCustos();
   }, [fetchCustos]);
 
-  // Notify parent of total
   useEffect(() => {
     const total = Object.values(custos)
       .filter((c) => c.ativo)
       .reduce((acc, c) => acc + c.valor, 0);
+
     onTotalChange?.(total);
   }, [custos, onTotalChange]);
 
@@ -161,34 +163,42 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
   };
 
   const addCustomItem = () => {
-    const nextIndex = customItems.length + 1;
-    // Find unique key
-    let key = `outros_${nextIndex}`;
-    while (custos[key]) {
-      key = `outros_${parseInt(key.split("_")[1]) + 1}`;
-    }
+    const nextIndex = [...customItems, ...Object.keys(custos)]
+      .filter((key) => key.startsWith("outros_"))
+      .reduce((max, key) => Math.max(max, getCustomIndex(key)), 0) + 1;
+
+    const key = `outros_${nextIndex}`;
+    const label = `Outro ${nextIndex}`;
+
     setCustos((prev) => ({
       ...prev,
-      [key]: { tipo: key, valor: 0, ativo: true, label: "Outros" },
+      [key]: { tipo: key, valor: 0, ativo: true, label },
     }));
     setCustomItems((prev) => [...prev, key]);
-    setEditingLabel(key);
+    setAberto(true);
   };
 
   const removeCustomItem = async (tipo: string) => {
     const custo = custos[tipo];
+
     if (custo?.id) {
-      await supabase
+      const { error } = await supabase
         .from("custos_fixos_proprietario" as any)
         .delete()
         .eq("id", custo.id);
+
+      if (error) {
+        toast({ title: "Erro ao remover categoria", variant: "destructive" });
+        return;
+      }
     }
+
     setCustos((prev) => {
       const next = { ...prev };
       delete next[tipo];
       return next;
     });
-    setCustomItems((prev) => prev.filter((k) => k !== tipo));
+    setCustomItems((prev) => prev.filter((key) => key !== tipo));
   };
 
   const handleSave = async () => {
@@ -200,7 +210,11 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
         if (custo.id) {
           await supabase
             .from("custos_fixos_proprietario" as any)
-            .update({ valor: custo.valor, ativo: custo.ativo, label: custo.label || null } as any)
+            .update({
+              valor: custo.valor,
+              ativo: custo.ativo,
+              label: custo.label?.trim() || null,
+            } as any)
             .eq("id", custo.id);
         } else if (custo.ativo && custo.valor > 0) {
           await supabase
@@ -211,10 +225,11 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
               tipo: custo.tipo,
               valor: custo.valor,
               ativo: custo.ativo,
-              label: custo.label || null,
+              label: custo.label?.trim() || null,
             } as any);
         }
       }
+
       toast({ title: "Custos fixos salvos com sucesso!" });
       fetchCustos();
     } catch {
@@ -230,10 +245,12 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
 
   const liquidoFinal = repasseMensal - totalCustos;
 
-  const renderCostItem = (key: string, label: string, Icon: React.FC<any>, isCustom: boolean) => {
+  const renderFixedCostItem = (
+    key: string,
+    label: string,
+    Icon: React.ComponentType<{ className?: string }>
+  ) => {
     const custo = custos[key] || { tipo: key, valor: 0, ativo: false };
-    const isEditing = editingLabel === key;
-    const displayLabel = custo.label || label;
 
     return (
       <div
@@ -250,31 +267,8 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
           onCheckedChange={(checked) => handleToggle(key, checked === true)}
         />
         <Icon className="h-4 w-4 text-primary shrink-0" />
-        {isCustom && isEditing ? (
-          <Input
-            autoFocus
-            value={displayLabel}
-            onChange={(e) => handleLabelChange(key, e.target.value)}
-            onBlur={() => setEditingLabel(null)}
-            onKeyDown={(e) => e.key === "Enter" && setEditingLabel(null)}
-            className="h-7 text-sm flex-1 min-w-0 px-2"
-          />
-        ) : (
-          <span
-            className={cn(
-              "text-sm text-foreground flex-1 min-w-0",
-              isCustom && "cursor-pointer hover:underline"
-            )}
-            onClick={isCustom ? () => setEditingLabel(key) : undefined}
-            title={isCustom ? "Clique para renomear" : undefined}
-          >
-            {displayLabel}
-            {isCustom && (
-              <Pencil className="inline h-3 w-3 ml-1 text-muted-foreground" />
-            )}
-          </span>
-        )}
-        <div className="relative w-28">
+        <span className="text-sm text-foreground flex-1 min-w-0">{label}</span>
+        <div className="relative w-28 shrink-0">
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
             R$
           </span>
@@ -289,15 +283,79 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
             placeholder="0,00"
           />
         </div>
-        {isCustom && (
-          <button
-            onClick={() => removeCustomItem(key)}
-            className="text-muted-foreground hover:text-destructive transition-colors"
-            title="Remover"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+      </div>
+    );
+  };
+
+  const renderCustomCostItem = (key: string) => {
+    const custo = custos[key] || {
+      tipo: key,
+      valor: 0,
+      ativo: true,
+      label: getDefaultCustomLabel(key),
+    };
+
+    return (
+      <div
+        key={key}
+        className={cn(
+          "rounded-lg border p-3 transition-colors",
+          custo.ativo
+            ? "border-primary/30 bg-primary/5"
+            : "border-border bg-transparent opacity-60"
         )}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Checkbox
+              checked={custo.ativo}
+              onCheckedChange={(checked) => handleToggle(key, checked === true)}
+            />
+            <MoreHorizontal className="h-4 w-4 text-primary shrink-0" />
+            <div className="min-w-0 flex-1">
+              <Label htmlFor={key} className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                Nome da categoria
+              </Label>
+              <Input
+                id={key}
+                value={custo.label || ""}
+                onChange={(e) => handleLabelChange(key, e.target.value)}
+                placeholder={getDefaultCustomLabel(key)}
+                className="mt-1 h-8 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-end gap-2 sm:w-auto">
+            <div className="relative w-full sm:w-32 shrink-0">
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                Valor
+              </Label>
+              <span className="absolute left-2.5 bottom-2 text-xs text-muted-foreground">
+                R$
+              </span>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={custo.valor || ""}
+                onChange={(e) => handleValorChange(key, e.target.value)}
+                disabled={!custo.ativo}
+                className="mt-1 h-8 text-xs pl-8 text-right"
+                placeholder="0,00"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => removeCustomItem(key)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </div>
     );
   };
@@ -337,7 +395,6 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
 
       {aberto && (
         <div className="border-t border-border px-5 py-4 space-y-5">
-          {/* Property selector */}
           {imoveis.length > 1 && (
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
@@ -364,41 +421,52 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
             </div>
           ) : (
             <>
-              {/* Fixed cost items grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {TIPOS_FIXOS.map(({ key, label, icon: Icon }) =>
-                  renderCostItem(key, label, Icon, false)
-                )}
-                {/* Custom "Outros" items */}
-                {customItems.map((key) =>
-                  renderCostItem(key, "Outros", MoreHorizontal, true)
+                  renderFixedCostItem(key, label, Icon)
                 )}
               </div>
 
-              {/* Add custom category button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={addCustomItem}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Adicionar Categoria
-              </Button>
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest">
+                      Categorias personalizadas
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Crie quantas categorias extras precisar e renomeie cada uma livremente.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={addCustomItem}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Adicionar categoria
+                  </Button>
+                </div>
 
-              {/* Summary */}
+                {customItems.length > 0 ? (
+                  <div className="space-y-3">
+                    {customItems.map((key) => renderCustomCostItem(key))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                    Nenhuma categoria personalizada criada ainda.
+                  </div>
+                )}
+              </div>
+
               <div className="border-t border-border pt-4 space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Total Custos Fixos</span>
-                  <span className="text-foreground font-medium">
-                    - {fmt(totalCustos)}
-                  </span>
+                  <span className="text-foreground font-medium">- {fmt(totalCustos)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Repasse do Período</span>
-                  <span className="text-foreground font-medium">
-                    {fmt(repasseMensal)}
-                  </span>
+                  <span className="text-foreground font-medium">{fmt(repasseMensal)}</span>
                 </div>
                 <div className="border-t border-border pt-3 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground uppercase tracking-widest">
@@ -415,7 +483,6 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
                 </div>
               </div>
 
-              {/* Save button */}
               <div className="flex justify-end">
                 <Button
                   size="sm"
