@@ -371,45 +371,45 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Receita */}
-            <div className="border border-border rounded-lg p-4 space-y-1">
-              <p className="font-display text-2xl text-foreground font-bold">
-                {fmtCompact(totalReceita)} BRL
+            <div className="border border-border rounded-xl p-4 sm:p-5 space-y-2 bg-background/50">
+              <p className="text-xs text-muted-foreground flex items-center gap-1 uppercase tracking-wider font-medium">
+                Receita <InfoIcon tooltip="Receita proveniente do valor das diárias, excluindo impostos, taxas e outros encargos." />
+              </p>
+              <p className="font-display text-2xl text-foreground font-semibold tabular-nums">
+                R$ {fmtCompact(totalReceita)}
               </p>
               <div className="flex items-center gap-1.5">
                 <ChangeIndicator current={totalReceita} previous={priorReceita} format="currency" />
-                <span className="text-[10px] text-muted-foreground/70 font-medium">MEAP</span>
+                <span className="text-[10px] text-muted-foreground/50 font-medium">vs ano anterior</span>
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Receita <InfoIcon tooltip="MEAP = Mesma época no ano passado. A receita proveniente do valor das diárias, excluindo impostos, taxas e outros encargos." />
-              </p>
             </div>
 
             {/* Ocupação */}
-            <div className="border border-border rounded-lg p-4 space-y-1">
-              <p className="font-display text-2xl text-foreground font-bold">
+            <div className="border border-border rounded-xl p-4 sm:p-5 space-y-2 bg-background/50">
+              <p className="text-xs text-muted-foreground flex items-center gap-1 uppercase tracking-wider font-medium">
+                Ocupação <InfoIcon tooltip="Percentual de noites reservadas sobre o total de noites no período." />
+              </p>
+              <p className="font-display text-2xl text-foreground font-semibold tabular-nums">
                 {avgOccupancy.toFixed(0)}%
               </p>
               <div className="flex items-center gap-1.5">
                 <ChangeIndicator current={avgOccupancy} previous={priorAvgOccupancy} format="percent" />
-                <span className="text-[10px] text-muted-foreground/70 font-medium">MEAP</span>
+                <span className="text-[10px] text-muted-foreground/50 font-medium">vs ano anterior</span>
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Ocupação <InfoIcon tooltip="MEAP = Mesma época no ano passado. Ocupação = (Noites reservadas + noites bloqueadas) / Total de noites. Ocupação reservada = Noites reservadas / Total de noites. Ocupação bloqueada = Noites bloqueadas / Total de noites." />
-              </p>
             </div>
 
             {/* Preço médio da diária */}
-            <div className="border border-border rounded-lg p-4 space-y-1">
-              <p className="font-display text-2xl text-foreground font-bold">
-                {fmtCurrency(avgDailyRate)} BRL
+            <div className="border border-border rounded-xl p-4 sm:p-5 space-y-2 bg-background/50">
+              <p className="text-xs text-muted-foreground flex items-center gap-1 uppercase tracking-wider font-medium">
+                Diária média <InfoIcon tooltip="Receita de aluguel dividida pelo número de noites ocupadas." />
+              </p>
+              <p className="font-display text-2xl text-foreground font-semibold tabular-nums">
+                R$ {fmtCurrency(avgDailyRate)}
               </p>
               <div className="flex items-center gap-1.5">
                 <ChangeIndicator current={avgDailyRate} previous={priorAvgDailyRate} format="currency" />
-                <span className="text-[10px] text-muted-foreground/70 font-medium">MEAP</span>
+                <span className="text-[10px] text-muted-foreground/50 font-medium">vs ano anterior</span>
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Preço médio da diária <InfoIcon tooltip="MEAP = Mesma época no ano passado. Preço médio da diária = Receita de aluguel / Duração da estadia. A receita proveniente do valor das diárias, excluindo impostos, taxas e outros encargos." />
-              </p>
             </div>
           </div>
         </CardContent>
@@ -424,8 +424,8 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto -mx-1 px-1">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="text-muted-foreground text-xs font-medium">Mês</TableHead>

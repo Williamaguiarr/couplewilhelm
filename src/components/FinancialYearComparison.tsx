@@ -230,8 +230,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
   const varRepasse = variacao(dataBase.totalRepasse, dataComparacao.totalRepasse);
 
   const TrendIcon = ({ val }: { val: number }) =>
-    val > 0 ? <TrendingUp className="h-3.5 w-3.5 text-emerald-500" /> :
-    val < 0 ? <TrendingDown className="h-3.5 w-3.5 text-red-500" /> :
+    val > 0 ? <TrendingUp className="h-3.5 w-3.5 text-primary" /> :
+    val < 0 ? <TrendingDown className="h-3.5 w-3.5 text-destructive" /> :
     <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
 
   const summaryCards = [
@@ -287,16 +287,16 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {summaryCards.map((s) => (
-            <div key={s.label} className="rounded-lg border border-border p-3 bg-background">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{s.label}</p>
-              <p className="text-lg font-display text-foreground">{fmt(s.base)}</p>
-              <div className="flex items-center gap-1.5 mt-1">
+            <div key={s.label} className="rounded-xl border border-border p-4 bg-background/50">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">{s.label}</p>
+              <p className="text-xl font-display text-foreground font-semibold tabular-nums">{fmt(s.base)}</p>
+              <div className="flex items-center gap-1.5 mt-2">
                 <TrendIcon val={s.var} />
-                <span className={`text-xs font-medium ${s.var > 0 ? "text-emerald-500" : s.var < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                <span className={`text-xs font-medium ${s.var > 0 ? "text-primary" : s.var < 0 ? "text-destructive" : "text-muted-foreground"}`}>
                   {s.var > 0 ? "+" : ""}{s.var.toFixed(1)}% vs {anoComparacao}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">{anoComparacao}: {fmt(s.comp)}</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">{anoComparacao}: {fmt(s.comp)}</p>
             </div>
           ))}
         </div>
@@ -398,8 +398,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
         </div>
 
         {/* Monthly detail table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-1 px-1">
+          <table className="w-full text-sm min-w-[500px]">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left text-xs text-muted-foreground uppercase tracking-widest py-2 pr-3">Mês</th>

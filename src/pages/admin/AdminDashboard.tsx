@@ -817,7 +817,8 @@ const AdminDashboard: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <Table>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
@@ -865,6 +866,7 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+            </div>
             )}
           </div>
 

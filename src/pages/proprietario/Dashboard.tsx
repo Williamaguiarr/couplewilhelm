@@ -610,8 +610,9 @@ const ProprietarioDashboard: React.FC = () => {
                   <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
                 </div>
               ) : (
-                <>
-                   <Table>
+              <>
+                <div className="overflow-x-auto">
+                   <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow>
                         {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão ADM", "Repasse"].map((h, i) => (
@@ -650,6 +651,7 @@ const ProprietarioDashboard: React.FC = () => {
                       })}
                     </TableBody>
                   </Table>
+                </div>
 
                   {/* Totals footer */}
                   <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-6 flex-wrap">
