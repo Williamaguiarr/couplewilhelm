@@ -610,8 +610,9 @@ const ProprietarioDashboard: React.FC = () => {
                   <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
                 </div>
               ) : (
-                <>
-                   <Table>
+              <>
+                <div className="overflow-x-auto">
+                   <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow>
                         {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão ADM", "Repasse"].map((h, i) => (
@@ -650,6 +651,7 @@ const ProprietarioDashboard: React.FC = () => {
                       })}
                     </TableBody>
                   </Table>
+                </div>
 
                   {/* Totals footer */}
                   <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-6 flex-wrap">
@@ -681,16 +683,16 @@ const ProprietarioDashboard: React.FC = () => {
 
         {/* Resumo Líquido Final */}
         {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
-          <div className="border border-primary/20 rounded-xl px-5 py-4 bg-primary/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="border border-primary/25 rounded-xl px-5 sm:px-6 py-5 bg-gradient-to-r from-primary/5 to-primary/[0.02] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">
+              <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-1">
                 Líquido Final — {MESES[filterMes]} {filterAno}
               </p>
               <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
             </div>
             <div className="text-right">
               <p className={cn(
-                "font-display text-2xl font-semibold",
+                "font-display text-3xl font-semibold tabular-nums",
                 (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
               )}>
                 {fmt(totalLiquido - totalCustosFixos)}
@@ -813,19 +815,19 @@ const MetricCard: React.FC<{
   value: string | null;
   icon: React.ReactNode;
 }> = ({ label, sub, value, icon }) => (
-  <Card className="spotlight-card group">
-    <CardContent className="p-5">
+  <Card className="spotlight-card group overflow-hidden">
+    <CardContent className="p-5 sm:p-6">
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">{label}</p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
           {value === null ? (
-            <div className="h-7 w-32 bg-muted animate-pulse rounded-lg" />
+            <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
           ) : (
-            <p className="font-display text-2xl text-foreground">{value}</p>
+            <p className="font-display text-2xl sm:text-3xl text-foreground font-semibold tabular-nums">{value}</p>
           )}
-          <p className="text-xs text-muted-foreground mt-1.5">{sub}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">{sub}</p>
         </div>
-        <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+        <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/14 transition-all duration-300 group-hover:scale-105">
           <span className="text-primary">{icon}</span>
         </div>
       </div>

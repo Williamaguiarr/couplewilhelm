@@ -25,18 +25,18 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Premium glass header */}
           <header className="h-14 flex items-center justify-between px-4 sm:px-6 glass sticky top-0 z-10">
-            <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors duration-200" />
+            <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors duration-200" />
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-foreground leading-tight truncate max-w-[180px]">
+                <p className="text-sm font-medium text-foreground leading-tight truncate max-w-[200px]">
                   {profile?.nome || profile?.email}
                 </p>
-                <p className="text-[11px] text-primary/80 leading-tight font-medium">
+                <p className="text-[11px] text-primary/70 leading-tight font-medium tracking-wide">
                   {roleLabel}
                 </p>
               </div>
-              <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center transition-all duration-200 hover:bg-primary/15 hover:border-primary/30">
-                <span className="text-primary text-xs font-semibold">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center transition-all duration-300 hover:border-primary/40 hover:shadow-glow">
+                <span className="text-primary text-sm font-semibold">
                   {(profile?.nome || profile?.email || "U")[0].toUpperCase()}
                 </span>
               </div>

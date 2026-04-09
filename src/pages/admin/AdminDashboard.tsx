@@ -714,13 +714,13 @@ const AdminDashboard: React.FC = () => {
             <Card
               key={card.title}
               className="spotlight-card group"
-              style={{ animationDelay: `${idx * 60}ms` }}
+              style={{ animationDelay: `${idx * 80}ms` }}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {card.title}
                 </CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+                <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/14 transition-all duration-300 group-hover:scale-105">
                   <card.icon className="h-4 w-4 text-primary" />
                 </div>
               </CardHeader>
@@ -728,7 +728,7 @@ const AdminDashboard: React.FC = () => {
                 {loading ? (
                   <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" />
                 ) : (
-                  <p className="font-display text-2xl text-foreground">
+                  <p className="font-display text-2xl sm:text-3xl text-foreground font-semibold tabular-nums">
                     {formatValue(card.value, card.format)}
                   </p>
                 )}
@@ -817,7 +817,8 @@ const AdminDashboard: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <Table>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
@@ -865,6 +866,7 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+            </div>
             )}
           </div>
 
