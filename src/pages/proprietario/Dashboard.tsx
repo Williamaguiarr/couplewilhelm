@@ -146,7 +146,17 @@ const ProprietarioDashboard: React.FC = () => {
   const [despesasAberto, setDespesasAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
 
-  // Gera lista de anos disponíveis: 2 anos atrás até 1 ano à frente
+  // Form state for adding expense
+  const [showAddDespesa, setShowAddDespesa] = useState(false);
+  const [newDespesa, setNewDespesa] = useState({
+    imovel_id: "",
+    descricao: "",
+    tipo: "manutencao",
+    data: new Date().toISOString().slice(0, 10),
+    valor: "",
+  });
+  const [savingDespesa, setSavingDespesa] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const anoAtual = now.getFullYear();
   const anos = Array.from({ length: 4 }, (_, i) => anoAtual - 2 + i);
 
