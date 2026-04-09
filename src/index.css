@@ -2,62 +2,68 @@
   display: none !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ===================================================
-   COUPLE WILHELM — Design System
-   Luxury dark palette inspired by the brand identity
+   COUPLE WILHELM — Premium Design System
+   21st.dev-inspired: spotlight, glassmorphism, micro-interactions
    =================================================== */
 
 @layer base {
   :root {
-    /* Core — fundo branco creme, texto escuro */
-    --background: 40 30% 97%;         /* quase branco com leve warmth */
-    --foreground: 211 71% 11%;        /* azul-marinho profundo para texto */
+    /* Core — warm light base */
+    --background: 40 20% 97%;
+    --foreground: 220 25% 10%;
 
-    --card: 0 0% 100%;                /* branco puro para cards */
-    --card-foreground: 211 71% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 211 71% 11%;
+    --popover-foreground: 220 25% 10%;
 
-    --primary: 60 10% 44%;            /* dourado/khaki um pouco mais escuro no claro */
+    --primary: 50 12% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 211 30% 93%;         /* azul bem claro */
-    --secondary-foreground: 211 71% 15%;
+    --secondary: 220 18% 94%;
+    --secondary-foreground: 220 25% 15%;
 
-    --muted: 210 20% 95%;             /* cinza azulado suave */
-    --muted-foreground: 211 25% 40%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 210 25% 93%;
-    --accent-foreground: 211 71% 11%;
+    --accent: 220 16% 93%;
+    --accent-foreground: 220 25% 10%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 211 20% 88%;            /* borda cinza-azulada discreta */
-    --input: 210 20% 95%;
-    --ring: 60 10% 44%;
+    --border: 220 13% 90%;
+    --input: 220 14% 95%;
+    --ring: 50 12% 42%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Sidebar mantém o azul-marinho da identidade */
-    --sidebar-background: 211 75% 9%;
-    --sidebar-foreground: 40 27% 80%;
-    --sidebar-primary: 60 10% 58%;
-    --sidebar-primary-foreground: 211 71% 11%;
-    --sidebar-accent: 211 60% 15%;
-    --sidebar-accent-foreground: 40 27% 94%;
-    --sidebar-border: 60 10% 58% / 0.12;
-    --sidebar-ring: 60 10% 58%;
+    /* Sidebar — deep navy */
+    --sidebar-background: 220 40% 8%;
+    --sidebar-foreground: 40 20% 78%;
+    --sidebar-primary: 50 14% 56%;
+    --sidebar-primary-foreground: 220 40% 8%;
+    --sidebar-accent: 220 30% 14%;
+    --sidebar-accent-foreground: 40 20% 92%;
+    --sidebar-border: 50 14% 56% / 0.10;
+    --sidebar-ring: 50 14% 56%;
+
+    /* Premium tokens */
+    --glass-bg: 0 0% 100% / 0.6;
+    --glass-border: 220 13% 90% / 0.5;
+    --spotlight-size: 400px;
+    --glow-primary: 50 12% 42% / 0.08;
   }
 }
 
@@ -68,26 +74,117 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
 
-  /* Tipografia display (Playfair) para títulos */
   .font-display {
     font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.02em;
   }
 }
 
 /* ===================================================
-   ANIMAÇÕES DE TRANSIÇÃO DE PÁGINA
+   GLASSMORPHISM — selective, not abused
+   =================================================== */
+@layer utilities {
+  .glass {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    border: 1px solid hsl(var(--glass-border));
+  }
+
+  .glass-subtle {
+    background: hsl(0 0% 100% / 0.45);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    border: 1px solid hsl(220 13% 90% / 0.4);
+  }
+}
+
+/* ===================================================
+   SPOTLIGHT CARD — hover glow effect
+   =================================================== */
+@layer utilities {
+  .spotlight-card {
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .spotlight-card::before {
+    content: '';
+    position: absolute;
+    top: var(--mouse-y, 50%);
+    left: var(--mouse-x, 50%);
+    width: var(--spotlight-size);
+    height: var(--spotlight-size);
+    background: radial-gradient(
+      circle,
+      hsl(var(--glow-primary)) 0%,
+      transparent 70%
+    );
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .spotlight-card:hover::before {
+    opacity: 1;
+  }
+
+  .spotlight-card:hover {
+    border-color: hsl(50 12% 42% / 0.18);
+    box-shadow:
+      0 0 0 1px hsl(50 12% 42% / 0.06),
+      0 8px 32px -8px hsl(220 25% 10% / 0.08);
+  }
+
+  .spotlight-card > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* ===================================================
+   PREMIUM SHADOWS
+   =================================================== */
+@layer utilities {
+  .shadow-luxury {
+    box-shadow:
+      0 1px 2px hsl(220 25% 10% / 0.04),
+      0 4px 16px -2px hsl(220 25% 10% / 0.06),
+      0 12px 40px -8px hsl(220 25% 10% / 0.05);
+  }
+
+  .shadow-elevated {
+    box-shadow:
+      0 0 0 1px hsl(220 13% 90% / 0.6),
+      0 2px 8px hsl(220 25% 10% / 0.04),
+      0 8px 32px -4px hsl(220 25% 10% / 0.07);
+  }
+
+  .shadow-glow {
+    box-shadow:
+      0 0 0 1px hsl(50 12% 42% / 0.12),
+      0 0 20px -4px hsl(50 12% 42% / 0.10);
+  }
+}
+
+/* ===================================================
+   PAGE TRANSITIONS
    =================================================== */
 @layer utilities {
   @keyframes page-enter {
     from {
       opacity: 0;
-      transform: translateY(12px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -96,65 +193,122 @@
   }
 
   .animate-page-enter {
-    animation: page-enter 0.35s ease-out forwards;
+    animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease forwards;
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 }
 
 /* ===================================================
-   SOMBRA DE LUXO
+   PREMIUM INPUT STYLE (prompt-bar)
    =================================================== */
-@layer utilities {
-  .shadow-luxury {
-    box-shadow: 0 4px 24px -4px hsl(211 71% 11% / 0.08),
-                0 1px 6px -1px hsl(211 71% 11% / 0.06);
+@layer components {
+  .input-premium {
+    @apply bg-background rounded-lg px-4 py-2.5 text-sm transition-all duration-200;
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 2px hsl(220 25% 10% / 0.03);
+  }
+
+  .input-premium:focus {
+    border-color: hsl(var(--primary));
+    box-shadow:
+      0 0 0 3px hsl(var(--glow-primary)),
+      0 1px 2px hsl(220 25% 10% / 0.03);
+    outline: none;
+  }
+
+  .input-premium::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.6;
   }
 }
 
 /* ===================================================
-   CALENDÁRIO CUSTOMIZADO (react-day-picker)
+   BUTTON MICRO-INTERACTIONS
+   =================================================== */
+@layer components {
+  .btn-premium {
+    @apply relative overflow-hidden transition-all duration-200;
+  }
+
+  .btn-premium:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 12px -2px hsl(50 12% 42% / 0.20),
+      0 2px 4px hsl(220 25% 10% / 0.04);
+  }
+
+  .btn-premium:active {
+    transform: translateY(0);
+  }
+}
+
+/* ===================================================
+   CALENDAR (react-day-picker)
    =================================================== */
 .rdp-day-occupied {
-  background-color: hsl(60 10% 44% / 0.18) !important;
-  color: hsl(60 10% 30%) !important;
+  background-color: hsl(50 12% 42% / 0.15) !important;
+  color: hsl(50 12% 30%) !important;
   font-weight: 500;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .rdp-day-occupied:hover {
-  background-color: hsl(60 10% 44% / 0.32) !important;
+  background-color: hsl(50 12% 42% / 0.28) !important;
   cursor: pointer;
 }
 
-/* Esconder botões padrão do react-day-picker e usar nossos estilos */
 .rdp {
-  --rdp-accent-color: hsl(60 10% 44%);
-  --rdp-background-color: hsl(60 10% 44% / 0.12);
-  --rdp-accent-color-dark: hsl(60 10% 44%);
-  --rdp-background-color-dark: hsl(60 10% 44% / 0.12);
-  --rdp-outline: 2px solid hsl(60 10% 44%);
-  --rdp-outline-selected: 2px solid hsl(60 10% 44%);
+  --rdp-accent-color: hsl(50 12% 42%);
+  --rdp-background-color: hsl(50 12% 42% / 0.10);
+  --rdp-accent-color-dark: hsl(50 12% 42%);
+  --rdp-background-color-dark: hsl(50 12% 42% / 0.10);
+  --rdp-outline: 2px solid hsl(50 12% 42%);
+  --rdp-outline-selected: 2px solid hsl(50 12% 42%);
   margin: 0;
 }
 
 /* ===================================================
-   SCROLLBAR
+   SCROLLBAR — refined
    =================================================== */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(210 20% 95%);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(211 20% 75%);
-  border-radius: 3px;
+  background: hsl(220 10% 78%);
+  border-radius: 100px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(60 10% 44% / 0.6);
+  background: hsl(50 12% 42% / 0.5);
 }
 
 /* ===================================================
@@ -163,5 +317,13 @@
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: none;
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0.4;
+}
+
+/* ===================================================
+   SELECTION
+   =================================================== */
+::selection {
+  background: hsl(50 12% 42% / 0.18);
+  color: hsl(220 25% 10%);
 }
