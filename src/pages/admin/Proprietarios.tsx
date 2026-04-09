@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthToken, fetchLinkedProprietarioIds, fetchProfilesByIds } from "@/lib/supabase-helpers";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,25 +74,15 @@ const Proprietarios: React.FC = () => {
   const fetchProprietarios = async () => {
     if (!user) return;
 
-    // Busca proprietários vinculados a este admin via tabela de vínculo
-    const { data: vinculos } = await supabase
-      .from("admin_proprietarios" as any)
-      .select("proprietario_id")
-      .eq("admin_id", user.id);
-
-    if (!vinculos || vinculos.length === 0) {
+    const ids = await fetchLinkedProprietarioIds(user.id);
+    if (ids.length === 0) {
       setProprietarios([]);
       setLoading(false);
       return;
     }
 
-    const ids = (vinculos as any[]).map((v) => v.proprietario_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("*")
-      .in("id", ids);
-
-    setProprietarios(profiles || []);
+    const profiles = await fetchProfilesByIds(ids);
+    setProprietarios(profiles as Proprietario[]);
     setLoading(false);
   };
 
@@ -99,17 +90,12 @@ const Proprietarios: React.FC = () => {
     fetchProprietarios();
   }, [user]);
 
-  const getToken = async () => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token;
-  };
-
   // ── CREATE ──────────────────────────────────────────────
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateSubmitting(true);
 
-    const token = await getToken();
+    const token = await getAuthToken();
     const res = await supabase.functions.invoke("create-user", {
       body: {
         email: createForm.email,
