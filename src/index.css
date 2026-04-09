@@ -362,3 +362,87 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: hsl(48 14% 42% / 0.16);
   color: hsl(222 28% 12%);
 }
+
+/* ===================================================
+   PREMIUM SKELETON — shimmer effect
+   =================================================== */
+@layer utilities {
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / 0.06) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+}
+
+/* ===================================================
+   FOCUS RING — premium glow
+   =================================================== */
+@layer utilities {
+  .focus-ring-premium {
+    @apply outline-none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .focus-ring-premium:focus-visible {
+    border-color: hsl(var(--primary));
+    box-shadow:
+      0 0 0 3px hsl(var(--glow-primary)),
+      0 1px 2px hsl(222 28% 12% / 0.03);
+  }
+}
+
+/* ===================================================
+   STATE INDICATORS — success, error, warning
+   =================================================== */
+@layer utilities {
+  @keyframes check-draw {
+    0% { stroke-dashoffset: 24; }
+    100% { stroke-dashoffset: 0; }
+  }
+  .animate-check {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    animation: check-draw 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+  }
+
+  @keyframes subtle-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  .animate-subtle-bounce {
+    animation: subtle-bounce 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+}
+
+/* ===================================================
+   LOADING SPINNER — refined
+   =================================================== */
+@layer components {
+  .spinner-premium {
+    width: 20px;
+    height: 20px;
+    border: 2px solid hsl(var(--border));
+    border-top-color: hsl(var(--primary));
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
