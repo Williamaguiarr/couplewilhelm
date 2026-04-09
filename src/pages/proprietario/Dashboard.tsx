@@ -467,7 +467,7 @@ const ProprietarioDashboard: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-6 w-full max-w-5xl overflow-x-hidden">
+      <div className="w-full max-w-6xl overflow-x-hidden space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -489,319 +489,334 @@ const ProprietarioDashboard: React.FC = () => {
           </Button>
         </div>
 
-        {/* Metric cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <MetricCard
-            label="Receita do Mês"
-            sub="Checkouts neste mês"
-            value={loading ? null : fmt(receitaMesAtual)}
-            icon={<TrendingUp className="h-4 w-4" />}
-          />
-          <MetricCard
-            label="Previsão Futura"
-            sub="Reservas confirmadas"
-            value={loading ? null : fmt(previsaoFutura)}
-            icon={<CalendarCheck className="h-4 w-4" />}
-          />
-        </div>
-        {/* Taxa de Ocupação */}
-        <OccupancyComparison
-          mes={filterMes}
-          ano={filterAno}
-          imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
-        />
+        {/* ═══ BENTO GRID ═══ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-min">
 
-        {/* Extrato */}
-        <section className="border border-border rounded-xl overflow-hidden">
-          <button
-            onClick={() => setExtratoAberto((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors duration-150"
-          >
-            <span className="font-display text-base text-foreground">Extrato Financeiro</span>
-            {extratoAberto
-              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-          </button>
+          {/* ── Receita do Mês (span 1) ── */}
+          <BentoBox className="lg:col-span-2">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Receita do Mês</p>
+                {loading ? (
+                  <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
+                ) : (
+                  <p className="font-display text-3xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
+                )}
+                <p className="text-xs text-muted-foreground/70">Checkouts neste mês</p>
+              </div>
+              <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+          </BentoBox>
 
-          {extratoAberto && (
-            <div className="border-t border-border">
-              {/* Filters */}
-              <div className="px-5 py-3 flex flex-wrap items-end gap-3 border-b border-border">
-                {/* Filtro por Imóvel */}
-                {imoveis.length > 1 && (
+          {/* ── Previsão Futura (span 1) ── */}
+          <BentoBox className="lg:col-span-2">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Previsão Futura</p>
+                {loading ? (
+                  <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
+                ) : (
+                  <p className="font-display text-3xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(previsaoFutura)}</p>
+                )}
+                <p className="text-xs text-muted-foreground/70">Reservas confirmadas</p>
+              </div>
+              <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
+                <CalendarCheck className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+          </BentoBox>
+
+          {/* ── Líquido Final (full width highlight) ── */}
+          {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
+            <BentoBox className="lg:col-span-4 bg-gradient-to-r from-primary/6 via-primary/3 to-transparent border-primary/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-1">
+                    Líquido Final — {MESES[filterMes]} {filterAno}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
+                </div>
+                <p className={cn(
+                  "font-display text-3xl sm:text-4xl font-semibold tabular-nums",
+                  (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
+                )}>
+                  {fmt(totalLiquido - totalCustosFixos)}
+                </p>
+              </div>
+            </BentoBox>
+          )}
+
+          {/* ── KPIs / Ocupação (full width) ── */}
+          <div className="lg:col-span-4">
+            <OccupancyComparison
+              mes={filterMes}
+              ano={filterAno}
+              imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
+            />
+          </div>
+
+          {/* ── Extrato Financeiro (full width) ── */}
+          <BentoBox className="lg:col-span-4 !p-0 overflow-hidden" hover={false}>
+            <button
+              onClick={() => setExtratoAberto((v) => !v)}
+              className="w-full flex items-center justify-between px-5 sm:px-6 py-4 hover:bg-muted/30 transition-colors duration-150"
+            >
+              <span className="font-display text-base text-foreground">Extrato Financeiro</span>
+              {extratoAberto
+                ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </button>
+
+            {extratoAberto && (
+              <div className="border-t border-border">
+                {/* Filters */}
+                <div className="px-5 sm:px-6 py-3 flex flex-wrap items-end gap-3 border-b border-border">
+                  {imoveis.length > 1 && (
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <Building2 className="h-3 w-3" /> Imóvel
+                      </Label>
+                      <Select value={filterImovel} onValueChange={setFilterImovel}>
+                        <SelectTrigger className="w-44 h-8 text-xs bg-transparent border-border">
+                          <SelectValue placeholder="Todos os imóveis" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          <SelectItem value="todos" className="text-xs">Todos os imóveis</SelectItem>
+                          {imoveis.map((imovel) => (
+                            <SelectItem key={imovel.id} value={imovel.id} className="text-xs">
+                              {imovel.nome_imovel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                      <Building2 className="h-3 w-3" /> Imóvel
-                    </Label>
-                    <Select value={filterImovel} onValueChange={setFilterImovel}>
-                      <SelectTrigger className="w-44 h-8 text-xs bg-transparent border-border">
-                        <SelectValue placeholder="Todos os imóveis" />
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Mês</Label>
+                    <Select value={String(filterMes)} onValueChange={(v) => setFilterMes(Number(v))}>
+                      <SelectTrigger className="w-36 h-8 text-xs bg-transparent border-border">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        <SelectItem value="todos" className="text-xs">Todos os imóveis</SelectItem>
-                        {imoveis.map((imovel) => (
-                          <SelectItem key={imovel.id} value={imovel.id} className="text-xs">
-                            {imovel.nome_imovel}
+                        {MESES.map((nome, idx) => (
+                          <SelectItem key={idx} value={String(idx)} className="text-xs">
+                            {nome}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                )}
 
-                {/* Filtro Mês */}
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Mês</Label>
-                  <Select value={String(filterMes)} onValueChange={(v) => setFilterMes(Number(v))}>
-                    <SelectTrigger className="w-36 h-8 text-xs bg-transparent border-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {MESES.map((nome, idx) => (
-                        <SelectItem key={idx} value={String(idx)} className="text-xs">
-                          {nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Filtro Ano */}
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Ano</Label>
-                  <Select value={String(filterAno)} onValueChange={(v) => setFilterAno(Number(v))}>
-                    <SelectTrigger className="w-24 h-8 text-xs bg-transparent border-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {anos.map((ano) => (
-                        <SelectItem key={ano} value={String(ano)} className="text-xs">
-                          {ano}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Botão voltar ao mês atual */}
-                {!isPeriodoAtual && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setFilterMes(currentMonth); setFilterAno(currentYear); }}
-                    className="text-muted-foreground hover:text-foreground gap-1.5 h-8 self-end"
-                  >
-                    <X className="h-3 w-3" /> Mês atual
-                  </Button>
-                )}
-
-                <span className="ml-auto self-end text-xs text-muted-foreground">
-                  {reservasFiltradas.length} reserva{reservasFiltradas.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-
-              {/* Table */}
-              {loading ? (
-                <div className="p-10 flex justify-center">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : reservasFiltradas.length === 0 ? (
-                <div className="p-10 text-center">
-                  <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
-                </div>
-              ) : (
-              <>
-                <div className="overflow-x-auto">
-                   <Table className="min-w-[700px]">
-                    <TableHeader>
-                      <TableRow>
-                        {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão ADM", "Repasse"].map((h, i) => (
-                          <TableHead
-                            key={h}
-                            className={cn(i > 2 && "text-right")}
-                          >
-                            {h}
-                          </TableHead>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Ano</Label>
+                    <Select value={String(filterAno)} onValueChange={(v) => setFilterAno(Number(v))}>
+                      <SelectTrigger className="w-24 h-8 text-xs bg-transparent border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {anos.map((ano) => (
+                          <SelectItem key={ano} value={String(ano)} className="text-xs">
+                            {ano}
+                          </SelectItem>
                         ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reservasFiltradas.map((r) => {
-                        const f = calcFinanceiro(r, comissaoRate);
-                        return (
-                          <TableRow key={r.id} className="border-border hover:bg-muted/20">
-                            <TableCell className="text-foreground font-medium text-sm py-3">
-                              {r.imovel?.nome_imovel ?? "—"}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm py-3">
-                              {new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm py-3">
-                              {new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.bruto)}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.limpeza)}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right py-3">
-                              {f.plataforma > 0 ? fmt(f.plataforma) : <span className="opacity-30">—</span>}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.comissao)}</TableCell>
-                            <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(f.proprietario)}</TableCell>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {!isPeriodoAtual && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setFilterMes(currentMonth); setFilterAno(currentYear); }}
+                      className="text-muted-foreground hover:text-foreground gap-1.5 h-8 self-end"
+                    >
+                      <X className="h-3 w-3" /> Mês atual
+                    </Button>
+                  )}
+
+                  <span className="ml-auto self-end text-xs text-muted-foreground">
+                    {reservasFiltradas.length} reserva{reservasFiltradas.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {/* Table */}
+                {loading ? (
+                  <div className="p-10 flex justify-center">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : reservasFiltradas.length === 0 ? (
+                  <div className="p-10 text-center">
+                    <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[700px]">
+                        <TableHeader>
+                          <TableRow>
+                            {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão ADM", "Repasse"].map((h, i) => (
+                              <TableHead key={h} className={cn(i > 2 && "text-right")}>
+                                {h}
+                              </TableHead>
+                            ))}
                           </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {reservasFiltradas.map((r) => {
+                            const f = calcFinanceiro(r, comissaoRate);
+                            return (
+                              <TableRow key={r.id} className="border-border hover:bg-muted/20">
+                                <TableCell className="text-foreground font-medium text-sm py-3">{r.imovel?.nome_imovel ?? "—"}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm py-3">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm py-3">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.bruto)}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.limpeza)}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3">
+                                  {f.plataforma > 0 ? fmt(f.plataforma) : <span className="opacity-30">—</span>}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.comissao)}</TableCell>
+                                <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(f.proprietario)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Totals footer */}
+                    <div className="border-t border-border px-5 sm:px-6 py-3 flex items-center justify-end gap-6 flex-wrap">
+                      <TotalItem label="Bruto" value={fmt(totais.bruto)} />
+                      <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
+                      {totais.plataforma > 0 && (
+                        <TotalItem label="Com. OTA" value={fmt(totais.plataforma)} />
+                      )}
+                      <TotalItem label="Comissão ADM" value={fmt(totais.comissao)} />
+                      <div className="pl-6 border-l border-border">
+                        <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Repasse</p>
+                        <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </BentoBox>
+
+          {/* ── Custos Fixos (span 2) ── */}
+          <div className="lg:col-span-4">
+            <CustosFixosProprietario
+              imoveis={imoveis}
+              repasseMensal={totais.proprietario - totalDespesas}
+              filterImovel={filterImovel}
+              onTotalChange={setTotalCustosFixos}
+            />
+          </div>
+
+          {/* ── Calendário de Ocupação (span 4) ── */}
+          <BentoBox className="lg:col-span-4">
+            <div className="mb-5">
+              <h2 className="font-display text-base text-foreground">Calendário de Ocupação</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Dias em dourado indicam período de reserva — clique para detalhes
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <div>
+                    <DayPicker
+                      mode="single"
+                      month={month}
+                      onMonthChange={setMonth}
+                      locale={ptBR}
+                      onDayClick={handleDayClick}
+                      modifiers={{ occupied: occupiedDays }}
+                      modifiersClassNames={{ occupied: "rdp-day-occupied" }}
+                      classNames={{
+                        root: "rdp-luxury",
+                        months: "flex flex-col",
+                        month: "space-y-4",
+                        caption: "flex justify-center relative items-center",
+                        caption_label: "font-display text-foreground text-sm tracking-wide capitalize",
+                        nav: "flex items-center gap-1",
+                        nav_button: "h-7 w-7 bg-transparent hover:bg-muted rounded-md flex items-center justify-center transition-colors text-muted-foreground hover:text-primary",
+                        nav_button_previous: "absolute left-0",
+                        nav_button_next: "absolute right-0",
+                        table: "w-full border-collapse",
+                        head_row: "flex",
+                        head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.7rem] text-center uppercase tracking-wider",
+                        row: "flex w-full mt-1",
+                        cell: "h-9 w-9 text-center text-sm relative p-0",
+                        day: "h-9 w-9 p-0 font-normal rounded-md text-foreground hover:bg-muted transition-colors cursor-pointer aria-selected:opacity-100 flex items-center justify-center",
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary",
+                        day_today: "border border-primary/50 text-primary",
+                        day_outside: "text-muted-foreground opacity-30",
+                        day_disabled: "text-muted-foreground opacity-30 cursor-not-allowed",
+                      }}
+                    />
+                  </div>
+                </PopoverTrigger>
+
+                {selectedDay && selectedReservas.length > 0 && (
+                  <PopoverContent
+                    className="bg-card border border-border shadow-luxury w-72 p-4"
+                    align="center"
+                  >
+                    <div className="space-y-3">
+                      <p className="font-display text-xs text-primary tracking-widest uppercase">
+                        {selectedDay.toLocaleDateString("pt-BR", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                        })}
+                      </p>
+                      {selectedReservas.map((r) => {
+                        const f = calcFinanceiro(r, comissaoRate);
+                        const pctLabel = `${Math.round(comissaoRate * 100)}%`;
+                        return (
+                          <div key={r.id} className="border-t border-border pt-3 space-y-3">
+                            <p className="text-foreground font-medium text-sm">
+                              {r.imovel?.nome_imovel}
+                            </p>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <div className="flex justify-between">
+                                <span>Check-in</span>
+                                <span>{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Check-out</span>
+                                <span>{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                              </div>
+                            </div>
+                            <div className="bg-muted/20 rounded-lg p-2.5 space-y-1.5 text-xs">
+                              <FinRow label="Valor bruto" value={fmt(f.bruto)} />
+                              <FinRow label="Taxa de limpeza" value={`- ${fmt(f.limpeza)}`} />
+                              <div className="border-t border-border pt-1.5">
+                                <FinRow label="Valor líquido" value={fmt(f.bruto - f.limpeza)} />
+                              </div>
+                              <FinRow label={`Comissão ${nomeAdmin} (${pctLabel})`} value={`- ${fmt(f.comissao)}`} />
+                              <div className="border-t border-border pt-1.5">
+                                <FinRow label="Seu repasse" value={fmt(f.proprietario)} highlight />
+                              </div>
+                            </div>
+                            {r.observacoes && (
+                              <p className="text-xs text-muted-foreground italic">{r.observacoes}</p>
+                            )}
+                          </div>
                         );
                       })}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                  {/* Totals footer */}
-                  <div className="border-t border-border px-5 py-3 flex items-center justify-end gap-6 flex-wrap">
-                    <TotalItem label="Bruto" value={fmt(totais.bruto)} />
-                    <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
-                    {totais.plataforma > 0 && (
-                      <TotalItem label="Com. OTA" value={fmt(totais.plataforma)} />
-                    )}
-                    <TotalItem label="Comissão ADM" value={fmt(totais.comissao)} />
-                    <div className="pl-6 border-l border-border">
-                      <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Seu Repasse</p>
-                      <p className="font-display text-base text-primary font-semibold">{fmt(totais.proprietario)}</p>
                     </div>
-                  </div>
-                </>
-              )}
+                  </PopoverContent>
+                )}
+              </Popover>
             </div>
-          )}
-        </section>
+          </BentoBox>
 
-
-
-        <CustosFixosProprietario
-          imoveis={imoveis}
-          repasseMensal={totais.proprietario - totalDespesas}
-          filterImovel={filterImovel}
-          onTotalChange={setTotalCustosFixos}
-        />
-
-        {/* Resumo Líquido Final */}
-        {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
-          <div className="border border-primary/25 rounded-xl px-5 sm:px-6 py-5 bg-gradient-to-r from-primary/5 to-primary/[0.02] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-1">
-                Líquido Final — {MESES[filterMes]} {filterAno}
-              </p>
-              <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
-            </div>
-            <div className="text-right">
-              <p className={cn(
-                "font-display text-3xl font-semibold tabular-nums",
-                (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
-              )}>
-                {fmt(totalLiquido - totalCustosFixos)}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Calendar */}
-        <section className="border border-border rounded-xl p-5">
-          <div className="mb-5">
-            <h2 className="font-display text-base text-foreground">Calendário de Ocupação</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Dias em dourado indicam período de reserva — clique para detalhes
-            </p>
-          </div>
-
-          <div className="flex justify-center">
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-              <PopoverTrigger asChild>
-                <div>
-                  <DayPicker
-                    mode="single"
-                    month={month}
-                    onMonthChange={setMonth}
-                    locale={ptBR}
-                    onDayClick={handleDayClick}
-                    modifiers={{ occupied: occupiedDays }}
-                    modifiersClassNames={{ occupied: "rdp-day-occupied" }}
-                    classNames={{
-                      root: "rdp-luxury",
-                      months: "flex flex-col",
-                      month: "space-y-4",
-                      caption: "flex justify-center relative items-center",
-                      caption_label: "font-display text-foreground text-sm tracking-wide capitalize",
-                      nav: "flex items-center gap-1",
-                      nav_button: "h-7 w-7 bg-transparent hover:bg-muted rounded-md flex items-center justify-center transition-colors text-muted-foreground hover:text-primary",
-                      nav_button_previous: "absolute left-0",
-                      nav_button_next: "absolute right-0",
-                      table: "w-full border-collapse",
-                      head_row: "flex",
-                      head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.7rem] text-center uppercase tracking-wider",
-                      row: "flex w-full mt-1",
-                      cell: "h-9 w-9 text-center text-sm relative p-0",
-                      day: "h-9 w-9 p-0 font-normal rounded-md text-foreground hover:bg-muted transition-colors cursor-pointer aria-selected:opacity-100 flex items-center justify-center",
-                      day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-                      day_today: "border border-primary/50 text-primary",
-                      day_outside: "text-muted-foreground opacity-30",
-                      day_disabled: "text-muted-foreground opacity-30 cursor-not-allowed",
-                    }}
-                  />
-                </div>
-              </PopoverTrigger>
-
-              {selectedDay && selectedReservas.length > 0 && (
-                <PopoverContent
-                  className="bg-card border border-border shadow-luxury w-72 p-4"
-                  align="center"
-                >
-                  <div className="space-y-3">
-                    <p className="font-display text-xs text-primary tracking-widest uppercase">
-                      {selectedDay.toLocaleDateString("pt-BR", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </p>
-                    {selectedReservas.map((r) => {
-                      const f = calcFinanceiro(r, comissaoRate);
-                      const pctLabel = `${Math.round(comissaoRate * 100)}%`;
-                      return (
-                        <div key={r.id} className="border-t border-border pt-3 space-y-3">
-                          <p className="text-foreground font-medium text-sm">
-                            {r.imovel?.nome_imovel}
-                          </p>
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            <div className="flex justify-between">
-                              <span>Check-in</span>
-                              <span>{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Check-out</span>
-                              <span>{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="bg-muted/20 rounded p-2.5 space-y-1.5 text-xs">
-                            <FinRow label="Valor bruto" value={fmt(f.bruto)} />
-                            <FinRow label="Taxa de limpeza" value={`- ${fmt(f.limpeza)}`} />
-                            <div className="border-t border-border pt-1.5">
-                              <FinRow label="Valor líquido" value={fmt(f.bruto - f.limpeza)} />
-                            </div>
-                            <FinRow label={`Comissão ${nomeAdmin} (${pctLabel})`} value={`- ${fmt(f.comissao)}`} />
-                            <div className="border-t border-border pt-1.5">
-                              <FinRow label="Seu repasse" value={fmt(f.proprietario)} highlight />
-                            </div>
-                          </div>
-                          {r.observacoes && (
-                            <p className="text-xs text-muted-foreground italic">{r.observacoes}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              )}
-            </Popover>
-          </div>
-        </section>
+        </div>{/* end bento grid */}
       </div>
     </PageTransition>
   );
