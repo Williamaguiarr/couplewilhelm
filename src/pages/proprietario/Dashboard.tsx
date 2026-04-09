@@ -333,7 +333,8 @@ const ProprietarioDashboard: React.FC = () => {
       { label: "Comissão OTA", value: fmtPDF(totais.plataforma) },
       { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtPDF(totais.comissao) },
       { label: "Despesas Extras", value: fmtPDF(totalDespesas) },
-      { label: "Repasse Líquido", value: fmtPDF(totalLiquido), highlight: true },
+      { label: "Custos Fixos", value: fmtPDF(totalCustosFixos) },
+      { label: "Líquido Final", value: fmtPDF(totalLiquido - totalCustosFixos), highlight: true },
     ];
 
     const cardW = (pageW - 28 - (summaryItems.length - 1) * 4) / summaryItems.length;
