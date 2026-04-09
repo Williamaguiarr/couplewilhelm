@@ -26,6 +26,20 @@ import {
   Save,
   Loader2,
   Plus,
+  MoreHorizontal,
+} from "lucide-react";
+  ChevronUp,
+  Home,
+  Landmark,
+  Building2,
+  FileText,
+  Zap,
+  Droplets,
+  Flame,
+  Wifi,
+  Save,
+  Loader2,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +52,7 @@ const TIPOS_CUSTOS = [
   { key: "agua", label: "Água", icon: Droplets },
   { key: "gas", label: "Gás", icon: Flame },
   { key: "internet", label: "Internet", icon: Wifi },
+  { key: "outros", label: "Outros", icon: MoreHorizontal },
 ] as const;
 
 type CustoFixo = {
