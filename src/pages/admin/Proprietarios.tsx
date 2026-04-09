@@ -223,7 +223,7 @@ const Proprietarios: React.FC = () => {
   return (
     <PageTransition>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Proprietários</h1>
             <p className="text-muted-foreground mt-1 text-sm">Gerencie os proprietários cadastrados no sistema</p>
@@ -341,7 +341,8 @@ const Proprietarios: React.FC = () => {
               </p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
@@ -384,6 +385,7 @@ const Proprietarios: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>

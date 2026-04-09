@@ -293,7 +293,7 @@ const Imoveis: React.FC = () => {
   return (
     <PageTransition>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Imóveis</h1>
             <p className="text-muted-foreground mt-1 text-sm">Gerencie os imóveis da carteira</p>
@@ -441,7 +441,8 @@ const Imoveis: React.FC = () => {
               <p className="text-muted-foreground">Nenhum imóvel cadastrado</p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Imóvel</TableHead>
@@ -539,6 +540,7 @@ const Imoveis: React.FC = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>
