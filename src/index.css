@@ -116,15 +116,9 @@
     line-height: 1.35;
   }
 
-  p {
-    line-height: 1.65;
-  }
+  p { line-height: 1.65; }
+  small, .text-sm { line-height: 1.5; }
 
-  small, .text-sm {
-    line-height: 1.5;
-  }
-
-  /* Improve label/caption readability */
   label {
     font-weight: 500;
     font-size: 0.875rem;
@@ -133,27 +127,23 @@
 }
 
 /* ===================================================
-   GLASSMORPHISM — selective, header only
+   UTILITY CLASSES
    =================================================== */
 @layer utilities {
+  /* Glassmorphism — selective use */
   .glass {
     background: hsl(var(--glass-bg));
     backdrop-filter: blur(14px) saturate(1.5);
     -webkit-backdrop-filter: blur(14px) saturate(1.5);
     border-bottom: 1px solid hsl(var(--glass-border));
   }
-}
 
-/* ===================================================
-   SPOTLIGHT CARD — subtle radial glow on hover
-   =================================================== */
-@layer utilities {
+  /* Spotlight card — radial glow on hover */
   .spotlight-card {
     position: relative;
     overflow: hidden;
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
   }
-
   .spotlight-card::before {
     content: '';
     position: absolute;
@@ -168,205 +158,16 @@
     pointer-events: none;
     z-index: 0;
   }
-
-  .spotlight-card:hover::before {
-    opacity: 1;
-  }
-
+  .spotlight-card:hover::before { opacity: 1; }
   .spotlight-card:hover {
     border-color: hsl(48 14% 42% / 0.16);
     box-shadow:
       0 0 0 1px hsl(48 14% 42% / 0.05),
       0 8px 24px -6px hsl(222 28% 12% / 0.07);
   }
+  .spotlight-card > * { position: relative; z-index: 1; }
 
-  .spotlight-card > * {
-    position: relative;
-    z-index: 1;
-  }
-}
-
-/* ===================================================
-   SHADOW SYSTEM — 3 tiers
-   =================================================== */
-@layer utilities {
-  .shadow-luxury {
-    box-shadow:
-      0 1px 2px hsl(222 28% 12% / 0.03),
-      0 4px 16px -2px hsl(222 28% 12% / 0.05),
-      0 12px 40px -8px hsl(222 28% 12% / 0.04);
-  }
-
-  .shadow-elevated {
-    box-shadow:
-      0 0 0 1px hsl(220 14% 90% / 0.5),
-      0 2px 6px hsl(222 28% 12% / 0.03),
-      0 8px 24px -4px hsl(222 28% 12% / 0.06);
-  }
-
-  .shadow-glow {
-    box-shadow:
-      0 0 0 1px hsl(48 14% 42% / 0.10),
-      0 0 16px -4px hsl(48 14% 42% / 0.08);
-  }
-}
-
-/* ===================================================
-   PAGE TRANSITIONS
-   =================================================== */
-@layer utilities {
-  @keyframes page-enter {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-page-enter {
-    animation: page-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  .animate-fade-in {
-    animation: fade-in 0.4s ease forwards;
-  }
-
-  @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.97); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .animate-scale-in {
-    animation: scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-}
-
-/* ===================================================
-   PREMIUM INPUT — prompt-bar style
-   =================================================== */
-@layer components {
-  .input-premium {
-    @apply bg-background rounded-lg px-4 py-2.5 text-sm;
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 2px hsl(222 28% 12% / 0.02);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .input-premium:focus {
-    border-color: hsl(var(--primary));
-    box-shadow:
-      0 0 0 3px hsl(var(--glow-primary)),
-      0 1px 2px hsl(222 28% 12% / 0.02);
-    outline: none;
-  }
-
-  .input-premium::placeholder {
-    color: hsl(var(--muted-foreground));
-    opacity: 0.55;
-  }
-}
-
-/* ===================================================
-   BUTTON MICRO-INTERACTIONS
-   =================================================== */
-@layer components {
-  .btn-lift {
-    transition: transform 0.15s ease, box-shadow 0.2s ease;
-  }
-  .btn-lift:hover:not(:disabled) {
-    transform: translateY(-1px);
-  }
-  .btn-lift:active:not(:disabled) {
-    transform: translateY(0);
-  }
-}
-
-/* ===================================================
-   TABLE — premium striping & hover
-   =================================================== */
-@layer components {
-  .table-premium tbody tr:nth-child(even) {
-    background-color: hsl(var(--muted) / 0.3);
-  }
-  .table-premium tbody tr {
-    transition: background-color 0.15s ease;
-  }
-  .table-premium tbody tr:hover {
-    background-color: hsl(var(--accent));
-  }
-  .table-premium thead th {
-    background-color: hsl(var(--muted) / 0.5);
-    font-weight: 600;
-    font-size: 0.75rem;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    color: hsl(var(--muted-foreground));
-  }
-}
-
-/* ===================================================
-   CALENDAR (react-day-picker)
-   =================================================== */
-.rdp-day-occupied {
-  background-color: hsl(48 14% 42% / 0.14) !important;
-  color: hsl(48 14% 30%) !important;
-  font-weight: 500;
-  border-radius: 6px;
-}
-
-.rdp-day-occupied:hover {
-  background-color: hsl(48 14% 42% / 0.26) !important;
-  cursor: pointer;
-}
-
-.rdp {
-  --rdp-accent-color: hsl(48 14% 42%);
-  --rdp-background-color: hsl(48 14% 42% / 0.10);
-  --rdp-accent-color-dark: hsl(48 14% 42%);
-  --rdp-background-color-dark: hsl(48 14% 42% / 0.10);
-  --rdp-outline: 2px solid hsl(48 14% 42%);
-  --rdp-outline-selected: 2px solid hsl(48 14% 42%);
-  margin: 0;
-}
-
-/* ===================================================
-   SCROLLBAR — minimal
-   =================================================== */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(220 10% 80%);
-  border-radius: 100px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(48 14% 42% / 0.45);
-}
-
-/* ===================================================
-   INPUT DATE
-   =================================================== */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: none;
-  cursor: pointer;
-  opacity: 0.35;
-}
-
-/* ===================================================
-   SELECTION
-   =================================================== */
-::selection {
-  background: hsl(48 14% 42% / 0.16);
-  color: hsl(222 28% 12%);
-}
-
-/* ===================================================
-   PREMIUM SKELETON — shimmer effect
-   =================================================== */
-@layer utilities {
+  /* Skeleton shimmer */
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
@@ -384,65 +185,69 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ===================================================
-   FOCUS RING — premium glow
+   COMPONENT STYLES
    =================================================== */
-@layer utilities {
-  .focus-ring-premium {
-    @apply outline-none;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+@layer components {
+  /* Premium input — Login page */
+  .input-premium {
+    @apply bg-background rounded-lg px-4 py-2.5 text-sm;
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 2px hsl(222 28% 12% / 0.02);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .focus-ring-premium:focus-visible {
+  .input-premium:focus {
     border-color: hsl(var(--primary));
     box-shadow:
       0 0 0 3px hsl(var(--glow-primary)),
-      0 1px 2px hsl(222 28% 12% / 0.03);
+      0 1px 2px hsl(222 28% 12% / 0.02);
+    outline: none;
+  }
+  .input-premium::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.55;
   }
 }
 
 /* ===================================================
-   STATE INDICATORS — success, error, warning
+   THIRD-PARTY OVERRIDES
    =================================================== */
-@layer utilities {
-  @keyframes check-draw {
-    0% { stroke-dashoffset: 24; }
-    100% { stroke-dashoffset: 0; }
-  }
-  .animate-check {
-    stroke-dasharray: 24;
-    stroke-dashoffset: 24;
-    animation: check-draw 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-  }
 
-  @keyframes subtle-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
-  }
-  .animate-subtle-bounce {
-    animation: subtle-bounce 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fade-up {
-    animation: fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
+/* Calendar (react-day-picker) */
+.rdp-day-occupied {
+  background-color: hsl(48 14% 42% / 0.14) !important;
+  color: hsl(48 14% 30%) !important;
+  font-weight: 500;
+  border-radius: 6px;
+}
+.rdp-day-occupied:hover {
+  background-color: hsl(48 14% 42% / 0.26) !important;
+  cursor: pointer;
+}
+.rdp {
+  --rdp-accent-color: hsl(48 14% 42%);
+  --rdp-background-color: hsl(48 14% 42% / 0.10);
+  --rdp-accent-color-dark: hsl(48 14% 42%);
+  --rdp-background-color-dark: hsl(48 14% 42% / 0.10);
+  --rdp-outline: 2px solid hsl(48 14% 42%);
+  --rdp-outline-selected: 2px solid hsl(48 14% 42%);
+  margin: 0;
 }
 
-/* ===================================================
-   LOADING SPINNER — refined
-   =================================================== */
-@layer components {
-  .spinner-premium {
-    width: 20px;
-    height: 20px;
-    border: 2px solid hsl(var(--border));
-    border-top-color: hsl(var(--primary));
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(220 10% 80%); border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(48 14% 42% / 0.45); }
+
+/* Date input */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+/* Selection */
+::selection {
+  background: hsl(48 14% 42% / 0.16);
+  color: hsl(222 28% 12%);
 }
