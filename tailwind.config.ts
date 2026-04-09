@@ -73,34 +73,40 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
         "page-enter": {
-          from: { opacity: "0", transform: "translateY(12px)" },
+          from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.97)" },
+          to: { opacity: "1", transform: "scale(1)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "page-enter": "page-enter 0.35s ease-out forwards",
+        "page-enter": "page-enter 0.35s cubic-bezier(0.22,1,0.36,1) forwards",
+        "fade-in": "fade-in 0.4s ease forwards",
+        "scale-in": "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) forwards",
       },
       boxShadow: {
         luxury:
-          "0 4px 24px -4px hsl(211 71% 11% / 0.08), 0 1px 6px -1px hsl(211 71% 11% / 0.06)",
+          "0 1px 2px hsl(222 28% 12% / 0.03), 0 4px 16px -2px hsl(222 28% 12% / 0.05), 0 12px 40px -8px hsl(222 28% 12% / 0.04)",
+        elevated:
+          "0 0 0 1px hsl(220 14% 90% / 0.5), 0 2px 6px hsl(222 28% 12% / 0.03), 0 8px 24px -4px hsl(222 28% 12% / 0.06)",
+        glow:
+          "0 0 0 1px hsl(48 14% 42% / 0.10), 0 0 16px -4px hsl(48 14% 42% / 0.08)",
       },
     },
   },
