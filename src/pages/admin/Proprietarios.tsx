@@ -143,7 +143,7 @@ const Proprietarios: React.FC = () => {
     if (!editTarget) return;
     setEditSubmitting(true);
 
-    const token = await getToken();
+    const token = await getAuthToken();
     const body: Record<string, string> = {
       action: "update",
       userId: editTarget.id,
@@ -185,7 +185,7 @@ const Proprietarios: React.FC = () => {
     if (!deleteTarget) return;
     setDeleteSubmitting(true);
 
-    const token = await getToken();
+    const token = await getAuthToken();
     const res = await supabase.functions.invoke("manage-user", {
       body: { action: "delete", userId: deleteTarget.id },
       headers: { Authorization: `Bearer ${token}` },
