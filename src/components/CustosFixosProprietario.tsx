@@ -25,6 +25,7 @@ import {
   Wifi,
   Save,
   Loader2,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
