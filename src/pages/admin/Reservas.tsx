@@ -673,7 +673,7 @@ const Reservas: React.FC = () => {
             </div>
 
             {/* Filtro De */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-[calc(50%-6px)] sm:w-auto">
               <Label className="text-muted-foreground text-xs uppercase tracking-wide">De</Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -702,14 +702,14 @@ const Reservas: React.FC = () => {
             </div>
 
             {/* Filtro Até */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-[calc(50%-6px)] sm:w-auto">
               <Label className="text-muted-foreground text-xs uppercase tracking-wide">Até</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-40 justify-start text-left font-normal bg-background border-border",
+                      "w-full sm:w-40 justify-start text-left font-normal bg-background border-border",
                       !filterAte && "text-muted-foreground"
                     )}
                   >
