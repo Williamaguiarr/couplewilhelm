@@ -358,7 +358,7 @@ const SimuladorDiaria: React.FC = () => {
                       <span className="text-sm text-muted-foreground">Lucro estimado/mês</span>
                       <span className={cn(
                         "text-sm font-bold",
-                        teste.lucroEstimado >= 0 ? "text-emerald-600" : "text-destructive"
+                        teste.lucroEstimado >= 0 ? "text-primary" : "text-destructive"
                       )}>
                         {fmt(teste.lucroEstimado)}
                       </span>
@@ -368,9 +368,9 @@ const SimuladorDiaria: React.FC = () => {
                       <span className={cn(
                         "text-xs font-bold px-2 py-0.5 rounded",
                         teste.margem >= 0.2
-                          ? "bg-emerald-500/10 text-emerald-600"
+                          ? "bg-primary/10 text-primary"
                           : teste.margem >= 0
-                            ? "bg-amber-500/10 text-amber-600"
+                            ? "bg-warning/10 text-warning"
                             : "bg-destructive/10 text-destructive"
                       )}>
                         {fmtPct(teste.margem)}
