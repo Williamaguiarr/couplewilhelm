@@ -42,10 +42,13 @@ import OccupancyComparison from "@/components/OccupancyComparison";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
+import {
+  createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
+  drawFooterAllPages, makeAutoTableFooterCallback, premiumTableStyles,
+  fmtBRL, genTimestamp,
+} from "@/lib/pdf-builder";
 import { useToast } from "@/hooks/use-toast";
 import CustosFixosProprietario from "@/components/CustosFixosProprietario";
 
@@ -283,113 +286,62 @@ const ProprietarioDashboard: React.FC = () => {
   const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
 
   const gerarPDF = async () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const genDate = new Date();
+    const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
-    // ── Paleta do tema do admin ──────────────────────────────────────────────
-    const { primary, accent, textOnPrimary, lightGray, bodyText } = buildPdfPalette(
-      theme.corPrimaria,
-      theme.corSecundaria,
-      theme.corTexto,
-    );
-    const companyName = (theme.nomeEmpresa || "Couple Wilhelm").toUpperCase();
-
-    // ── Header ───────────────────────────────────────────────────────────────
-    doc.setFillColor(...primary);
-    doc.rect(0, 0, pageW, 42, "F");
-    doc.setFillColor(...accent);
-    doc.rect(0, 42, pageW, 0.8, "F");
-
-    // Logo (personalizada ou CW como fallback)
-    const logoData = theme.logoUrl || await getPdfLogoEscuro();
-    if (logoData) {
-      try { doc.addImage(logoData, "PNG", 10, 4, 52, 34); } catch (_) {}
-    }
-
-    // Título
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...accent);
-    doc.text("EXTRATO DO PROPRIETÁRIO", pageW - 14, 16, { align: "right" });
-
-    doc.setFontSize(7);
-    doc.setTextColor(...textOnPrimary);
     const imovelNome = filterImovel !== "todos"
       ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
       : "Todos os imóveis";
-    doc.text(`Imóvel: ${imovelNome}`, pageW - 14, 23, { align: "right" });
-    doc.text(`Período: ${MESES[filterMes]} de ${filterAno}`, pageW - 14, 29, { align: "right" });
-    doc.text(
-      `Gerado em ${genDate.toLocaleDateString("pt-BR")} às ${genDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
-      pageW - 14, 35, { align: "right" }
-    );
 
-    const fmtPDF = (v: number) =>
-      v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-    // Cards de resumo
-    const summaryItems = [
-      { label: "Valor Bruto Total", value: fmtPDF(totais.bruto) },
-      { label: "Tx. Limpeza", value: fmtPDF(totais.limpeza) },
-      { label: "Comissão OTA", value: fmtPDF(totais.plataforma) },
-      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtPDF(totais.comissao) },
-      { label: "Despesas Extras", value: fmtPDF(totalDespesas) },
-      { label: "Custos Fixos", value: fmtPDF(totalCustosFixos) },
-      { label: "Líquido Final", value: fmtPDF(totalLiquido - totalCustosFixos), highlight: true },
-    ];
-
-    const cardW = (pageW - 28 - (summaryItems.length - 1) * 4) / summaryItems.length;
-    const cardY = 48;
-    const cardH = 22;
-
-    summaryItems.forEach((item, i) => {
-      const x = 14 + i * (cardW + 4);
-      doc.setFillColor(...(item.highlight ? primary : lightGray));
-      doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "F");
-      if (item.highlight) {
-        doc.setDrawColor(...accent);
-        doc.setLineWidth(0.4);
-        doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "S");
-      }
-      doc.setFontSize(6.5);
-      doc.setTextColor(...(item.highlight ? accent : [120, 115, 105] as [number, number, number]));
-      doc.text(item.label.toUpperCase(), x + cardW / 2, cardY + 8, { align: "center" });
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...(item.highlight ? textOnPrimary : primary));
-      doc.text(item.value, x + cardW / 2, cardY + 17, { align: "center" });
-      doc.setFont("helvetica", "normal");
+    // ── Header
+    let y = drawHeader(doc, {
+      title: "Extrato do Proprietário",
+      subtitle: companyName,
+      lines: [
+        `Imóvel: ${imovelNome}`,
+        `Período: ${MESES[filterMes]} de ${filterAno}`,
+        genTimestamp(),
+      ],
+      palette, logoData, companyName, pageW,
     });
 
-    doc.setDrawColor(...accent);
-    doc.setLineWidth(0.3);
-    doc.line(14, cardY + cardH + 4, pageW - 14, cardY + cardH + 4);
+    y += 6;
 
-    // Tabela de reservas
+    // ── Summary cards
+    y = drawSummaryCards(doc, [
+      { label: "Valor Bruto Total", value: fmtBRL(totais.bruto) },
+      { label: "Tx. Limpeza", value: fmtBRL(totais.limpeza) },
+      { label: "Comissão OTA", value: fmtBRL(totais.plataforma) },
+      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtBRL(totais.comissao) },
+      { label: "Despesas Extras", value: fmtBRL(totalDespesas) },
+      { label: "Custos Fixos", value: fmtBRL(totalCustosFixos) },
+      { label: "Líquido Final", value: fmtBRL(totalLiquido - totalCustosFixos), highlight: true },
+    ], { startY: y, pageW, palette });
+
+    y += 2;
+
+    // ── Tabela de reservas
     const tableData = reservasFiltradas.map((r) => {
       const f = calcFinanceiro(r, comissaoRate);
       return [
         r.imovel?.nome_imovel || "—",
         new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
         new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
-        fmtPDF(f.bruto),
-        fmtPDF(f.limpeza),
-        f.plataforma > 0 ? fmtPDF(f.plataforma) : "—",
-        fmtPDF(f.comissao),
-        fmtPDF(f.proprietario),
+        fmtBRL(f.bruto),
+        fmtBRL(f.limpeza),
+        f.plataforma > 0 ? fmtBRL(f.plataforma) : "—",
+        fmtBRL(f.comissao),
+        fmtBRL(f.proprietario),
         r.observacoes || "",
       ];
     });
 
+    const footerCb = makeAutoTableFooterCallback(doc, palette, companyName, pageW, pageH);
+
     autoTable(doc, {
-      startY: cardY + cardH + 8,
+      startY: y,
       head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Com. OTA", "Comissão", "Repasse", "Obs."]],
       body: tableData,
-      headStyles: { fillColor: primary, textColor: accent, fontSize: 7, fontStyle: "bold", cellPadding: { top: 3, bottom: 3, left: 3, right: 3 } },
-      bodyStyles: { fontSize: 7.5, textColor: bodyText, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } },
-      alternateRowStyles: { fillColor: lightGray },
+      ...premiumTableStyles(palette),
       columnStyles: {
         0: { cellWidth: 30 },
         1: { cellWidth: 18, halign: "center" },
@@ -398,48 +350,31 @@ const ProprietarioDashboard: React.FC = () => {
         4: { cellWidth: 18, halign: "right" },
         5: { cellWidth: 18, halign: "right" },
         6: { cellWidth: 22, halign: "right" },
-        7: { cellWidth: 24, halign: "right", fontStyle: "bold", textColor: primary },
+        7: { cellWidth: 24, halign: "right", fontStyle: "bold", textColor: palette.primary },
         8: { cellWidth: "auto" },
       },
-      margin: { left: 14, right: 14 },
-      didDrawPage: (data) => {
-        const footerY = pageH - 8;
-        doc.setFillColor(...primary);
-        doc.rect(0, footerY - 4, pageW, 14, "F");
-        doc.setFontSize(6.5);
-        doc.setTextColor(...accent);
-        doc.text(`${companyName} — Gestão de Imóveis`, 14, footerY + 1);
-        doc.setTextColor(...textOnPrimary);
-        doc.text(`Página ${data.pageNumber}`, pageW - 14, footerY + 1, { align: "right" });
-      },
+      didDrawPage: footerCb,
     });
 
-    // Despesas extras
+    // ── Despesas extras
     if (despesasFiltradas.length > 0) {
       const finalY = (doc as any).lastAutoTable?.finalY ?? pageH - 40;
       if (finalY + 40 > pageH - 20) { doc.addPage(); }
-      const despY = Math.min(finalY + 8, pageH - 60);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setTextColor(...primary);
-      doc.text("DESPESAS EXTRAS", 14, despY + 6);
-      doc.setLineWidth(0.3);
-      doc.setDrawColor(...accent);
-      doc.line(14, despY + 8, pageW - 14, despY + 8);
+      let despY = Math.min(finalY + 8, pageH - 60);
+
+      despY = drawSectionTitle(doc, "Despesas Extras", despY + 6, palette, pageW);
 
       autoTable(doc, {
-        startY: despY + 12,
+        startY: despY,
         head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor"]],
         body: despesasFiltradas.map((d) => [
           d.imovel?.nome_imovel || "—",
           d.descricao,
           TIPO_LABELS[d.tipo] ?? d.tipo,
           new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR"),
-          `- ${fmtPDF(d.valor)}`,
+          `- ${fmtBRL(d.valor)}`,
         ]),
-        headStyles: { fillColor: primary, textColor: accent, fontSize: 7, fontStyle: "bold", cellPadding: { top: 3, bottom: 3, left: 3, right: 3 } },
-        bodyStyles: { fontSize: 7.5, textColor: bodyText, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } },
-        alternateRowStyles: { fillColor: lightGray },
+        ...premiumTableStyles(palette),
         columnStyles: {
           0: { cellWidth: 40 },
           1: { cellWidth: "auto" },
@@ -447,19 +382,12 @@ const ProprietarioDashboard: React.FC = () => {
           3: { cellWidth: 22, halign: "center" },
           4: { cellWidth: 28, halign: "right", textColor: [180, 40, 40] as [number, number, number], fontStyle: "bold" },
         },
-        margin: { left: 14, right: 14 },
-        didDrawPage: (data) => {
-          const footerY = pageH - 8;
-          doc.setFillColor(...primary);
-          doc.rect(0, footerY - 4, pageW, 14, "F");
-          doc.setFontSize(6.5);
-          doc.setTextColor(...accent);
-          doc.text(`${companyName} — Gestão de Imóveis`, 14, footerY + 1);
-          doc.setTextColor(...textOnPrimary);
-          doc.text(`Página ${data.pageNumber}`, pageW - 14, footerY + 1, { align: "right" });
-        },
+        didDrawPage: footerCb,
       });
     }
+
+    // Footer on all pages
+    drawFooterAllPages(doc, palette, companyName, pageW, pageH);
 
     doc.save(`extrato-${MESES[filterMes].toLowerCase()}-${filterAno}.pdf`);
     toast({ title: "Extrato gerado com sucesso!" });

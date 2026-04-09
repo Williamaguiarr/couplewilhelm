@@ -50,10 +50,12 @@ import OccupancyComparison from "@/components/OccupancyComparison";
 import FinancialYearComparison from "@/components/FinancialYearComparison";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
+import {
+  createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
+  drawFooterAllPages, premiumTableStyles, fmtBRL, genTimestamp,
+} from "@/lib/pdf-builder";
 
 interface Imovel {
   id: string;
@@ -372,90 +374,40 @@ const AdminDashboard: React.FC = () => {
   };
 
   const gerarPDF = async () => {
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const mesNome = MESES[mesSelecionado];
     const nomeProprietario =
       filtroProprietario === "todos"
         ? "Todos os proprietários"
         : proprietarioSelecionado?.nome || proprietarioSelecionado?.email || "—";
 
-    const { primary, accent, textOnPrimary, lightGray, bodyText } = buildPdfPalette(
-      theme.corPrimaria,
-      theme.corSecundaria,
-      theme.corTexto,
-    );
-    const companyName = (theme.nomeEmpresa || "Couple Wilhelm").toUpperCase();
+    const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
 
-    // Header background
-    doc.setFillColor(...primary);
-    doc.rect(0, 0, 210, 38, "F");
-
-    // Accent line under header
-    doc.setFillColor(...accent);
-    doc.rect(0, 38, 210, 0.8, "F");
-
-    // Logo (personalizada ou CW como fallback)
-    const logoData = theme.logoUrl || await getPdfLogoEscuro();
-    if (logoData) {
-      try { doc.addImage(logoData, "PNG", 10, 4, 40, 30); } catch (_) {}
-    }
-
-    doc.setTextColor(...textOnPrimary);
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("Visão Geral — Relatório Financeiro", logoData ? 56 : 14, 16);
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Período: ${mesNome} / ${anoSelecionado}`, logoData ? 56 : 14, 25);
-    doc.text(`Proprietário: ${nomeProprietario}`, logoData ? 56 : 14, 32);
-
-    // Generated date
-    doc.setFontSize(8);
-    doc.setTextColor(...textOnPrimary);
-    doc.setGState(new (doc as any).GState({ opacity: 0.6 }));
-    doc.text(
-      `Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
-      196, 32, { align: "right" }
-    );
-    doc.setGState(new (doc as any).GState({ opacity: 1 }));
-
-    let y = 48;
-
-    // ── Estatísticas ──
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...primary);
-    doc.text("Estatísticas do Período", 14, y);
-    y += 6;
-
-    const statsData = [
-      ["Proprietários", String(stats.totalProprietarios)],
-      ["Imóveis", String(stats.totalImoveis)],
-      ["Reservas no mês", String(stats.totalReservas)],
-      ["Repasse a proprietários", fmt(stats.receitaMes)],
-    ];
-
-    autoTable(doc, {
-      startY: y,
-      head: [["Indicador", "Valor"]],
-      body: statsData,
-      theme: "grid",
-      headStyles: { fillColor: primary, textColor: textOnPrimary, fontSize: 9, fontStyle: "bold" },
-      bodyStyles: { fontSize: 9, textColor: bodyText },
-      alternateRowStyles: { fillColor: lightGray },
-      columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
-      margin: { left: 14, right: 14 },
+    // ── Header
+    let y = drawHeader(doc, {
+      title: "Visão Geral — Relatório Financeiro",
+      subtitle: companyName,
+      lines: [
+        `Período: ${mesNome} / ${anoSelecionado}`,
+        `Proprietário: ${nomeProprietario}`,
+        genTimestamp(),
+      ],
+      palette, logoData, companyName, pageW,
     });
 
-    y = (doc as any).lastAutoTable.finalY + 10;
-
-    // ── Detalhamento Financeiro ──
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...primary);
-    doc.text("Detalhamento Financeiro", 14, y);
     y += 6;
+
+    // ── Estatísticas
+    y = drawSummaryCards(doc, [
+      { label: "Proprietários", value: String(stats.totalProprietarios) },
+      { label: "Imóveis", value: String(stats.totalImoveis) },
+      { label: "Reservas", value: String(stats.totalReservas) },
+      { label: "Repasse", value: fmt(stats.receitaMes), highlight: true },
+    ], { startY: y, pageW, palette });
+
+    y += 4;
+
+    // ── Detalhamento Financeiro
+    y = drawSectionTitle(doc, "Detalhamento Financeiro", y, palette, pageW);
 
     const finData = [
       ["Receita Bruta", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
@@ -470,35 +422,27 @@ const AdminDashboard: React.FC = () => {
       startY: y,
       head: [["Descrição", "Valor", "Observação"]],
       body: finData,
-      theme: "grid",
-      headStyles: { fillColor: primary, textColor: textOnPrimary, fontSize: 9, fontStyle: "bold" },
-      bodyStyles: { fontSize: 9, textColor: bodyText },
-      alternateRowStyles: { fillColor: lightGray },
+      ...premiumTableStyles(palette),
       columnStyles: {
         1: { halign: "right", fontStyle: "bold" },
-        2: { textColor: [120, 120, 120] as [number, number, number], fontSize: 8 },
+        2: { textColor: [130, 130, 130] as [number, number, number], fontSize: 7 },
       },
       didParseCell: (data) => {
         if (data.row.index === 5) {
-          data.cell.styles.fillColor = accent;
-          data.cell.styles.textColor = textOnPrimary;
+          data.cell.styles.fillColor = palette.accent;
+          data.cell.styles.textColor = palette.textOnPrimary;
           data.cell.styles.fontStyle = "bold";
         }
       },
-      margin: { left: 14, right: 14 },
     });
 
     y = (doc as any).lastAutoTable.finalY + 10;
 
-    // ── Despesas Extras ──
+    // ── Despesas Extras
     if (despesasFiltradas.length > 0) {
       if (y > 220) { doc.addPage(); y = 20; }
 
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...primary);
-      doc.text("Despesas Extras", 14, y);
-      y += 6;
+      y = drawSectionTitle(doc, "Despesas Extras", y, palette, pageW);
 
       const despesasData = despesasFiltradas.map((d) => [
         d.imovel?.nome_imovel ?? "—",
@@ -512,30 +456,15 @@ const AdminDashboard: React.FC = () => {
         startY: y,
         head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor"]],
         body: despesasData,
-        theme: "grid",
-        headStyles: { fillColor: primary, textColor: textOnPrimary, fontSize: 9, fontStyle: "bold" },
-        bodyStyles: { fontSize: 9, textColor: bodyText },
-        alternateRowStyles: { fillColor: lightGray },
+        ...premiumTableStyles(palette),
         columnStyles: { 4: { halign: "right", fontStyle: "bold" } },
-        margin: { left: 14, right: 14 },
         foot: [["", "", "", "Total", fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0))]],
-        footStyles: { fillColor: primary, textColor: textOnPrimary, fontStyle: "bold", fontSize: 9 },
+        footStyles: { fillColor: palette.primary, textColor: palette.textOnPrimary, fontStyle: "bold", fontSize: 9 },
       });
     }
 
-    // Footer em todas as páginas
-    const totalPages = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setDrawColor(...accent);
-      doc.setLineWidth(0.5);
-      doc.line(14, 285, 196, 285);
-      doc.setFontSize(7);
-      doc.setTextColor(150, 150, 150);
-      doc.setFont("helvetica", "normal");
-      doc.text(`${companyName} — Sistema de Gestão de Imóveis`, 14, 289);
-      doc.text(`Página ${i} de ${totalPages}`, 196, 289, { align: "right" });
-    }
+    // Footer
+    drawFooterAllPages(doc, palette, companyName, pageW, pageH);
 
     const fileName = `visao-geral_${mesNome.toLowerCase()}-${anoSelecionado}${filtroProprietario !== "todos" ? `_${(proprietarioSelecionado?.nome || "proprietario").replace(/\s+/g, "-").toLowerCase()}` : ""}.pdf`;
     doc.save(fileName);
