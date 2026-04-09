@@ -502,6 +502,7 @@ const AdminsList: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>
