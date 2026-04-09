@@ -854,7 +854,94 @@ const ProprietarioDashboard: React.FC = () => {
           )}
         </section>
 
-        {/* Custos Fixos Mensais */}
+        {/* Dialog Adicionar Despesa */}
+        <Dialog open={showAddDespesa} onOpenChange={setShowAddDespesa}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Adicionar Despesa Extra</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Imóvel</Label>
+                <Select
+                  value={newDespesa.imovel_id}
+                  onValueChange={(v) => setNewDespesa((p) => ({ ...p, imovel_id: v }))}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione o imóvel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {imoveis.map((im) => (
+                      <SelectItem key={im.id} value={im.id} className="text-sm">
+                        {im.nome_imovel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Descrição</Label>
+                <Input
+                  value={newDespesa.descricao}
+                  onChange={(e) => setNewDespesa((p) => ({ ...p, descricao: e.target.value }))}
+                  placeholder="Ex: Troca de chuveiro"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tipo</Label>
+                  <Select
+                    value={newDespesa.tipo}
+                    onValueChange={(v) => setNewDespesa((p) => ({ ...p, tipo: v }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIPO_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key} className="text-sm">
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Data</Label>
+                  <Input
+                    type="date"
+                    value={newDespesa.data}
+                    onChange={(e) => setNewDespesa((p) => ({ ...p, data: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Valor (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newDespesa.valor}
+                  onChange={(e) => setNewDespesa((p) => ({ ...p, valor: e.target.value }))}
+                  placeholder="0,00"
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setShowAddDespesa(false)}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleAddDespesa} disabled={savingDespesa} className="gap-1.5">
+                {savingDespesa && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <CustosFixosProprietario
           imoveis={imoveis}
           repasseMensal={totais.proprietario - totalDespesas}
