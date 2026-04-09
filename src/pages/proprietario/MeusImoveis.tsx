@@ -52,7 +52,7 @@ const MeusImoveis: React.FC = () => {
     <PageTransition>
       <div className="space-y-6">
         <div>
-          <h1 className="font-display text-3xl text-foreground tracking-wide">Meus Imóveis</h1>
+          <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">Meus Imóveis</h1>
           <p className="text-muted-foreground mt-1">
             Visão geral dos seus imóveis cadastrados
           </p>

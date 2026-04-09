@@ -362,30 +362,30 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
 
   return (
     <section className="border border-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-5 py-3 sm:py-4 gap-2">
         <button
           onClick={() => setAberto((v) => !v)}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0"
         >
-          <Home className="h-4 w-4 text-primary" />
-          <span className="font-display text-base text-foreground tracking-wide">
+          <Home className="h-4 w-4 text-primary shrink-0" />
+          <span className="font-display text-sm sm:text-base text-foreground tracking-wide truncate">
             Custos Fixos Mensais
           </span>
           {totalCustos > 0 && (
-            <span className="text-[10px] text-muted-foreground font-medium">
+            <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
               ({fmt(totalCustos)}/mês)
             </span>
           )}
           {aberto ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
           )}
         </button>
         <Button
           size="sm"
           variant="outline"
-          className="gap-1.5 text-xs"
+          className="gap-1.5 text-xs w-full sm:w-auto"
           onClick={() => setAberto(true)}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -394,14 +394,14 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
       </div>
 
       {aberto && (
-        <div className="border-t border-border px-5 py-4 space-y-5">
+        <div className="border-t border-border px-4 sm:px-5 py-4 space-y-5">
           {imoveis.length > 1 && (
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                 <Building2 className="h-3 w-3" /> Imóvel
               </Label>
               <Select value={selectedImovel} onValueChange={setSelectedImovel}>
-                <SelectTrigger className="w-56 h-8 text-xs bg-transparent border-border">
+                <SelectTrigger className="w-full sm:w-56 h-8 text-xs bg-transparent border-border">
                   <SelectValue placeholder="Selecione um imóvel" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">

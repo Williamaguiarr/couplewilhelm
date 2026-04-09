@@ -321,12 +321,12 @@ const AdminsList: React.FC = () => {
   return (
     <PageTransition>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl text-foreground tracking-wide">
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
               Administradores
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               Gerencie os admins da plataforma
             </p>
           </div>
@@ -349,7 +349,8 @@ const AdminsList: React.FC = () => {
               <p className="text-muted-foreground">Nenhum administrador cadastrado</p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">
@@ -501,6 +502,7 @@ const AdminsList: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>

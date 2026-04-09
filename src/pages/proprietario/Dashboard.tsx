@@ -418,7 +418,7 @@ const ProprietarioDashboard: React.FC = () => {
         </div>
 
         {/* ═══ BENTO GRID ═══ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-min">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-min">
 
           {/* ── Receita do Mês (span 1) ── */}
           <BentoBox className="lg:col-span-2">
@@ -428,7 +428,7 @@ const ProprietarioDashboard: React.FC = () => {
                 {loading ? (
                   <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
                 ) : (
-                  <p className="font-display text-3xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
+                  <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
                 )}
                 <p className="text-xs text-muted-foreground/70">Checkouts neste mês</p>
               </div>
@@ -446,7 +446,7 @@ const ProprietarioDashboard: React.FC = () => {
                 {loading ? (
                   <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
                 ) : (
-                  <p className="font-display text-3xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(previsaoFutura)}</p>
+                  <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(previsaoFutura)}</p>
                 )}
                 <p className="text-xs text-muted-foreground/70">Reservas confirmadas</p>
               </div>
@@ -467,7 +467,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
                 </div>
                 <p className={cn(
-                  "font-display text-3xl sm:text-4xl font-semibold tabular-nums",
+                  "font-display text-2xl sm:text-4xl font-semibold tabular-nums",
                   (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
                 )}>
                   {fmt(totalLiquido - totalCustosFixos)}
@@ -500,14 +500,14 @@ const ProprietarioDashboard: React.FC = () => {
             {extratoAberto && (
               <div className="border-t border-border">
                 {/* Filters */}
-                <div className="px-5 sm:px-6 py-3 flex flex-wrap items-end gap-3 border-b border-border">
+                <div className="px-4 sm:px-6 py-3 grid grid-cols-2 sm:flex sm:flex-wrap items-end gap-3 border-b border-border">
                   {imoveis.length > 1 && (
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                         <Building2 className="h-3 w-3" /> Imóvel
                       </Label>
                       <Select value={filterImovel} onValueChange={setFilterImovel}>
-                        <SelectTrigger className="w-44 h-8 text-xs bg-transparent border-border">
+                        <SelectTrigger className="w-full sm:w-44 h-8 text-xs bg-transparent border-border">
                           <SelectValue placeholder="Todos os imóveis" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
@@ -525,7 +525,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Mês</Label>
                     <Select value={String(filterMes)} onValueChange={(v) => setFilterMes(Number(v))}>
-                      <SelectTrigger className="w-36 h-8 text-xs bg-transparent border-border">
+                      <SelectTrigger className="w-full sm:w-36 h-8 text-xs bg-transparent border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -541,7 +541,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground uppercase tracking-widest">Ano</Label>
                     <Select value={String(filterAno)} onValueChange={(v) => setFilterAno(Number(v))}>
-                      <SelectTrigger className="w-24 h-8 text-xs bg-transparent border-border">
+                      <SelectTrigger className="w-full sm:w-24 h-8 text-xs bg-transparent border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -615,7 +615,7 @@ const ProprietarioDashboard: React.FC = () => {
                     </div>
 
                     {/* Totals footer */}
-                    <div className="border-t border-border px-5 sm:px-6 py-3 flex items-center justify-end gap-6 flex-wrap">
+                    <div className="border-t border-border px-4 sm:px-6 py-3 flex items-center justify-end gap-3 sm:gap-6 flex-wrap">
                       <TotalItem label="Bruto" value={fmt(totais.bruto)} />
                       <TotalItem label="Limpeza" value={fmt(totais.limpeza)} />
                       {totais.plataforma > 0 && (

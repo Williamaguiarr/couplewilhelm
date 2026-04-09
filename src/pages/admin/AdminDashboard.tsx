@@ -587,7 +587,7 @@ const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Filter className="h-3.5 w-3.5 text-muted-foreground" />
                 <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
-                  <SelectTrigger className="w-[190px] bg-background border-border text-sm h-9">
+                  <SelectTrigger className="w-full sm:w-[190px] bg-background border-border text-sm h-9">
                     <SelectValue placeholder="Filtrar proprietário…" />
                   </SelectTrigger>
                   <SelectContent>

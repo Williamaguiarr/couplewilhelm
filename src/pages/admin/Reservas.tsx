@@ -780,6 +780,7 @@ const Reservas: React.FC = () => {
               <p className="text-muted-foreground">Nenhuma reserva encontrada</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <div className="min-w-[900px]">
             <Table>
               <TableHeader>
@@ -836,6 +837,7 @@ const Reservas: React.FC = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
             </div>
           )}
         </div>
