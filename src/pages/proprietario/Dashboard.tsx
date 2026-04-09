@@ -742,11 +742,11 @@ const ProprietarioDashboard: React.FC = () => {
 
         {/* Despesas Extras */}
         <section className="border border-border rounded-lg overflow-x-auto">
-          <button
-            onClick={() => setDespesasAberto((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
-          >
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-5 py-4">
+            <button
+              onClick={() => setDespesasAberto((v) => !v)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <span className="font-display text-base text-foreground tracking-wide">Despesas Extras</span>
               {despesasFiltradas.length > 0 && (
                 <span className="inline-flex items-center gap-1 text-[10px] text-destructive/70 font-medium">
@@ -754,11 +754,26 @@ const ProprietarioDashboard: React.FC = () => {
                   {despesasFiltradas.length} item{despesasFiltradas.length !== 1 ? "s" : ""}
                 </span>
               )}
-            </div>
-            {despesasAberto
-              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-          </button>
+              {despesasAberto
+                ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                setNewDespesa((prev) => ({
+                  ...prev,
+                  imovel_id: filterImovel !== "todos" ? filterImovel : (imoveis[0]?.id || ""),
+                }));
+                setShowAddDespesa(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar Despesa
+            </Button>
+          </div>
 
           {despesasAberto && (
             <div className="border-t border-border">
@@ -775,12 +790,13 @@ const ProprietarioDashboard: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        {["Imóvel", "Descrição", "Tipo", "Data", "Valor"].map((h, i) => (
+                        {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
                           <TableHead
-                            key={h}
+                            key={`${h}-${i}`}
                             className={cn(
                               "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
-                              i === 4 && "text-right"
+                              i === 4 && "text-right",
+                              i === 5 && "w-10"
                             )}
                           >
                             {h}
@@ -805,6 +821,21 @@ const ProprietarioDashboard: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-destructive text-sm text-right font-semibold py-3">
                             - {fmt(d.valor)}
+                          </TableCell>
+                          <TableCell className="py-3 text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteDespesa(d.id)}
+                              disabled={deletingId === d.id}
+                            >
+                              {deletingId === d.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
