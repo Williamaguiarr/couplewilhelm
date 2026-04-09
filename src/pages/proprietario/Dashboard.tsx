@@ -840,16 +840,16 @@ const BentoBox: React.FC<{
   </div>
 );
 
+// MetricCard kept for potential reuse
 const MetricCard: React.FC<{
   label: string;
   sub: string;
   value: string | null;
   icon: React.ReactNode;
 }> = ({ label, sub, value, icon }) => (
-  <Card className="spotlight-card group overflow-hidden">
-    <CardContent className="p-5 sm:p-6">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
+  <BentoBox>
+    <div className="flex items-start justify-between">
+      <div className="space-y-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
           {value === null ? (
             <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
