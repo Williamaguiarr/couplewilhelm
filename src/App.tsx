@@ -5,8 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import AppLayout from "@/components/layout/AppLayout";
+import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import Login from "@/pages/Login";
 import ResetPassword from "@/pages/ResetPassword";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -34,129 +33,34 @@ const App = () => (
         <AuthProvider>
           <ThemeProvider>
             <Routes>
-              {/* Rotas públicas */}
+              {/* Public */}
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/setup" element={<Setup />} />
-
-              {/* Redirecionar raiz para login */}
               <Route path="/" element={<Navigate to="/login" replace />} />
 
-              {/* Rotas Master */}
-              <Route
-                path="/master"
-                element={
-                  <ProtectedRoute requiredRole="master">
-                    <AppLayout>
-                      <MasterDashboard />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/master/admins"
-                element={
-                  <ProtectedRoute requiredRole="master">
-                    <AppLayout>
-                      <AdminsList />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
+              {/* Master */}
+              <Route element={<ProtectedLayout requiredRole="master" />}>
+                <Route path="/master" element={<MasterDashboard />} />
+                <Route path="/master/admins" element={<AdminsList />} />
+              </Route>
 
-              {/* Rotas Admin */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <AdminDashboard />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/proprietarios"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <Proprietarios />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/imoveis"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <Imoveis />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/reservas"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <Reservas />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/configuracoes"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <Configuracoes />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/calendario"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <Calendario />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/simulador"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AppLayout>
-                      <SimuladorDiaria />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
+              {/* Admin */}
+              <Route element={<ProtectedLayout requiredRole="admin" />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/proprietarios" element={<Proprietarios />} />
+                <Route path="/admin/imoveis" element={<Imoveis />} />
+                <Route path="/admin/reservas" element={<Reservas />} />
+                <Route path="/admin/configuracoes" element={<Configuracoes />} />
+                <Route path="/admin/calendario" element={<Calendario />} />
+                <Route path="/admin/simulador" element={<SimuladorDiaria />} />
+              </Route>
 
-              {/* Rotas Proprietário */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute requiredRole="proprietario">
-                    <AppLayout>
-                      <ProprietarioDashboard />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/imoveis"
-                element={
-                  <ProtectedRoute requiredRole="proprietario">
-                    <AppLayout>
-                      <MeusImoveis />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
+              {/* Proprietário */}
+              <Route element={<ProtectedLayout requiredRole="proprietario" />}>
+                <Route path="/dashboard" element={<ProprietarioDashboard />} />
+                <Route path="/dashboard/imoveis" element={<MeusImoveis />} />
+              </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
