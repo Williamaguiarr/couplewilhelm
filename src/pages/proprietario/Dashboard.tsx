@@ -850,17 +850,16 @@ const MetricCard: React.FC<{
   <BentoBox>
     <div className="flex items-start justify-between">
       <div className="space-y-1">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
-          {value === null ? (
-            <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
-          ) : (
-            <p className="font-display text-2xl sm:text-3xl text-foreground font-semibold tabular-nums">{value}</p>
-          )}
-          <p className="text-xs text-muted-foreground/70 mt-1">{sub}</p>
-        </div>
-        <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/14 transition-all duration-300 group-hover:scale-105">
-          <span className="text-primary">{icon}</span>
-        </div>
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
+        {value === null ? (
+          <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
+        ) : (
+          <p className="font-display text-2xl sm:text-3xl text-foreground font-semibold tabular-nums">{value}</p>
+        )}
+        <p className="text-xs text-muted-foreground/70 mt-1">{sub}</p>
+      </div>
+      <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
+        <span className="text-primary">{icon}</span>
       </div>
     </div>
   </BentoBox>
