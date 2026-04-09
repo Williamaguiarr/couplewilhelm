@@ -23,8 +23,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between px-3 sm:px-6 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-            <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors" />
+          <header className="h-14 flex items-center justify-between px-3 sm:px-6 border-b border-border glass-subtle sticky top-0 z-10">
+            <SidebarTrigger className="text-muted-foreground hover:text-primary transition-colors duration-200" />
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-foreground leading-tight">
