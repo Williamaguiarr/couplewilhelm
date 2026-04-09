@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -34,6 +42,9 @@ import {
   AlertCircle,
   Building2,
   FileText,
+  Plus,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/OccupancyComparison";
@@ -135,7 +146,17 @@ const ProprietarioDashboard: React.FC = () => {
   const [despesasAberto, setDespesasAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
 
-  // Gera lista de anos disponíveis: 2 anos atrás até 1 ano à frente
+  // Form state for adding expense
+  const [showAddDespesa, setShowAddDespesa] = useState(false);
+  const [newDespesa, setNewDespesa] = useState({
+    imovel_id: "",
+    descricao: "",
+    tipo: "manutencao",
+    data: new Date().toISOString().slice(0, 10),
+    valor: "",
+  });
+  const [savingDespesa, setSavingDespesa] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const anoAtual = now.getFullYear();
   const anos = Array.from({ length: 4 }, (_, i) => anoAtual - 2 + i);
 
@@ -194,6 +215,55 @@ const ProprietarioDashboard: React.FC = () => {
     };
     fetchData();
   }, [user]);
+
+  const refetchDespesas = async () => {
+    const { data: despData } = await supabase
+      .from("despesas_extras" as any)
+      .select("*, imoveis(nome_imovel)")
+      .order("data", { ascending: false });
+    setDespesas((despData || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
+  };
+
+  const handleAddDespesa = async () => {
+    if (!newDespesa.imovel_id || !newDespesa.descricao || !newDespesa.valor) {
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+    setSavingDespesa(true);
+    const { error } = await supabase
+      .from("despesas_extras" as any)
+      .insert({
+        imovel_id: newDespesa.imovel_id,
+        descricao: newDespesa.descricao,
+        tipo: newDespesa.tipo,
+        data: newDespesa.data,
+        valor: parseFloat(newDespesa.valor),
+      } as any);
+    setSavingDespesa(false);
+    if (error) {
+      toast({ title: "Erro ao adicionar despesa", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Despesa adicionada com sucesso!" });
+      setShowAddDespesa(false);
+      setNewDespesa({ imovel_id: "", descricao: "", tipo: "manutencao", data: new Date().toISOString().slice(0, 10), valor: "" });
+      refetchDespesas();
+    }
+  };
+
+  const handleDeleteDespesa = async (id: string) => {
+    setDeletingId(id);
+    const { error } = await supabase
+      .from("despesas_extras" as any)
+      .delete()
+      .eq("id", id);
+    setDeletingId(null);
+    if (error) {
+      toast({ title: "Erro ao excluir despesa", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Despesa excluída!" });
+      refetchDespesas();
+    }
+  };
 
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -672,11 +742,11 @@ const ProprietarioDashboard: React.FC = () => {
 
         {/* Despesas Extras */}
         <section className="border border-border rounded-lg overflow-x-auto">
-          <button
-            onClick={() => setDespesasAberto((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
-          >
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-5 py-4">
+            <button
+              onClick={() => setDespesasAberto((v) => !v)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <span className="font-display text-base text-foreground tracking-wide">Despesas Extras</span>
               {despesasFiltradas.length > 0 && (
                 <span className="inline-flex items-center gap-1 text-[10px] text-destructive/70 font-medium">
@@ -684,11 +754,26 @@ const ProprietarioDashboard: React.FC = () => {
                   {despesasFiltradas.length} item{despesasFiltradas.length !== 1 ? "s" : ""}
                 </span>
               )}
-            </div>
-            {despesasAberto
-              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-          </button>
+              {despesasAberto
+                ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => {
+                setNewDespesa((prev) => ({
+                  ...prev,
+                  imovel_id: filterImovel !== "todos" ? filterImovel : (imoveis[0]?.id || ""),
+                }));
+                setShowAddDespesa(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar Despesa
+            </Button>
+          </div>
 
           {despesasAberto && (
             <div className="border-t border-border">
@@ -705,12 +790,13 @@ const ProprietarioDashboard: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        {["Imóvel", "Descrição", "Tipo", "Data", "Valor"].map((h, i) => (
+                        {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
                           <TableHead
-                            key={h}
+                            key={`${h}-${i}`}
                             className={cn(
                               "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
-                              i === 4 && "text-right"
+                              i === 4 && "text-right",
+                              i === 5 && "w-10"
                             )}
                           >
                             {h}
@@ -736,6 +822,21 @@ const ProprietarioDashboard: React.FC = () => {
                           <TableCell className="text-destructive text-sm text-right font-semibold py-3">
                             - {fmt(d.valor)}
                           </TableCell>
+                          <TableCell className="py-3 text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteDespesa(d.id)}
+                              disabled={deletingId === d.id}
+                            >
+                              {deletingId === d.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -753,7 +854,94 @@ const ProprietarioDashboard: React.FC = () => {
           )}
         </section>
 
-        {/* Custos Fixos Mensais */}
+        {/* Dialog Adicionar Despesa */}
+        <Dialog open={showAddDespesa} onOpenChange={setShowAddDespesa}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Adicionar Despesa Extra</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Imóvel</Label>
+                <Select
+                  value={newDespesa.imovel_id}
+                  onValueChange={(v) => setNewDespesa((p) => ({ ...p, imovel_id: v }))}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione o imóvel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {imoveis.map((im) => (
+                      <SelectItem key={im.id} value={im.id} className="text-sm">
+                        {im.nome_imovel}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Descrição</Label>
+                <Input
+                  value={newDespesa.descricao}
+                  onChange={(e) => setNewDespesa((p) => ({ ...p, descricao: e.target.value }))}
+                  placeholder="Ex: Troca de chuveiro"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tipo</Label>
+                  <Select
+                    value={newDespesa.tipo}
+                    onValueChange={(v) => setNewDespesa((p) => ({ ...p, tipo: v }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIPO_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key} className="text-sm">
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Data</Label>
+                  <Input
+                    type="date"
+                    value={newDespesa.data}
+                    onChange={(e) => setNewDespesa((p) => ({ ...p, data: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Valor (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newDespesa.valor}
+                  onChange={(e) => setNewDespesa((p) => ({ ...p, valor: e.target.value }))}
+                  placeholder="0,00"
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setShowAddDespesa(false)}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleAddDespesa} disabled={savingDespesa} className="gap-1.5">
+                {savingDespesa && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <CustosFixosProprietario
           imoveis={imoveis}
           repasseMensal={totais.proprietario - totalDespesas}
