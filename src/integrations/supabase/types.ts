@@ -89,6 +89,7 @@ export type Database = {
           created_at: string
           id: string
           imovel_id: string
+          label: string | null
           proprietario_id: string
           tipo: string
           updated_at: string
@@ -99,6 +100,7 @@ export type Database = {
           created_at?: string
           id?: string
           imovel_id: string
+          label?: string | null
           proprietario_id: string
           tipo: string
           updated_at?: string
@@ -109,6 +111,7 @@ export type Database = {
           created_at?: string
           id?: string
           imovel_id?: string
+          label?: string | null
           proprietario_id?: string
           tipo?: string
           updated_at?: string
