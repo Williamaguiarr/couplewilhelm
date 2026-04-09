@@ -418,7 +418,7 @@ const ProprietarioDashboard: React.FC = () => {
         </div>
 
         {/* ═══ BENTO GRID ═══ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-min">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-min">
 
           {/* ── Receita do Mês (span 1) ── */}
           <BentoBox className="lg:col-span-2">
@@ -428,7 +428,7 @@ const ProprietarioDashboard: React.FC = () => {
                 {loading ? (
                   <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
                 ) : (
-                  <p className="font-display text-3xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
+                  <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
                 )}
                 <p className="text-xs text-muted-foreground/70">Checkouts neste mês</p>
               </div>
@@ -446,7 +446,7 @@ const ProprietarioDashboard: React.FC = () => {
                 {loading ? (
                   <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
                 ) : (
-                  <p className="font-display text-3xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(previsaoFutura)}</p>
+                  <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(previsaoFutura)}</p>
                 )}
                 <p className="text-xs text-muted-foreground/70">Reservas confirmadas</p>
               </div>
@@ -467,7 +467,7 @@ const ProprietarioDashboard: React.FC = () => {
                   <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
                 </div>
                 <p className={cn(
-                  "font-display text-3xl sm:text-4xl font-semibold tabular-nums",
+                  "font-display text-2xl sm:text-4xl font-semibold tabular-nums",
                   (totalLiquido - totalCustosFixos) >= 0 ? "text-primary" : "text-destructive"
                 )}>
                   {fmt(totalLiquido - totalCustosFixos)}

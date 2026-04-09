@@ -368,7 +368,7 @@ const Configuracoes: React.FC = () => {
     <PageTransition>
       <div className="space-y-8 max-w-2xl">
         <div>
-          <h1 className="font-display text-3xl text-foreground tracking-wide">Configurações</h1>
+          <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">Configurações</h1>
           <p className="text-muted-foreground mt-1">
             Personalize sua plataforma e regras financeiras
           </p>
@@ -437,7 +437,7 @@ const Configuracoes: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                  <div className="h-28 w-28 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="h-20 w-20 sm:h-28 sm:w-28 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
                     {form.logo_url ? (
                       <img
                         src={form.logo_url}
