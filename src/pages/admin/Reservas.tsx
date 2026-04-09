@@ -673,7 +673,7 @@ const Reservas: React.FC = () => {
       <div className="space-y-4 sm:space-y-6 w-full max-w-[100vw] overflow-x-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">Reservas</h1>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Reservas</h1>
             <p className="text-muted-foreground mt-1 text-sm">Gerencie as reservas de todos os imóveis</p>
           </div>
           <div className="flex gap-2">
@@ -707,7 +707,7 @@ const Reservas: React.FC = () => {
         </div>
 
         {/* Filtros */}
-        <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4">
           <div className="flex flex-wrap items-end gap-3 sm:gap-4">
             {/* Filtro por imóvel */}
             <div className="space-y-1.5 w-full sm:w-auto">
@@ -824,7 +824,7 @@ const Reservas: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg overflow-x-auto">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -838,16 +838,16 @@ const Reservas: React.FC = () => {
             <div className="min-w-[900px]">
             <Table>
               <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-in</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Check-out</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Duração</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Hóspedes</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Valor Bruto</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Tx. Limpeza</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão ADM</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário</TableHead>
+                <TableRow>
+                  <TableHead>Imóvel</TableHead>
+                  <TableHead>Check-in</TableHead>
+                  <TableHead>Check-out</TableHead>
+                  <TableHead>Duração</TableHead>
+                  <TableHead>Hóspedes</TableHead>
+                  <TableHead>Valor Bruto</TableHead>
+                  <TableHead>Tx. Limpeza</TableHead>
+                  <TableHead>Comissão ADM</TableHead>
+                  <TableHead>Proprietário</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
