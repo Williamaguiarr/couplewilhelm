@@ -824,6 +824,22 @@ const ProprietarioDashboard: React.FC = () => {
 
 /* ── Sub-components ─────────────────────────────────── */
 
+const BentoBox: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+  hover?: boolean;
+}> = ({ children, className, hover = true }) => (
+  <div
+    className={cn(
+      "rounded-2xl border border-border bg-card p-5 sm:p-6 transition-all duration-300",
+      hover && "hover:border-primary/20 hover:shadow-elevated hover:scale-[1.005]",
+      className,
+    )}
+  >
+    {children}
+  </div>
+);
+
 const MetricCard: React.FC<{
   label: string;
   sub: string;
