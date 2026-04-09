@@ -815,19 +815,19 @@ const MetricCard: React.FC<{
   value: string | null;
   icon: React.ReactNode;
 }> = ({ label, sub, value, icon }) => (
-  <Card className="spotlight-card group">
-    <CardContent className="p-5">
+  <Card className="spotlight-card group overflow-hidden">
+    <CardContent className="p-5 sm:p-6">
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">{label}</p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
           {value === null ? (
-            <div className="h-7 w-32 bg-muted animate-pulse rounded-lg" />
+            <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
           ) : (
-            <p className="font-display text-2xl text-foreground">{value}</p>
+            <p className="font-display text-2xl sm:text-3xl text-foreground font-semibold tabular-nums">{value}</p>
           )}
-          <p className="text-xs text-muted-foreground mt-1.5">{sub}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">{sub}</p>
         </div>
-        <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+        <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/14 transition-all duration-300 group-hover:scale-105">
           <span className="text-primary">{icon}</span>
         </div>
       </div>
