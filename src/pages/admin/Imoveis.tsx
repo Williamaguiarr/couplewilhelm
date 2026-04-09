@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchLinkedProprietarioIds } from "@/lib/supabase-helpers";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,12 +105,7 @@ const Imoveis: React.FC = () => {
     );
 
     // Proprietários: apenas os vinculados a este admin via tabela de vínculo
-    const { data: vinculos } = await supabase
-      .from("admin_proprietarios" as any)
-      .select("proprietario_id")
-      .eq("admin_id", user.id);
-
-    const propIds = (vinculos as any[] || []).map((v) => v.proprietario_id);
+    const propIds = await fetchLinkedProprietarioIds(user.id);
 
     if (propIds.length > 0) {
       const { data: profiles } = await supabase

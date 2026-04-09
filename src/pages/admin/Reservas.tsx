@@ -51,7 +51,7 @@ import {
   createPdfDoc, drawHeader, drawSummaryCards,
   drawFooterAllPages, makeAutoTableFooterCallback, premiumTableStyles,
   fmtBRL, genTimestamp,
-} from "@/lib/pdf-builder";
+} from "@/lib/pdf/builder";
 
 interface Reserva {
   id: string;
@@ -74,15 +74,8 @@ interface Imovel {
   proprietario_id_2: string | null;
 }
 
-const fmt = (v: number | null) =>
-  v != null
-    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
-    : "—";
+import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
 
-const toNum = (v: string | number | null): number | null => {
-  const n = typeof v === "string" ? parseFloat(v) : v;
-  return n == null || isNaN(n) ? null : n;
-};
 
 const calcValorLiquido = (
   valorBruto: string | number | null,

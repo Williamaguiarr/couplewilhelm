@@ -1,12 +1,35 @@
+import { motion } from "framer-motion";
 import React from "react";
-import MotionPage from "@/components/motion/MotionPage";
 
 interface PageTransitionProps {
   children: React.ReactNode;
+  className?: string;
 }
 
-const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
-  return <MotionPage>{children}</MotionPage>;
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
 };
+
+const pageTransition = {
+  type: "spring" as const,
+  stiffness: 260,
+  damping: 30,
+  mass: 0.8,
+};
+
+const PageTransition: React.FC<PageTransitionProps> = ({ children, className }) => (
+  <motion.div
+    variants={pageVariants}
+    initial="initial"
+    animate="animate"
+    exit="exit"
+    transition={pageTransition}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
 
 export default PageTransition;

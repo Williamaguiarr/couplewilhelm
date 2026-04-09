@@ -46,8 +46,8 @@ import {
   FileDown,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
-import OccupancyComparison from "@/components/OccupancyComparison";
-import FinancialYearComparison from "@/components/FinancialYearComparison";
+import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
+import FinancialYearComparison from "@/components/dashboard/FinancialYearComparison";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import autoTable from "jspdf-autotable";
@@ -55,7 +55,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
   drawFooterAllPages, premiumTableStyles, fmtBRL, genTimestamp,
-} from "@/lib/pdf-builder";
+} from "@/lib/pdf/builder";
 
 interface Imovel {
   id: string;
