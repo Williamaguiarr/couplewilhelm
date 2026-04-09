@@ -680,7 +680,7 @@ const Reservas: React.FC = () => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-40 justify-start text-left font-normal bg-background border-border",
+                      "w-full sm:w-40 justify-start text-left font-normal bg-background border-border",
                       !filterDe && "text-muted-foreground"
                     )}
                   >
