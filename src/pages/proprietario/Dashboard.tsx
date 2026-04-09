@@ -19,13 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -42,9 +35,6 @@ import {
   AlertCircle,
   Building2,
   FileText,
-  Plus,
-  Trash2,
-  Loader2,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/OccupancyComparison";
@@ -143,7 +133,6 @@ const ProprietarioDashboard: React.FC = () => {
   const [filterAno, setFilterAno] = useState<number>(now.getFullYear());
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
-  const [despesasAberto, setDespesasAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
 
   
