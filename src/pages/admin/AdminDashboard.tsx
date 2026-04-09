@@ -49,6 +49,7 @@ import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/OccupancyComparison";
 import FinancialYearComparison from "@/components/FinancialYearComparison";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
