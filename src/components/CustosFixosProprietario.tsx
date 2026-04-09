@@ -27,11 +27,13 @@ import {
   Loader2,
   Plus,
   MoreHorizontal,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const TIPOS_CUSTOS = [
+const TIPOS_FIXOS = [
   { key: "financiamento", label: "Financiamento", icon: Landmark },
   { key: "condominio", label: "Condomínio", icon: Building2 },
   { key: "iptu", label: "IPTU", icon: FileText },
@@ -39,7 +41,6 @@ const TIPOS_CUSTOS = [
   { key: "agua", label: "Água", icon: Droplets },
   { key: "gas", label: "Gás", icon: Flame },
   { key: "internet", label: "Internet", icon: Wifi },
-  { key: "outros", label: "Outros", icon: MoreHorizontal },
 ] as const;
 
 type CustoFixo = {
@@ -47,6 +48,7 @@ type CustoFixo = {
   tipo: string;
   valor: number;
   ativo: boolean;
+  label?: string;
 };
 
 interface CustosFixosProprietarioProps {
@@ -70,6 +72,8 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
   const [aberto, setAberto] = useState(false);
   const [selectedImovel, setSelectedImovel] = useState<string>("");
   const [custos, setCustos] = useState<Record<string, CustoFixo>>({});
+  const [customItems, setCustomItems] = useState<string[]>([]);
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -94,20 +98,31 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
       .eq("proprietario_id", user.id);
 
     const map: Record<string, CustoFixo> = {};
-    TIPOS_CUSTOS.forEach(({ key }) => {
+    const customs: string[] = [];
+
+    // Init fixed types
+    TIPOS_FIXOS.forEach(({ key }) => {
       map[key] = { tipo: key, valor: 0, ativo: false };
     });
+
     if (data) {
       (data as any[]).forEach((row) => {
+        const isCustom = row.tipo.startsWith("outros_");
         map[row.tipo] = {
           id: row.id,
           tipo: row.tipo,
           valor: Number(row.valor),
           ativo: row.ativo,
+          label: row.label || undefined,
         };
+        if (isCustom) {
+          customs.push(row.tipo);
+        }
       });
     }
+
     setCustos(map);
+    setCustomItems(customs);
     setLoading(false);
   }, [user, selectedImovel]);
 
@@ -138,6 +153,44 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
     }));
   };
 
+  const handleLabelChange = (tipo: string, label: string) => {
+    setCustos((prev) => ({
+      ...prev,
+      [tipo]: { ...prev[tipo], label },
+    }));
+  };
+
+  const addCustomItem = () => {
+    const nextIndex = customItems.length + 1;
+    // Find unique key
+    let key = `outros_${nextIndex}`;
+    while (custos[key]) {
+      key = `outros_${parseInt(key.split("_")[1]) + 1}`;
+    }
+    setCustos((prev) => ({
+      ...prev,
+      [key]: { tipo: key, valor: 0, ativo: true, label: "Outros" },
+    }));
+    setCustomItems((prev) => [...prev, key]);
+    setEditingLabel(key);
+  };
+
+  const removeCustomItem = async (tipo: string) => {
+    const custo = custos[tipo];
+    if (custo?.id) {
+      await supabase
+        .from("custos_fixos_proprietario" as any)
+        .delete()
+        .eq("id", custo.id);
+    }
+    setCustos((prev) => {
+      const next = { ...prev };
+      delete next[tipo];
+      return next;
+    });
+    setCustomItems((prev) => prev.filter((k) => k !== tipo));
+  };
+
   const handleSave = async () => {
     if (!user || !selectedImovel) return;
     setSaving(true);
@@ -145,13 +198,11 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
     try {
       for (const custo of Object.values(custos)) {
         if (custo.id) {
-          // Update existing
           await supabase
             .from("custos_fixos_proprietario" as any)
-            .update({ valor: custo.valor, ativo: custo.ativo } as any)
+            .update({ valor: custo.valor, ativo: custo.ativo, label: custo.label || null } as any)
             .eq("id", custo.id);
         } else if (custo.ativo && custo.valor > 0) {
-          // Insert new
           await supabase
             .from("custos_fixos_proprietario" as any)
             .insert({
@@ -160,6 +211,7 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
               tipo: custo.tipo,
               valor: custo.valor,
               ativo: custo.ativo,
+              label: custo.label || null,
             } as any);
         }
       }
@@ -177,6 +229,78 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
     .reduce((acc, c) => acc + c.valor, 0);
 
   const liquidoFinal = repasseMensal - totalCustos;
+
+  const renderCostItem = (key: string, label: string, Icon: React.FC<any>, isCustom: boolean) => {
+    const custo = custos[key] || { tipo: key, valor: 0, ativo: false };
+    const isEditing = editingLabel === key;
+    const displayLabel = custo.label || label;
+
+    return (
+      <div
+        key={key}
+        className={cn(
+          "flex items-center gap-3 rounded-lg border p-3 transition-colors",
+          custo.ativo
+            ? "border-primary/30 bg-primary/5"
+            : "border-border bg-transparent opacity-60"
+        )}
+      >
+        <Checkbox
+          checked={custo.ativo}
+          onCheckedChange={(checked) => handleToggle(key, checked === true)}
+        />
+        <Icon className="h-4 w-4 text-primary shrink-0" />
+        {isCustom && isEditing ? (
+          <Input
+            autoFocus
+            value={displayLabel}
+            onChange={(e) => handleLabelChange(key, e.target.value)}
+            onBlur={() => setEditingLabel(null)}
+            onKeyDown={(e) => e.key === "Enter" && setEditingLabel(null)}
+            className="h-7 text-sm flex-1 min-w-0 px-2"
+          />
+        ) : (
+          <span
+            className={cn(
+              "text-sm text-foreground flex-1 min-w-0",
+              isCustom && "cursor-pointer hover:underline"
+            )}
+            onClick={isCustom ? () => setEditingLabel(key) : undefined}
+            title={isCustom ? "Clique para renomear" : undefined}
+          >
+            {displayLabel}
+            {isCustom && (
+              <Pencil className="inline h-3 w-3 ml-1 text-muted-foreground" />
+            )}
+          </span>
+        )}
+        <div className="relative w-28">
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+            R$
+          </span>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={custo.valor || ""}
+            onChange={(e) => handleValorChange(key, e.target.value)}
+            disabled={!custo.ativo}
+            className="h-8 text-xs pl-8 text-right"
+            placeholder="0,00"
+          />
+        </div>
+        {isCustom && (
+          <button
+            onClick={() => removeCustomItem(key)}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            title="Remover"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <section className="border border-border rounded-lg overflow-hidden">
@@ -240,49 +364,27 @@ const CustosFixosProprietario: React.FC<CustosFixosProprietarioProps> = ({
             </div>
           ) : (
             <>
-              {/* Cost items grid */}
+              {/* Fixed cost items grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {TIPOS_CUSTOS.map(({ key, label, icon: Icon }) => {
-                  const custo = custos[key] || { tipo: key, valor: 0, ativo: false };
-                  return (
-                    <div
-                      key={key}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg border p-3 transition-colors",
-                        custo.ativo
-                          ? "border-primary/30 bg-primary/5"
-                          : "border-border bg-transparent opacity-60"
-                      )}
-                    >
-                      <Checkbox
-                        checked={custo.ativo}
-                        onCheckedChange={(checked) =>
-                          handleToggle(key, checked === true)
-                        }
-                      />
-                      <Icon className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-sm text-foreground flex-1 min-w-0">
-                        {label}
-                      </span>
-                      <div className="relative w-28">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                          R$
-                        </span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={custo.valor || ""}
-                          onChange={(e) => handleValorChange(key, e.target.value)}
-                          disabled={!custo.ativo}
-                          className="h-8 text-xs pl-8 text-right"
-                          placeholder="0,00"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                {TIPOS_FIXOS.map(({ key, label, icon: Icon }) =>
+                  renderCostItem(key, label, Icon, false)
+                )}
+                {/* Custom "Outros" items */}
+                {customItems.map((key) =>
+                  renderCostItem(key, "Outros", MoreHorizontal, true)
+                )}
               </div>
+
+              {/* Add custom category button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={addCustomItem}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar Categoria
+              </Button>
 
               {/* Summary */}
               <div className="border-t border-border pt-4 space-y-3">

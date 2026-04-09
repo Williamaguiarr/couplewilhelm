@@ -1,0 +1,1 @@
+ALTER TABLE public.custos_fixos_proprietario ADD COLUMN label text;
