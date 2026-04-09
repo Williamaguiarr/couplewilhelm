@@ -386,6 +386,7 @@ const Proprietarios: React.FC = () => {
               </TableBody>
             </Table>
             </div>
+          )}
         </div>
       </div>
 

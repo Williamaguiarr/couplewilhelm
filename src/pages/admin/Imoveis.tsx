@@ -540,6 +540,7 @@ const Imoveis: React.FC = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </div>
       </div>
