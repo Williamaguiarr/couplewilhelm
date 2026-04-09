@@ -38,7 +38,7 @@ import {
   FileText,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
-import OccupancyComparison from "@/components/OccupancyComparison";
+import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -48,9 +48,9 @@ import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
   drawFooterAllPages, makeAutoTableFooterCallback, premiumTableStyles,
   fmtBRL, genTimestamp,
-} from "@/lib/pdf-builder";
+} from "@/lib/pdf/builder";
 import { useToast } from "@/hooks/use-toast";
-import CustosFixosProprietario from "@/components/CustosFixosProprietario";
+import CustosFixosProprietario from "@/components/dashboard/CustosFixosProprietario";
 
 interface Reserva {
   id: string;

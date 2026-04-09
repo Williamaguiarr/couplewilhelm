@@ -51,7 +51,7 @@ import {
   createPdfDoc, drawHeader, drawSummaryCards,
   drawFooterAllPages, makeAutoTableFooterCallback, premiumTableStyles,
   fmtBRL, genTimestamp,
-} from "@/lib/pdf-builder";
+} from "@/lib/pdf/builder";
 
 interface Reserva {
   id: string;
