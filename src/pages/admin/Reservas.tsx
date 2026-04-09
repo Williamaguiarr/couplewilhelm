@@ -318,39 +318,8 @@ const Reservas: React.FC = () => {
   const { toast } = useToast();
 
   const gerarPDF = async () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const now = new Date();
+    const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
-    // ── Paleta do tema do admin ──────────────────────────────────────────────
-    const { primary, accent, textOnPrimary, lightGray, bodyText } = buildPdfPalette(
-      theme.corPrimaria,
-      theme.corSecundaria,
-      theme.corTexto,
-    );
-    const companyName = (theme.nomeEmpresa || "Couple Wilhelm").toUpperCase();
-
-    // ── Fundo header ─────────────────────────────────────────────────────────
-    doc.setFillColor(...primary);
-    doc.rect(0, 0, pageW, 42, "F");
-    doc.setFillColor(...accent);
-    doc.rect(0, 42, pageW, 0.8, "F");
-
-    // ── Logo ─────────────────────────────────────────────────────────────────
-    const logoUrl = theme.logoUrl || await getPdfLogoEscuro();
-    if (logoUrl) {
-      try { doc.addImage(logoUrl, "PNG", 10, 4, 52, 34); } catch (_) {}
-    }
-
-    // ── Título do relatório ───────────────────────────────────────────────────
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...accent);
-    doc.text("RELATÓRIO DE RESERVAS", pageW - 14, 16, { align: "right" });
-
-    doc.setFontSize(7);
-    doc.setTextColor(...textOnPrimary);
     const imovelNome = filterImovel !== "all"
       ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
       : "Todos os imóveis";
@@ -361,14 +330,22 @@ const Reservas: React.FC = () => {
         : filterAte
           ? `Até ${format(filterAte, "dd/MM/yyyy")}`
           : "Todos os períodos";
-    doc.text(`Imóvel: ${imovelNome}`, pageW - 14, 23, { align: "right" });
-    doc.text(`Período: ${periodoLabel}`, pageW - 14, 29, { align: "right" });
-    doc.text(
-      `Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`,
-      pageW - 14, 35, { align: "right" }
-    );
 
-    // ── Calcular totais ───────────────────────────────────────────────────────
+    // ── Header
+    let y = drawHeader(doc, {
+      title: "Relatório de Reservas",
+      subtitle: companyName,
+      lines: [
+        `Imóvel: ${imovelNome}`,
+        `Período: ${periodoLabel}`,
+        genTimestamp(),
+      ],
+      palette, logoData, companyName, pageW,
+    });
+
+    y += 6;
+
+    // ── Totais
     let totalBruto = 0, totalLimpeza = 0, totalPlataforma = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
     filteredReservas.forEach((r) => {
       const bruto = r.valor_bruto || 0;
@@ -385,46 +362,18 @@ const Reservas: React.FC = () => {
       totalProprietario += liquido - comissao;
     });
 
-    const fmtPDF = (v: number) =>
-      v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    // ── Summary cards
+    y = drawSummaryCards(doc, [
+      { label: "Valor Bruto Total", value: fmtBRL(totalBruto) },
+      { label: "Tx. Limpeza", value: fmtBRL(totalLimpeza) },
+      { label: "Comissão OTA", value: fmtBRL(totalPlataforma) },
+      { label: "Comissão ADM", value: fmtBRL(totalComissao) },
+      { label: "Repasse Proprietários", value: fmtBRL(totalProprietario), highlight: true },
+    ], { startY: y, pageW, palette });
 
-    // ── Cards de resumo financeiro ────────────────────────────────────────────
-    const summaryItems = [
-      { label: "Valor Bruto Total", value: fmtPDF(totalBruto) },
-      { label: "Tx. Limpeza", value: fmtPDF(totalLimpeza) },
-      { label: "Comissão OTA", value: fmtPDF(totalPlataforma) },
-      { label: "Comissão ADM", value: fmtPDF(totalComissao) },
-      { label: "Repasse Proprietários", value: fmtPDF(totalProprietario), highlight: true },
-    ];
+    y += 2;
 
-    const cardW = (pageW - 28 - (summaryItems.length - 1) * 4) / summaryItems.length;
-    const cardY = 48;
-    const cardH = 22;
-
-    summaryItems.forEach((item, i) => {
-      const x = 14 + i * (cardW + 4);
-      doc.setFillColor(...(item.highlight ? primary : lightGray));
-      doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "F");
-      if (item.highlight) {
-        doc.setDrawColor(...accent);
-        doc.setLineWidth(0.4);
-        doc.roundedRect(x, cardY, cardW, cardH, 2, 2, "S");
-      }
-      doc.setFontSize(6.5);
-      doc.setTextColor(...(item.highlight ? accent : [120, 115, 105] as [number, number, number]));
-      doc.text(item.label.toUpperCase(), x + cardW / 2, cardY + 8, { align: "center" });
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...(item.highlight ? textOnPrimary : primary));
-      doc.text(item.value, x + cardW / 2, cardY + 17, { align: "center" });
-      doc.setFont("helvetica", "normal");
-    });
-
-    doc.setDrawColor(...accent);
-    doc.setLineWidth(0.3);
-    doc.line(14, cardY + cardH + 4, pageW - 14, cardY + cardH + 4);
-
-    // ── Tabela de reservas ────────────────────────────────────────────────────
+    // ── Tabela de reservas
     const tableData = filteredReservas.map((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
@@ -437,23 +386,23 @@ const Reservas: React.FC = () => {
         r.imovel?.nome_imovel || "—",
         new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
         new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
-        fmtPDF(bruto),
-        fmtPDF(limpeza),
-        plataforma > 0 ? fmtPDF(plataforma) : "—",
-        fmtPDF(liquido),
-        fmtPDF(comissao),
-        fmtPDF(proprietario),
+        fmtBRL(bruto),
+        fmtBRL(limpeza),
+        plataforma > 0 ? fmtBRL(plataforma) : "—",
+        fmtBRL(liquido),
+        fmtBRL(comissao),
+        fmtBRL(proprietario),
         r.observacoes || "",
       ];
     });
 
+    const footerCb = makeAutoTableFooterCallback(doc, palette, companyName, pageW, pageH);
+
     autoTable(doc, {
-      startY: cardY + cardH + 8,
+      startY: y,
       head: [["Imóvel", "Check-in", "Check-out", "V. Bruto", "Limpeza", "Comissão OTA", "Base Liq.", "Comissão", "Proprietário", "Obs."]],
       body: tableData,
-      headStyles: { fillColor: primary, textColor: accent, fontSize: 7, fontStyle: "bold", cellPadding: { top: 3, bottom: 3, left: 3, right: 3 } },
-      bodyStyles: { fontSize: 7.5, textColor: bodyText, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } },
-      alternateRowStyles: { fillColor: lightGray },
+      ...premiumTableStyles(palette),
       columnStyles: {
         0: { cellWidth: 28 },
         1: { cellWidth: 16, halign: "center" },
@@ -463,23 +412,16 @@ const Reservas: React.FC = () => {
         5: { cellWidth: 20, halign: "right" },
         6: { cellWidth: 20, halign: "right" },
         7: { cellWidth: 20, halign: "right" },
-        8: { cellWidth: 22, halign: "right", fontStyle: "bold", textColor: primary },
+        8: { cellWidth: 22, halign: "right", fontStyle: "bold", textColor: palette.primary },
         9: { cellWidth: "auto" },
       },
-      margin: { left: 14, right: 14 },
-      didDrawPage: (data) => {
-        const footerY = pageH - 8;
-        doc.setFillColor(...primary);
-        doc.rect(0, footerY - 4, pageW, 14, "F");
-        doc.setFontSize(6.5);
-        doc.setTextColor(...accent);
-        doc.text(`${companyName} — Gestão de Imóveis`, 14, footerY + 1);
-        doc.setTextColor(...textOnPrimary);
-        doc.text(`Página ${data.pageNumber}`, pageW - 14, footerY + 1, { align: "right" });
-      },
+      didDrawPage: footerCb,
     });
 
-    doc.save(`relatorio-reservas-${now.toISOString().split("T")[0]}.pdf`);
+    // Footer on all pages
+    drawFooterAllPages(doc, palette, companyName, pageW, pageH);
+
+    doc.save(`relatorio-reservas-${new Date().toISOString().split("T")[0]}.pdf`);
     toast({ title: "Relatório gerado com sucesso!" });
   };
 
