@@ -441,7 +441,8 @@ const Imoveis: React.FC = () => {
               <p className="text-muted-foreground">Nenhum imóvel cadastrado</p>
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Imóvel</TableHead>
