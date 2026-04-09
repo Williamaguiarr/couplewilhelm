@@ -45,6 +45,7 @@ import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
 import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
 import { useToast } from "@/hooks/use-toast";
+import CustosFixosProprietario from "@/components/CustosFixosProprietario";
 
 interface Reserva {
   id: string;
@@ -132,6 +133,7 @@ const ProprietarioDashboard: React.FC = () => {
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [despesasAberto, setDespesasAberto] = useState(true);
+  const [totalCustosFixos, setTotalCustosFixos] = useState(0);
 
   // Gera lista de anos disponíveis: 2 anos atrás até 1 ano à frente
   const anoAtual = now.getFullYear();
