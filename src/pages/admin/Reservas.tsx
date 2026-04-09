@@ -43,12 +43,15 @@ import {
 import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
+import {
+  createPdfDoc, drawHeader, drawSummaryCards,
+  drawFooterAllPages, makeAutoTableFooterCallback, premiumTableStyles,
+  fmtBRL, genTimestamp,
+} from "@/lib/pdf-builder";
 
 interface Reserva {
   id: string;

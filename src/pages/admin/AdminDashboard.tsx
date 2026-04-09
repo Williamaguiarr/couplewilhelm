@@ -50,10 +50,12 @@ import OccupancyComparison from "@/components/OccupancyComparison";
 import FinancialYearComparison from "@/components/FinancialYearComparison";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
+import {
+  createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
+  drawFooterAllPages, premiumTableStyles, fmtBRL, genTimestamp,
+} from "@/lib/pdf-builder";
 
 interface Imovel {
   id: string;

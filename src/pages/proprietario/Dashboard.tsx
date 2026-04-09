@@ -42,10 +42,13 @@ import OccupancyComparison from "@/components/OccupancyComparison";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
-import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
+import {
+  createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
+  drawFooterAllPages, makeAutoTableFooterCallback, premiumTableStyles,
+  fmtBRL, genTimestamp,
+} from "@/lib/pdf-builder";
 import { useToast } from "@/hooks/use-toast";
 import CustosFixosProprietario from "@/components/CustosFixosProprietario";
 
