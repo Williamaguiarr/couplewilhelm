@@ -469,9 +469,9 @@ const ProprietarioDashboard: React.FC = () => {
       <div className="space-y-6 w-full max-w-5xl overflow-x-hidden">
 
         {/* Header */}
-        <div className="pb-2 border-b border-border flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl text-foreground tracking-wide">Dashboard</h1>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Dashboard</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
               {now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
             </p>
@@ -511,12 +511,12 @@ const ProprietarioDashboard: React.FC = () => {
         />
 
         {/* Extrato */}
-        <section className="border border-border rounded-lg overflow-x-auto">
+        <section className="border border-border rounded-xl overflow-hidden">
           <button
             onClick={() => setExtratoAberto((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/10 transition-colors"
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors duration-150"
           >
-            <span className="font-display text-base text-foreground tracking-wide">Extrato Financeiro</span>
+            <span className="font-display text-base text-foreground">Extrato Financeiro</span>
             {extratoAberto
               ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
               : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -610,16 +610,13 @@ const ProprietarioDashboard: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <Table>
+                   <Table>
                     <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent">
+                      <TableRow>
                         {["Imóvel", "Check-in", "Check-out", "Bruto", "Limpeza", "Com. OTA", "Comissão ADM", "Repasse"].map((h, i) => (
                           <TableHead
                             key={h}
-                            className={cn(
-                              "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
-                              i > 2 && "text-right"
-                            )}
+                            className={cn(i > 2 && "text-right")}
                           >
                             {h}
                           </TableHead>
@@ -683,9 +680,9 @@ const ProprietarioDashboard: React.FC = () => {
 
         {/* Resumo Líquido Final */}
         {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
-          <div className="border border-primary/20 rounded-lg px-5 py-4 bg-primary/5 flex items-center justify-between">
+          <div className="border border-primary/20 rounded-xl px-5 py-4 bg-primary/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">
                 Líquido Final — {MESES[filterMes]} {filterAno}
               </p>
               <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
@@ -702,9 +699,9 @@ const ProprietarioDashboard: React.FC = () => {
         )}
 
         {/* Calendar */}
-        <section className="border border-border rounded-lg p-5">
+        <section className="border border-border rounded-xl p-5">
           <div className="mb-5">
-            <h2 className="font-display text-base text-foreground tracking-wide">Calendário de Ocupação</h2>
+            <h2 className="font-display text-base text-foreground">Calendário de Ocupação</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               Dias em dourado indicam período de reserva — clique para detalhes
             </p>
@@ -815,20 +812,24 @@ const MetricCard: React.FC<{
   value: string | null;
   icon: React.ReactNode;
 }> = ({ label, sub, value, icon }) => (
-  <div className="border border-border rounded-lg px-5 py-4 flex items-start justify-between group hover:border-primary/30 transition-colors">
-    <div>
-      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
-      {value === null ? (
-        <div className="h-7 w-32 bg-muted animate-pulse rounded" />
-      ) : (
-        <p className="font-display text-2xl text-foreground">{value}</p>
-      )}
-      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
-    </div>
-    <span className="text-primary opacity-50 group-hover:opacity-80 transition-opacity mt-0.5">
-      {icon}
-    </span>
-  </div>
+  <Card className="spotlight-card group">
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">{label}</p>
+          {value === null ? (
+            <div className="h-7 w-32 bg-muted animate-pulse rounded-lg" />
+          ) : (
+            <p className="font-display text-2xl text-foreground">{value}</p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1.5">{sub}</p>
+        </div>
+        <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+          <span className="text-primary">{icon}</span>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
 );
 
 const TotalItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
