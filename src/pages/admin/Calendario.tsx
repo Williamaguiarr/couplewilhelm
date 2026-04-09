@@ -210,7 +210,7 @@ const Calendario: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl text-foreground tracking-wide">
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
               Calendário de Ocupação
             </h1>
             <p className="text-muted-foreground text-sm mt-1">

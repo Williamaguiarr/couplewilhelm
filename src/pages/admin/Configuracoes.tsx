@@ -398,7 +398,7 @@ const Configuracoes: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground uppercase tracking-widest">
                       Nome da empresa
@@ -436,7 +436,7 @@ const Configuracoes: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                   <div className="h-28 w-28 rounded-xl border border-border bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
                     {form.logo_url ? (
                       <img
