@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { buildPdfPalette, getPdfLogoEscuro } from "@/hooks/use-pdf-theme";
+import { buildPdfPalette, getPdfLogoEscuro } from "@/lib/pdf/theme";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
