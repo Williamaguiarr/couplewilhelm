@@ -862,8 +862,8 @@ const MetricCard: React.FC<{
           <span className="text-primary">{icon}</span>
         </div>
       </div>
-    </CardContent>
-  </Card>
+    </div>
+  </BentoBox>
 );
 
 const TotalItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
