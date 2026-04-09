@@ -216,6 +216,55 @@ const ProprietarioDashboard: React.FC = () => {
     fetchData();
   }, [user]);
 
+  const refetchDespesas = async () => {
+    const { data: despData } = await supabase
+      .from("despesas_extras" as any)
+      .select("*, imoveis(nome_imovel)")
+      .order("data", { ascending: false });
+    setDespesas((despData || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
+  };
+
+  const handleAddDespesa = async () => {
+    if (!newDespesa.imovel_id || !newDespesa.descricao || !newDespesa.valor) {
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+    setSavingDespesa(true);
+    const { error } = await supabase
+      .from("despesas_extras" as any)
+      .insert({
+        imovel_id: newDespesa.imovel_id,
+        descricao: newDespesa.descricao,
+        tipo: newDespesa.tipo,
+        data: newDespesa.data,
+        valor: parseFloat(newDespesa.valor),
+      } as any);
+    setSavingDespesa(false);
+    if (error) {
+      toast({ title: "Erro ao adicionar despesa", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Despesa adicionada com sucesso!" });
+      setShowAddDespesa(false);
+      setNewDespesa({ imovel_id: "", descricao: "", tipo: "manutencao", data: new Date().toISOString().slice(0, 10), valor: "" });
+      refetchDespesas();
+    }
+  };
+
+  const handleDeleteDespesa = async (id: string) => {
+    setDeletingId(id);
+    const { error } = await supabase
+      .from("despesas_extras" as any)
+      .delete()
+      .eq("id", id);
+    setDeletingId(null);
+    if (error) {
+      toast({ title: "Erro ao excluir despesa", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Despesa excluída!" });
+      refetchDespesas();
+    }
+  };
+
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
