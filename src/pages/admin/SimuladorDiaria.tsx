@@ -149,10 +149,10 @@ const SimuladorDiaria: React.FC = () => {
     <PageTransition>
       <div className="space-y-6 max-w-5xl w-full overflow-x-hidden">
         {/* Header */}
-        <div className="pb-2 border-b border-border">
+        <div>
           <div className="flex items-center gap-2">
-            <Calculator className="h-6 w-6 text-primary" />
-            <h1 className="font-display text-2xl text-foreground tracking-wide">
+            <Calculator className="h-5 w-5 text-primary" />
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">
               Simulador de Diária Ideal
             </h1>
           </div>
