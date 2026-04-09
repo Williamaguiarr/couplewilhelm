@@ -295,8 +295,8 @@ const Imoveis: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-3xl text-foreground tracking-wide">Imóveis</h1>
-            <p className="text-muted-foreground mt-1">Gerencie os imóveis da carteira</p>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Imóveis</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Gerencie os imóveis da carteira</p>
           </div>
           <Dialog
             open={open}
@@ -430,7 +430,7 @@ const Imoveis: React.FC = () => {
           </Dialog>
         </div>
 
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -443,12 +443,12 @@ const Imoveis: React.FC = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Imóvel</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Endereço</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Proprietário(s)</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">iCal</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-24"></TableHead>
+                <TableRow>
+                  <TableHead>Imóvel</TableHead>
+                  <TableHead>Endereço</TableHead>
+                  <TableHead>Proprietário(s)</TableHead>
+                  <TableHead>iCal</TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -49,6 +49,7 @@ import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/OccupancyComparison";
 import FinancialYearComparison from "@/components/FinancialYearComparison";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -580,11 +581,11 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="space-y-8 w-full overflow-x-hidden">
+      <div className="space-y-6 sm:space-y-8 w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl text-foreground tracking-wide">Visão Geral</h1>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
             {filtroProprietario !== "todos" && proprietarioSelecionado && (
               <p className="text-primary text-sm font-medium mt-1">
                 {proprietarioSelecionado.nome || proprietarioSelecionado.email}
@@ -592,15 +593,15 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Seletor de mês/ano */}
-            <div className="flex items-center gap-1 bg-card border border-border rounded-lg px-1 py-1">
+            <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-1.5 py-1 shadow-sm">
               <button
                 onClick={() => navegarMes(-1)}
-                className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
                 title="Mês anterior"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </button>
 
               <Select
@@ -641,14 +642,14 @@ const AdminDashboard: React.FC = () => {
                 onClick={() => navegarMes(1)}
                 disabled={isMesAtual}
                 className={cn(
-                  "p-1 rounded transition-colors",
+                  "p-1.5 rounded-lg transition-colors duration-150",
                   isMesAtual
                     ? "text-muted-foreground/30 cursor-not-allowed"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
                 title="Próximo mês"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -678,7 +679,7 @@ const AdminDashboard: React.FC = () => {
               disabled={loading}
               variant="outline"
               size="sm"
-              className="gap-2 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/60"
+              className="gap-2"
             >
               <FileDown className="h-4 w-4" />
               Exportar PDF
@@ -690,9 +691,9 @@ const AdminDashboard: React.FC = () => {
         {reservasSemValores > 0 && (
           <button
             onClick={() => navigate("/admin/reservas")}
-            className="w-full text-left flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 transition-colors group"
+            className="w-full text-left flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 hover:bg-warning/8 transition-colors duration-200 group"
           >
-            <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-primary/15 text-primary">
+            <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-warning/15 text-warning">
               <AlertTriangle className="h-4 w-4" />
             </span>
             <div className="flex-1 min-w-0">
@@ -703,26 +704,29 @@ const AdminDashboard: React.FC = () => {
                 Importada{reservasSemValores !== 1 ? "s" : ""} via iCal — clique para preencher os valores
               </p>
             </div>
-            <ArrowRight className="h-4 w-4 text-primary opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+            <ArrowRight className="h-4 w-4 text-warning opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
           </button>
         )}
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => (
+          {cards.map((card, idx) => (
             <Card
               key={card.title}
-              className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group"
+              className="spotlight-card group"
+              style={{ animationDelay: `${idx * 60}ms` }}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {card.title}
                 </CardTitle>
-                <card.icon className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+                <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+                  <card.icon className="h-4 w-4 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" />
                 ) : (
                   <p className="font-display text-2xl text-foreground">
                     {formatValue(card.value, card.format)}
@@ -735,30 +739,31 @@ const AdminDashboard: React.FC = () => {
 
         {/* Financeiro */}
         <div>
-          <h2 className="font-display text-xl text-foreground tracking-wide mb-4">
+          <h2 className="font-display text-lg sm:text-xl text-foreground mb-4">
             Detalhamento Financeiro
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {financeiroCards.map((card) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            {financeiroCards.map((card, idx) => (
               <Card
                 key={card.title}
-                className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group"
+                className="spotlight-card group"
+                style={{ animationDelay: `${idx * 40}ms` }}
               >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {card.title}
                   </CardTitle>
-                  <card.icon className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+                  <card.icon className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
                   ) : (
                     <div className="space-y-1">
-                      <p className="font-display text-xl text-foreground">
+                      <p className="font-display text-lg text-foreground">
                         {fmt(card.value)}
                       </p>
-                      <p className="text-xs text-muted-foreground">{card.description}</p>
+                      <p className="text-[11px] text-muted-foreground">{card.description}</p>
                     </div>
                   )}
                 </CardContent>
@@ -784,7 +789,7 @@ const AdminDashboard: React.FC = () => {
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div>
-              <h2 className="font-display text-xl text-foreground tracking-wide">Despesas Extras</h2>
+              <h2 className="font-display text-lg sm:text-xl text-foreground">Despesas Extras</h2>
               <p className="text-muted-foreground text-sm mt-0.5">
                 Manutenções, amenities e outros custos vinculados aos imóveis
               </p>
@@ -792,17 +797,19 @@ const AdminDashboard: React.FC = () => {
             <Button
               onClick={() => setDialogOpen(true)}
               size="sm"
-              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="gap-2"
             >
               <Plus className="h-4 w-4" />
               Nova Despesa
             </Button>
           </div>
 
-          <div className="border border-border rounded-lg overflow-x-auto">
+          <div className="border border-border rounded-xl overflow-hidden">
             {despesasFiltradas.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
-                <Receipt className="h-8 w-8 text-muted-foreground/40" />
+              <div className="py-16 flex flex-col items-center justify-center gap-3 text-center">
+                <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center">
+                  <Receipt className="h-5 w-5 text-muted-foreground/50" />
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {filtroProprietario === "todos"
                     ? "Nenhuma despesa extra registrada"
@@ -812,12 +819,11 @@ const AdminDashboard: React.FC = () => {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border hover:bg-transparent">
+                  <TableRow>
                     {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
                       <TableHead
                         key={i}
                         className={cn(
-                          "text-muted-foreground text-[10px] uppercase tracking-widest py-2",
                           i === 4 && "text-right",
                           i === 5 && "w-10"
                         )}
@@ -829,28 +835,28 @@ const AdminDashboard: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {despesasFiltradas.map((d) => (
-                    <TableRow key={d.id} className="border-border hover:bg-muted/20">
-                      <TableCell className="text-foreground font-medium text-sm py-3">
+                    <TableRow key={d.id}>
+                      <TableCell className="text-foreground font-medium text-sm">
                         {d.imovel?.nome_imovel ?? "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm py-3">
+                      <TableCell className="text-muted-foreground text-sm">
                         {d.descricao}
                       </TableCell>
-                      <TableCell className="py-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-primary/10 text-primary border border-primary/20">
+                      <TableCell>
+                        <Badge variant="default" className="text-[10px]">
                           {tipoLabel(d.tipo)}
-                        </span>
+                        </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm py-3">
+                      <TableCell className="text-muted-foreground text-sm">
                         {new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR")}
                       </TableCell>
-                      <TableCell className="text-foreground text-sm text-right font-semibold py-3">
+                      <TableCell className="text-foreground text-sm text-right font-semibold">
                         {fmt(d.valor)}
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell>
                         <button
                           onClick={() => handleDelete(d.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
+                          className="text-muted-foreground hover:text-destructive transition-colors duration-150 p-1.5 rounded-lg hover:bg-destructive/8"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -863,7 +869,7 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {despesasFiltradas.length > 0 && (
-            <div className="mt-2 flex justify-end">
+            <div className="mt-3 flex justify-end">
               <p className="text-xs text-muted-foreground">
                 Total:{" "}
                 <span className="text-foreground font-semibold">

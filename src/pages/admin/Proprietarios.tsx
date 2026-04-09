@@ -225,8 +225,8 @@ const Proprietarios: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-3xl text-foreground tracking-wide">Proprietários</h1>
-            <p className="text-muted-foreground mt-1">Gerencie os proprietários cadastrados no sistema</p>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Proprietários</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Gerencie os proprietários cadastrados no sistema</p>
           </div>
 
           {/* CREATE DIALOG */}
@@ -327,7 +327,7 @@ const Proprietarios: React.FC = () => {
         </div>
 
         {/* TABLE */}
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -343,12 +343,12 @@ const Proprietarios: React.FC = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Nome</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">E-mail</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Comissão</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase">Cadastrado em</TableHead>
-                  <TableHead className="text-muted-foreground tracking-wider text-xs uppercase w-20"></TableHead>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Comissão</TableHead>
+                  <TableHead>Cadastrado em</TableHead>
+                  <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
