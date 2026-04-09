@@ -28,19 +28,6 @@ import {
   Plus,
   MoreHorizontal,
 } from "lucide-react";
-  ChevronUp,
-  Home,
-  Landmark,
-  Building2,
-  FileText,
-  Zap,
-  Droplets,
-  Flame,
-  Wifi,
-  Save,
-  Loader2,
-  Plus,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
