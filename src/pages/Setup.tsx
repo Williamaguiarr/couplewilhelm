@@ -33,13 +33,20 @@ const Setup: React.FC = () => {
     setLoading(true);
     setError(null);
 
+    const secretInput = (document.getElementById("bootstrap_secret") as HTMLInputElement)?.value;
+    if (!secretInput) {
+      setError("Informe o código de configuração.");
+      setLoading(false);
+      return;
+    }
+
     const res = await supabase.functions.invoke("create-user", {
       body: {
         email: form.email,
         password: form.password,
         nome: form.nome,
         role: "admin",
-        bootstrap_secret: "couple-bootstrap-2024",
+        bootstrap_secret: secretInput,
       },
     });
 
@@ -109,6 +116,10 @@ const Setup: React.FC = () => {
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Senha</Label>
                 <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 6 caracteres" minLength={6} required className="bg-background" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Código de Configuração</Label>
+                <Input type="password" id="bootstrap_secret" placeholder="Código fornecido pelo suporte" required className="bg-background" />
               </div>
               {error && <p className="text-destructive text-sm bg-destructive/10 rounded p-2">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
