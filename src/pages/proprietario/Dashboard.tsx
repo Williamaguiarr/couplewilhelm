@@ -286,6 +286,7 @@ const ProprietarioDashboard: React.FC = () => {
   const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
 
   const gerarPDF = async () => {
+    try {
     const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
     const imovelNome = filterImovel !== "todos"
@@ -391,6 +392,10 @@ const ProprietarioDashboard: React.FC = () => {
 
     doc.save(`extrato-${MESES[filterMes].toLowerCase()}-${filterAno}.pdf`);
     toast({ title: "Extrato gerado com sucesso!" });
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      toast({ title: "Erro ao gerar relatório", description: String(err), variant: "destructive" });
+    }
   };
 
   return (

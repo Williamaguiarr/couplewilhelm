@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
   drawFooterAllPages, premiumTableStyles, fmtBRL, genTimestamp,
@@ -108,6 +109,7 @@ const ANOS = Array.from(
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { toast } = useToast();
 
   // Filtro mês/ano
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); // 0-indexed
@@ -374,6 +376,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const gerarPDF = async () => {
+    try {
     const mesNome = MESES[mesSelecionado];
     const nomeProprietario =
       filtroProprietario === "todos"
@@ -468,6 +471,11 @@ const AdminDashboard: React.FC = () => {
 
     const fileName = `visao-geral_${mesNome.toLowerCase()}-${anoSelecionado}${filtroProprietario !== "todos" ? `_${(proprietarioSelecionado?.nome || "proprietario").replace(/\s+/g, "-").toLowerCase()}` : ""}.pdf`;
     doc.save(fileName);
+    toast({ title: "Relatório gerado com sucesso!" });
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      toast({ title: "Erro ao gerar relatório", description: String(err), variant: "destructive" });
+    }
   };
 
   const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
