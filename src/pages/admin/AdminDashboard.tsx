@@ -132,6 +132,11 @@ const AdminDashboard: React.FC = () => {
     comissaoCW: 0,
     valorProprietario: 0,
   });
+  const [futuro, setFuturo] = useState({
+    totalReservas: 0,
+    valorBruto: 0,
+    valorProprietario: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [reservasSemValores, setReservasSemValores] = useState(0);
 
