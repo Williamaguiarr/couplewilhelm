@@ -44,6 +44,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileDown,
+  Clock,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
@@ -102,7 +103,7 @@ const MESES = [
 const now = new Date();
 // Gerar anos disponíveis: de 2 anos atrás até o ano atual
 const ANOS = Array.from(
-  { length: now.getFullYear() - 2023 + 1 },
+  { length: now.getFullYear() - 2023 + 2 },
   (_, i) => 2024 + i
 );
 
@@ -130,6 +131,11 @@ const AdminDashboard: React.FC = () => {
     taxaLimpeza: 0,
     valorLiquido: 0,
     comissaoCW: 0,
+    valorProprietario: 0,
+  });
+  const [futuro, setFuturo] = useState({
+    totalReservas: 0,
+    valorBruto: 0,
     valorProprietario: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -164,13 +170,12 @@ const AdminDashboard: React.FC = () => {
     let novoAno = anoSelecionado;
     if (novoMes < 0) { novoMes = 11; novoAno -= 1; }
     if (novoMes > 11) { novoMes = 0; novoAno += 1; }
-    // Não avançar além do mês atual
-    if (novoAno > now.getFullYear() || (novoAno === now.getFullYear() && novoMes > now.getMonth())) return;
     setMesSelecionado(novoMes);
     setAnoSelecionado(novoAno);
   };
 
   const isMesAtual = mesSelecionado === now.getMonth() && anoSelecionado === now.getFullYear();
+  const isMesFuturo = anoSelecionado > now.getFullYear() || (anoSelecionado === now.getFullYear() && mesSelecionado > now.getMonth());
 
   const fetchProprietarios = async () => {
     const { data: vinculos } = await supabase
@@ -328,6 +333,38 @@ const AdminDashboard: React.FC = () => {
       { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
     );
 
+    // ── Previsão futura: reservas com data_fim após o mês selecionado
+    const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
+    let futureQuery = supabase
+      .from("reservas")
+      .select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
+      .gte("data_fim", futureStart);
+
+    if (imovelIds) {
+      futureQuery = futureQuery.in("imovel_id", imovelIds);
+    }
+
+    const { data: futureReservas } = await futureQuery;
+
+    const futuroTotais = (futureReservas || []).reduce(
+      (acc, r) => {
+        const valorBruto = r.valor_bruto || 0;
+        const taxaLimpeza = r.taxa_limpeza || 0;
+        const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+        const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+        const comissaoRate = getOwnerRate((r as any).imovel_id);
+        const comissaoCW = valorLiquido * comissaoRate;
+        const valorProprietario = valorLiquido - comissaoCW;
+        return {
+          totalReservas: acc.totalReservas + 1,
+          valorBruto: acc.valorBruto + valorBruto,
+          valorProprietario: acc.valorProprietario + valorProprietario,
+        };
+      },
+      { totalReservas: 0, valorBruto: 0, valorProprietario: 0 }
+    );
+
+    setFuturo(futuroTotais);
     setStats({
       totalProprietarios: filtroProprietario === "todos" ? (propCount || 0) : 1,
       totalImoveis: imovelCount || 0,
@@ -522,7 +559,12 @@ const AdminDashboard: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
+              {isMesFuturo && (
+                <Badge variant="secondary" className="text-[10px]">Futuro</Badge>
+              )}
+            </div>
             {filtroProprietario !== "todos" && proprietarioSelecionado && (
               <p className="text-primary text-sm font-medium mt-1">
                 {proprietarioSelecionado.nome || proprietarioSelecionado.email}
@@ -549,15 +591,11 @@ const AdminDashboard: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {MESES.map((m, i) => {
-                    const disabled =
-                      anoSelecionado === now.getFullYear() && i > now.getMonth();
-                    return (
-                      <SelectItem key={i} value={String(i)} disabled={disabled}>
+                  {MESES.map((m, i) => (
+                      <SelectItem key={i} value={String(i)}>
                         {m}
                       </SelectItem>
-                    );
-                  })}
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -577,13 +615,7 @@ const AdminDashboard: React.FC = () => {
 
               <button
                 onClick={() => navegarMes(1)}
-                disabled={isMesAtual}
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors duration-150",
-                  isMesAtual
-                    ? "text-muted-foreground/30 cursor-not-allowed"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
+                className="p-1.5 rounded-lg transition-colors duration-150 text-muted-foreground hover:bg-muted hover:text-foreground"
                 title="Próximo mês"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -674,7 +706,71 @@ const AdminDashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Financeiro */}
+        {/* Previsão Futura */}
+        {futuro.totalReservas > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-lg sm:text-xl text-foreground">
+                Previsão Futura
+              </h2>
+              <Badge variant="secondary" className="text-[10px]">
+                {futuro.totalReservas} reserva{futuro.totalReservas !== 1 ? "s" : ""}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <Card className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Receita Bruta Futura
+                  </CardTitle>
+                  <DollarSign className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="font-display text-lg text-foreground">{fmt(futuro.valorBruto)}</p>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Repasse Futuro
+                  </CardTitle>
+                  <UserCheck className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="font-display text-lg text-foreground">{fmt(futuro.valorProprietario)}</p>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Reservas Futuras
+                  </CardTitle>
+                  <CalendarDays className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="font-display text-lg text-foreground">{futuro.totalReservas}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Valores de reservas com checkout após {MESES[mesSelecionado]}/{anoSelecionado}
+            </p>
+          </div>
+        )}
+
         <div>
           <h2 className="font-display text-lg sm:text-xl text-foreground mb-4">
             Detalhamento Financeiro
