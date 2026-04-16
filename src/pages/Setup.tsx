@@ -117,6 +117,10 @@ const Setup: React.FC = () => {
                 <Label className="text-muted-foreground">Senha</Label>
                 <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 6 caracteres" minLength={6} required className="bg-background" />
               </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Código de Configuração</Label>
+                <Input type="password" id="bootstrap_secret" placeholder="Código fornecido pelo suporte" required className="bg-background" />
+              </div>
               {error && <p className="text-destructive text-sm bg-destructive/10 rounded p-2">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Criando..." : "Criar Administrador"}
