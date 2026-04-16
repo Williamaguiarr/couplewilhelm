@@ -609,13 +609,7 @@ const AdminDashboard: React.FC = () => {
 
               <button
                 onClick={() => navegarMes(1)}
-                disabled={isMesAtual}
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors duration-150",
-                  isMesAtual
-                    ? "text-muted-foreground/30 cursor-not-allowed"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
+                className="p-1.5 rounded-lg transition-colors duration-150 text-muted-foreground hover:bg-muted hover:text-foreground"
                 title="Próximo mês"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
