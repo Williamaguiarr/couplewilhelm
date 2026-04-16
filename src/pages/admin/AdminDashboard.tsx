@@ -559,7 +559,12 @@ const AdminDashboard: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
+              {isMesFuturo && (
+                <Badge variant="secondary" className="text-[10px]">Futuro</Badge>
+              )}
+            </div>
             {filtroProprietario !== "todos" && proprietarioSelecionado && (
               <p className="text-primary text-sm font-medium mt-1">
                 {proprietarioSelecionado.nome || proprietarioSelecionado.email}
