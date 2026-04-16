@@ -24,7 +24,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           {/* Premium glass header */}
-          <header className="h-14 flex items-center justify-between px-4 sm:px-6 glass sticky top-0 z-10">
+          <header className="h-11 flex items-center justify-between px-3 sm:px-5 glass sticky top-0 z-10">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors duration-200" />
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
@@ -42,7 +42,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-6 overflow-auto">
+          <main className="flex-1 p-3 sm:p-5 overflow-auto">
             {children}
           </main>
         </div>
