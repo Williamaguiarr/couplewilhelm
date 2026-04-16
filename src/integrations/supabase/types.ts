@@ -251,8 +251,10 @@ export type Database = {
           data_inicio: string
           id: string
           imovel_id: string
+          nome_hospede: string | null
           num_hospedes: number | null
           observacoes: string | null
+          plataforma_origem: string | null
           taxa_limpeza: number | null
           valor_bruto: number | null
           valor_liquido_proprietario: number | null
@@ -264,8 +266,10 @@ export type Database = {
           data_inicio: string
           id?: string
           imovel_id: string
+          nome_hospede?: string | null
           num_hospedes?: number | null
           observacoes?: string | null
+          plataforma_origem?: string | null
           taxa_limpeza?: number | null
           valor_bruto?: number | null
           valor_liquido_proprietario?: number | null
@@ -277,8 +281,10 @@ export type Database = {
           data_inicio?: string
           id?: string
           imovel_id?: string
+          nome_hospede?: string | null
           num_hospedes?: number | null
           observacoes?: string | null
+          plataforma_origem?: string | null
           taxa_limpeza?: number | null
           valor_bruto?: number | null
           valor_liquido_proprietario?: number | null
