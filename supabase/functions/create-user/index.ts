@@ -21,10 +21,15 @@ Deno.serve(async (req) => {
     const { email, password, nome, role, bootstrap_secret } = body;
 
     // ── MODO BOOTSTRAP (criar primeiro admin sem auth) ──────────────────
-    // Só funciona se ainda não existe nenhum admin e o secret está correto
-    const BOOTSTRAP_SECRET = Deno.env.get("BOOTSTRAP_SECRET") || "couple-bootstrap-2024";
-
     if (bootstrap_secret) {
+      const BOOTSTRAP_SECRET = Deno.env.get("BOOTSTRAP_SECRET");
+      if (!BOOTSTRAP_SECRET) {
+        return new Response(JSON.stringify({ error: "Bootstrap não configurado no servidor." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       if (bootstrap_secret !== BOOTSTRAP_SECRET) {
         return new Response(JSON.stringify({ error: "Bootstrap secret inválido" }), {
           status: 403,
@@ -128,7 +133,6 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      // ── Email já cadastrado: tenta vincular o usuário existente ──────────
       const isEmailExists =
         createError.message?.toLowerCase().includes("already been registered") ||
         createError.message?.toLowerCase().includes("email_exists") ||
@@ -141,7 +145,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Busca o usuário existente pela listagem (Admin API)
       const { data: listData, error: listError } = await adminClient.auth.admin.listUsers();
       if (listError) {
         return new Response(JSON.stringify({ error: "Erro ao buscar usuário existente." }), {
@@ -163,7 +166,6 @@ Deno.serve(async (req) => {
 
       targetUserId = existingUser.id;
 
-      // Verifica se o usuário já tem algum papel incompatível (admin/master)
       const { data: existingRoles } = await adminClient
         .from("user_roles")
         .select("role")
@@ -177,15 +179,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Garante que tem o papel correto
       if (!roles.includes(role)) {
         await adminClient.from("user_roles").insert({ user_id: targetUserId, role });
       }
 
-      // Atualiza o nome no perfil
       await adminClient.from("profiles").update({ nome }).eq("id", targetUserId);
 
-      // Vincula ao admin (ignora se já vinculado)
       if (role === "proprietario") {
         const { data: existingLink } = await adminClient
           .from("admin_proprietarios")
@@ -208,13 +207,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Usuário criado com sucesso ────────────────────────────────────────
     targetUserId = newUser.user.id;
 
     await adminClient.from("user_roles").insert({ user_id: targetUserId, role });
     await adminClient.from("profiles").update({ nome }).eq("id", targetUserId);
 
-    // Se o criador é um admin e está criando um proprietário, registra o vínculo
     if (role === "proprietario") {
       await adminClient.from("admin_proprietarios").insert({
         admin_id: callerUser.id,

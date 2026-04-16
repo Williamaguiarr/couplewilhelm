@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify caller is admin
+    // Verify caller identity
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,32 +37,51 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: roleCheck } = await callerClient
+    // Check caller role (admin or master)
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .maybeSingle();
+      .eq("user_id", caller.id);
 
-    if (!roleCheck) {
+    const roles = (callerRoles ?? []).map((r: any) => r.role);
+    const isMaster = roles.includes("master");
+    const isAdmin = roles.includes("admin");
+
+    if (!isMaster && !isAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden: admins only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const body = await req.json();
     const { action, userId, nome, email, password } = body;
 
+    // ── Scope check: admin can only manage their own proprietários ──────
+    if (isAdmin && !isMaster) {
+      const { data: link } = await adminClient
+        .from("admin_proprietarios")
+        .select("id")
+        .eq("admin_id", caller.id)
+        .eq("proprietario_id", userId)
+        .maybeSingle();
+
+      if (!link) {
+        return new Response(JSON.stringify({ error: "Acesso negado: usuário fora do seu escopo." }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (action === "update") {
-      // Build auth payload only when there's something to change
       const authPayload: Record<string, unknown> = {};
       if (email) authPayload.email = email;
       if (password) authPayload.password = password;
 
       if (Object.keys(authPayload).length > 0) {
-        // Use GoTrue REST API directly to avoid the SDK scan bug with NULL fields
         const gotrueRes = await fetch(
           `${supabaseUrl}/auth/v1/admin/users/${userId}`,
           {
@@ -86,7 +105,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update profile
       const profileUpdate: Record<string, unknown> = {};
       if (nome !== undefined) profileUpdate.nome = nome;
       if (email !== undefined) profileUpdate.email = email;

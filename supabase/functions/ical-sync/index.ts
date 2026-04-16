@@ -11,7 +11,6 @@ function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: s
   const events: Array<{ uid: string; dtstart: string; dtend: string; summary: string }> = [];
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 
-  // Unfold folded lines (continuation lines start with space/tab)
   const unfolded: string[] = [];
   for (const line of lines) {
     if ((line.startsWith(" ") || line.startsWith("\t")) && unfolded.length > 0) {
@@ -39,7 +38,6 @@ function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: s
       }
       inEvent = false;
     } else if (inEvent) {
-      // Handle property params like DTSTART;VALUE=DATE:20240101
       const colonIdx = line.indexOf(":");
       if (colonIdx === -1) continue;
       const propFull = line.slice(0, colonIdx).toUpperCase();
@@ -56,7 +54,6 @@ function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: s
   return events;
 }
 
-// Convert iCal date (YYYYMMDD or YYYYMMDDTHHmmssZ) to ISO date string YYYY-MM-DD
 function parseICalDate(val: string): string {
   const clean = val.replace(/[TZ]/g, "");
   if (clean.length >= 8) {
@@ -75,16 +72,54 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-  // Auth check — allow service role calls (cron) and authenticated admin users
+  // ── Auth check ────────────────────────────────────────────────────────
   const authHeader = req.headers.get("Authorization");
-  let imovelId: string | null = null;
+  const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
 
-  // If body contains imovel_id, this is a manual sync for a specific property
-  let body: { imovel_id?: string } = {};
+  if (!isServiceRole) {
+    // Must be an authenticated admin user
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const callerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user } } = await callerClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify caller is admin or master
+    const { data: roleCheck } = await callerClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .in("role", ["admin", "master"])
+      .limit(1);
+
+    if (!roleCheck || roleCheck.length === 0) {
+      return new Response(JSON.stringify({ error: "Forbidden: admins only" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // ── Parse body ────────────────────────────────────────────────────────
+  let imovelId: string | null = null;
   if (req.method === "POST") {
     try {
-      body = await req.json();
+      const body = await req.json();
       imovelId = body.imovel_id ?? null;
     } catch (_) { /* no body */ }
   }
@@ -99,7 +134,6 @@ Deno.serve(async (req) => {
   if (imovelId) {
     query = query.eq("id", imovelId);
   } else {
-    // Only properties that have at least one iCal URL
     query = query.or("ical_url_airbnb.neq.null,ical_url_booking.neq.null");
   }
 
@@ -126,7 +160,6 @@ Deno.serve(async (req) => {
       const result = { imovel_id: imovel.id, source, synced: 0, errors: [] as string[] };
 
       try {
-        // Fetch the iCal feed
         const response = await fetch(url, {
           headers: { "User-Agent": "Mozilla/5.0 (compatible; CoupleWilhelm/1.0)" },
         });
@@ -141,21 +174,16 @@ Deno.serve(async (req) => {
         const events = parseICal(icalText);
 
         for (const event of events) {
-          // Skip BLOCKED / unavailable placeholders (no financial data needed)
-          // We upsert based on a stable external_id = uid
           const payload = {
             imovel_id: imovel.id,
             data_inicio: event.dtstart,
             data_fim: event.dtend,
             observacoes: `[${source.toUpperCase()}] ${event.summary}`.trim(),
-            // Financial fields left null — admin fills later
             valor_bruto: null,
             taxa_limpeza: null,
             valor_liquido_proprietario: null,
           };
 
-          // Check if a reservation already exists for this period and imovel
-          // (use date overlap check to avoid duplicates from iCal re-sync)
           const { data: existing } = await supabase
             .from("reservas")
             .select("id")
@@ -180,7 +208,6 @@ Deno.serve(async (req) => {
       results.push(result);
     }
 
-    // Update ical_last_sync timestamp
     await supabase
       .from("imoveis")
       .update({ ical_last_sync: new Date().toISOString() })
