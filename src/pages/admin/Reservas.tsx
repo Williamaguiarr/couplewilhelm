@@ -311,6 +311,7 @@ const Reservas: React.FC = () => {
   const { toast } = useToast();
 
   const gerarPDF = async () => {
+    try {
     const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
     const imovelNome = filterImovel !== "all"
@@ -416,6 +417,10 @@ const Reservas: React.FC = () => {
 
     doc.save(`relatorio-reservas-${new Date().toISOString().split("T")[0]}.pdf`);
     toast({ title: "Relatório gerado com sucesso!" });
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      toast({ title: "Erro ao gerar relatório", description: String(err), variant: "destructive" });
+    }
   };
 
   const fetchData = async () => {
