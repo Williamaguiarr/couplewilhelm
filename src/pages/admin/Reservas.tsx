@@ -814,14 +814,14 @@ const Reservas: React.FC = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="text-muted-foreground">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="text-muted-foreground">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
-                      <TableCell className="text-muted-foreground">{r.num_hospedes ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{fmt(r.valor_bruto)}</TableCell>
-                      <TableCell className="text-muted-foreground">{fmt(r.taxa_limpeza)}</TableCell>
-                      <TableCell className="text-muted-foreground">{fmt(comissao)}</TableCell>
-                      <TableCell className="text-primary font-semibold">{fmt(r.valor_liquido_proprietario)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{r.num_hospedes ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.valor_bruto)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.taxa_limpeza)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissao)}</TableCell>
+                      <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(r.valor_liquido_proprietario)}</TableCell>
                       <TableCell className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
                           <Pencil className="h-3.5 w-3.5" />
