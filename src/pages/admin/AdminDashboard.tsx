@@ -376,6 +376,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const gerarPDF = async () => {
+    try {
     const mesNome = MESES[mesSelecionado];
     const nomeProprietario =
       filtroProprietario === "todos"
@@ -470,6 +471,11 @@ const AdminDashboard: React.FC = () => {
 
     const fileName = `visao-geral_${mesNome.toLowerCase()}-${anoSelecionado}${filtroProprietario !== "todos" ? `_${(proprietarioSelecionado?.nome || "proprietario").replace(/\s+/g, "-").toLowerCase()}` : ""}.pdf`;
     doc.save(fileName);
+    toast({ title: "Relatório gerado com sucesso!" });
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      toast({ title: "Erro ao gerar relatório", description: String(err), variant: "destructive" });
+    }
   };
 
   const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
