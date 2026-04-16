@@ -6,11 +6,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Parse iCal text and return array of events with dtstart, dtend, summary, uid
-function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: string; summary: string }> {
-  const events: Array<{ uid: string; dtstart: string; dtend: string; summary: string }> = [];
+interface ICalEvent {
+  uid: string;
+  dtstart: string;
+  dtend: string;
+  summary: string;
+  description: string;
+}
+
+// Parse iCal text and return array of events
+function parseICal(text: string): ICalEvent[] {
+  const events: ICalEvent[] = [];
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 
+  // Unfold continuation lines (RFC 5545 §3.1)
   const unfolded: string[] = [];
   for (const line of lines) {
     if ((line.startsWith(" ") || line.startsWith("\t")) && unfolded.length > 0) {
@@ -21,7 +30,7 @@ function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: s
   }
 
   let inEvent = false;
-  let current: Partial<{ uid: string; dtstart: string; dtend: string; summary: string }> = {};
+  let current: Partial<ICalEvent> = {};
 
   for (const line of unfolded) {
     if (line === "BEGIN:VEVENT") {
@@ -34,6 +43,7 @@ function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: s
           dtstart: current.dtstart,
           dtend: current.dtend,
           summary: current.summary || "",
+          description: current.description || "",
         });
       }
       inEvent = false;
@@ -48,6 +58,7 @@ function parseICal(text: string): Array<{ uid: string; dtstart: string; dtend: s
       else if (propName === "DTSTART") current.dtstart = parseICalDate(value);
       else if (propName === "DTEND") current.dtend = parseICalDate(value);
       else if (propName === "SUMMARY") current.summary = value;
+      else if (propName === "DESCRIPTION") current.description = value;
     }
   }
 
@@ -65,6 +76,59 @@ function parseICalDate(val: string): string {
   return val;
 }
 
+/**
+ * Extract guest name from SUMMARY.
+ * Airbnb format: "Reserved - João Silva" or "Reservado - João Silva"
+ * Booking format: "CLOSED - João Silva" or just "João Silva"
+ */
+function extractGuestName(summary: string): string | null {
+  if (!summary) return null;
+  // Remove common prefixes
+  const cleaned = summary
+    .replace(/^(Reserved|Reservado|CLOSED|Blocked|Bloqueado|Not available)\s*[-–—:]\s*/i, "")
+    .trim();
+  // If what remains looks like a name (not empty, not just "Airbnb" etc.)
+  if (cleaned && !/^(airbnb|booking|not available|blocked|bloqueado)$/i.test(cleaned)) {
+    return cleaned;
+  }
+  return null;
+}
+
+/**
+ * Extract number of guests from DESCRIPTION.
+ * Airbnb: "Number of guests: 3" or "Número de hóspedes: 3"
+ * Booking: "Guest count: 3" or similar patterns
+ */
+function extractNumGuests(description: string): number | null {
+  if (!description) return null;
+  // Decode escaped newlines
+  const text = description.replace(/\\n/g, "\n").replace(/\\,/g, ",");
+  
+  const patterns = [
+    /(?:number of guests|número de hóspedes|guest count|guests?|hóspedes?)\s*[:=]\s*(\d+)/i,
+    /(\d+)\s*(?:guests?|hóspedes?)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > 0 && num < 100) return num;
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract phone number from DESCRIPTION.
+ */
+function extractPhone(description: string): string | null {
+  if (!description) return null;
+  const text = description.replace(/\\n/g, "\n");
+  const match = text.match(/(?:phone|telefone|tel)\s*[:=]\s*([+\d\s()-]{8,20})/i);
+  return match ? match[1].trim() : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -79,7 +143,6 @@ Deno.serve(async (req) => {
   const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
 
   if (!isServiceRole) {
-    // Must be an authenticated admin user
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -99,7 +162,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify caller is admin or master
     const { data: roleCheck } = await callerClient
       .from("user_roles")
       .select("role")
@@ -126,7 +188,6 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // Fetch properties to sync
   let query = supabase
     .from("imoveis")
     .select("id, nome_imovel, ical_url_airbnb, ical_url_booking");
@@ -174,11 +235,29 @@ Deno.serve(async (req) => {
         const events = parseICal(icalText);
 
         for (const event of events) {
-          const payload = {
+          const guestName = extractGuestName(event.summary);
+          const numGuests = extractNumGuests(event.description);
+          const phone = extractPhone(event.description);
+
+          // Build observacoes with all extracted info
+          const obsLines: string[] = [`[${source.toUpperCase()}] ${event.summary}`.trim()];
+          if (phone) obsLines.push(`Tel: ${phone}`);
+          if (event.description) {
+            // Add raw description for reference (truncated)
+            const descClean = event.description.replace(/\\n/g, " | ").replace(/\\,/g, ",");
+            if (descClean.length > 0) {
+              obsLines.push(descClean.length > 300 ? descClean.slice(0, 300) + "..." : descClean);
+            }
+          }
+
+          const payload: Record<string, unknown> = {
             imovel_id: imovel.id,
             data_inicio: event.dtstart,
             data_fim: event.dtend,
-            observacoes: `[${source.toUpperCase()}] ${event.summary}`.trim(),
+            observacoes: obsLines.join("\n"),
+            nome_hospede: guestName,
+            plataforma_origem: source,
+            num_hospedes: numGuests,
             valor_bruto: null,
             taxa_limpeza: null,
             valor_liquido_proprietario: null,
