@@ -602,16 +602,16 @@ const ProprietarioDashboard: React.FC = () => {
                             const f = calcFinanceiro(r, comissaoRate);
                             return (
                               <TableRow key={r.id} className="border-border hover:bg-muted/20">
-                                <TableCell className="text-foreground font-medium text-sm py-3">{r.imovel?.nome_imovel ?? "—"}</TableCell>
-                                <TableCell className="text-muted-foreground text-sm py-3">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                                <TableCell className="text-muted-foreground text-sm py-3">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                                <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.bruto)}</TableCell>
-                                <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.limpeza)}</TableCell>
-                                <TableCell className="text-muted-foreground text-sm text-right py-3">
+                                <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.nome_imovel ?? "—"}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3 whitespace-nowrap">{fmt(f.bruto)}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3 whitespace-nowrap">{fmt(f.limpeza)}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3 whitespace-nowrap">
                                   {f.plataforma > 0 ? fmt(f.plataforma) : <span className="opacity-30">—</span>}
                                 </TableCell>
-                                <TableCell className="text-muted-foreground text-sm text-right py-3">{fmt(f.comissao)}</TableCell>
-                                <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(f.proprietario)}</TableCell>
+                                <TableCell className="text-muted-foreground text-sm text-right py-3 whitespace-nowrap">{fmt(f.comissao)}</TableCell>
+                                <TableCell className="text-primary text-sm text-right font-semibold py-3 whitespace-nowrap">{fmt(f.proprietario)}</TableCell>
                               </TableRow>
                             );
                           })}
