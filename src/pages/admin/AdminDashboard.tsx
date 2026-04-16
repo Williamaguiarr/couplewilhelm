@@ -44,6 +44,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileDown,
+  Clock,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
