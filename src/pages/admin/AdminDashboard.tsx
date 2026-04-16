@@ -332,6 +332,38 @@ const AdminDashboard: React.FC = () => {
       { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
     );
 
+    // ── Previsão futura: reservas com data_fim após o mês selecionado
+    const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
+    let futureQuery = supabase
+      .from("reservas")
+      .select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
+      .gte("data_fim", futureStart);
+
+    if (imovelIds) {
+      futureQuery = futureQuery.in("imovel_id", imovelIds);
+    }
+
+    const { data: futureReservas } = await futureQuery;
+
+    const futuroTotais = (futureReservas || []).reduce(
+      (acc, r) => {
+        const valorBruto = r.valor_bruto || 0;
+        const taxaLimpeza = r.taxa_limpeza || 0;
+        const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+        const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+        const comissaoRate = getOwnerRate((r as any).imovel_id);
+        const comissaoCW = valorLiquido * comissaoRate;
+        const valorProprietario = valorLiquido - comissaoCW;
+        return {
+          totalReservas: acc.totalReservas + 1,
+          valorBruto: acc.valorBruto + valorBruto,
+          valorProprietario: acc.valorProprietario + valorProprietario,
+        };
+      },
+      { totalReservas: 0, valorBruto: 0, valorProprietario: 0 }
+    );
+
+    setFuturo(futuroTotais);
     setStats({
       totalProprietarios: filtroProprietario === "todos" ? (propCount || 0) : 1,
       totalImoveis: imovelCount || 0,
