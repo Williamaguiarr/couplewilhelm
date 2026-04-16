@@ -33,13 +33,20 @@ const Setup: React.FC = () => {
     setLoading(true);
     setError(null);
 
+    const secretInput = (document.getElementById("bootstrap_secret") as HTMLInputElement)?.value;
+    if (!secretInput) {
+      setError("Informe o código de configuração.");
+      setLoading(false);
+      return;
+    }
+
     const res = await supabase.functions.invoke("create-user", {
       body: {
         email: form.email,
         password: form.password,
         nome: form.nome,
         role: "admin",
-        bootstrap_secret: "couple-bootstrap-2024",
+        bootstrap_secret: secretInput,
       },
     });
 
