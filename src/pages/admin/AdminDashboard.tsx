@@ -102,7 +102,7 @@ const MESES = [
 const now = new Date();
 // Gerar anos disponíveis: de 2 anos atrás até o ano atual
 const ANOS = Array.from(
-  { length: now.getFullYear() - 2023 + 1 },
+  { length: now.getFullYear() - 2023 + 2 },
   (_, i) => 2024 + i
 );
 
