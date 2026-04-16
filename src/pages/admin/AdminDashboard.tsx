@@ -701,7 +701,71 @@ const AdminDashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Financeiro */}
+        {/* Previsão Futura */}
+        {futuro.totalReservas > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-lg sm:text-xl text-foreground">
+                Previsão Futura
+              </h2>
+              <Badge variant="secondary" className="text-[10px]">
+                {futuro.totalReservas} reserva{futuro.totalReservas !== 1 ? "s" : ""}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <Card className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Receita Bruta Futura
+                  </CardTitle>
+                  <DollarSign className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="font-display text-lg text-foreground">{fmt(futuro.valorBruto)}</p>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Repasse Futuro
+                  </CardTitle>
+                  <UserCheck className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="font-display text-lg text-foreground">{fmt(futuro.valorProprietario)}</p>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Reservas Futuras
+                  </CardTitle>
+                  <CalendarDays className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="font-display text-lg text-foreground">{futuro.totalReservas}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Valores de reservas com checkout após {MESES[mesSelecionado]}/{anoSelecionado}
+            </p>
+          </div>
+        )}
+
         <div>
           <h2 className="font-display text-lg sm:text-xl text-foreground mb-4">
             Detalhamento Financeiro
