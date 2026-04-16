@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
   drawFooterAllPages, premiumTableStyles, fmtBRL, genTimestamp,
