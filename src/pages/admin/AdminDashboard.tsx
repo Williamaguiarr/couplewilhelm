@@ -169,13 +169,12 @@ const AdminDashboard: React.FC = () => {
     let novoAno = anoSelecionado;
     if (novoMes < 0) { novoMes = 11; novoAno -= 1; }
     if (novoMes > 11) { novoMes = 0; novoAno += 1; }
-    // Não avançar além do mês atual
-    if (novoAno > now.getFullYear() || (novoAno === now.getFullYear() && novoMes > now.getMonth())) return;
     setMesSelecionado(novoMes);
     setAnoSelecionado(novoAno);
   };
 
   const isMesAtual = mesSelecionado === now.getMonth() && anoSelecionado === now.getFullYear();
+  const isMesFuturo = anoSelecionado > now.getFullYear() || (anoSelecionado === now.getFullYear() && mesSelecionado > now.getMonth());
 
   const fetchProprietarios = async () => {
     const { data: vinculos } = await supabase
