@@ -585,15 +585,11 @@ const AdminDashboard: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {MESES.map((m, i) => {
-                    const disabled =
-                      anoSelecionado === now.getFullYear() && i > now.getMonth();
-                    return (
-                      <SelectItem key={i} value={String(i)} disabled={disabled}>
+                  {MESES.map((m, i) => (
+                      <SelectItem key={i} value={String(i)}>
                         {m}
                       </SelectItem>
-                    );
-                  })}
+                  ))}
                 </SelectContent>
               </Select>
 
