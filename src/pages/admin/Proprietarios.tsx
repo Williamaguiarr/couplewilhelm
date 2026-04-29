@@ -171,12 +171,24 @@ const Proprietarios: React.FC = () => {
       });
     } else {
       // Atualizar comissão no perfil
-      const comissaoVal = parseFloat(editForm.comissao) || 25;
-      await supabase
-        .from("profiles")
-        .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
-        .eq("id", editTarget.id);
-      toast({ title: "Proprietário atualizado!" });
+      let comissaoErr: string | null = null;
+      if (editForm.comissao !== "") {
+        const comissaoVal = parseFloat(editForm.comissao);
+        if (!isNaN(comissaoVal)) {
+          const { error: cErr, data: cData } = await supabase
+            .from("profiles")
+            .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
+            .eq("id", editTarget.id)
+            .select("id");
+          if (cErr) comissaoErr = cErr.message;
+          else if (!cData || cData.length === 0) comissaoErr = "Sem permissão para atualizar a comissão.";
+        }
+      }
+      if (comissaoErr) {
+        toast({ title: "Erro ao atualizar comissão", description: comissaoErr, variant: "destructive" });
+      } else {
+        toast({ title: "Proprietário atualizado!" });
+      }
       setEditOpen(false);
       setEditTarget(null);
       fetchProprietarios();
