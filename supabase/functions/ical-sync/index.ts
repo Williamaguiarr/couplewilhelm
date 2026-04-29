@@ -234,12 +234,20 @@ Deno.serve(async (req) => {
         const icalText = await response.text();
         const events = parseICal(icalText);
 
+        // Janela: somente eventos dos próximos 3 meses (a partir de hoje)
+        const today = new Date();
+        const todayStr = today.toISOString().split("T")[0];
+        const limitDate = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
+        const limitStr = limitDate.toISOString().split("T")[0];
+
         for (const event of events) {
+          // Pula eventos fora da janela: já passaram (data_fim < hoje) ou começam após o limite
+          if (event.dtend < todayStr) continue;
+          if (event.dtstart > limitStr) continue;
+
           const guestName = extractGuestName(event.summary);
           const numGuests = extractNumGuests(event.description);
           const phone = extractPhone(event.description);
-
-          // Build observacoes with all extracted info
           const obsLines: string[] = [`[${source.toUpperCase()}] ${event.summary}`.trim()];
           if (phone) obsLines.push(`Tel: ${phone}`);
           if (event.description) {
