@@ -115,12 +115,17 @@ const Proprietarios: React.FC = () => {
     } else {
       // Atualizar comissão no perfil do proprietário criado
       const newUserId = res.data?.userId;
-      if (newUserId) {
-        const comissaoVal = parseFloat(createForm.comissao) || 25;
-        await supabase
-          .from("profiles")
-          .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
-          .eq("id", newUserId);
+      if (newUserId && createForm.comissao !== "") {
+        const comissaoVal = parseFloat(createForm.comissao);
+        if (!isNaN(comissaoVal)) {
+          const { error: comErr } = await supabase
+            .from("profiles")
+            .update({ comissao_percentual: Math.min(100, Math.max(0, comissaoVal)) } as any)
+            .eq("id", newUserId);
+          if (comErr) {
+            toast({ title: "Aviso: comissão não salva", description: comErr.message, variant: "destructive" });
+          }
+        }
       }
       toast({ title: "Proprietário criado!", description: `${createForm.nome} foi adicionado.` });
       setCreateOpen(false);
