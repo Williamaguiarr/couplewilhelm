@@ -221,21 +221,21 @@ export type Database = {
       }
       profiles: {
         Row: {
-          comissao_percentual: number
+          comissao_percentual: number | null
           created_at: string | null
           email: string | null
           id: string
           nome: string | null
         }
         Insert: {
-          comissao_percentual?: number
+          comissao_percentual?: number | null
           created_at?: string | null
           email?: string | null
           id: string
           nome?: string | null
         }
         Update: {
-          comissao_percentual?: number
+          comissao_percentual?: number | null
           created_at?: string | null
           email?: string | null
           id?: string
