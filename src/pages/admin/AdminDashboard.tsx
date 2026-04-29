@@ -193,7 +193,7 @@ const AdminDashboard: React.FC = () => {
       .select("id, nome, email")
       .in("id", ids);
 
-    setProprietarios(profiles || []);
+    setProprietarios((profiles || []).filter((p) => p && p.id));
   };
 
   const fetchReservasSemValores = async () => {
