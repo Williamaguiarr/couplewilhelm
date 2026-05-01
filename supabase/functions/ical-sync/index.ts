@@ -221,9 +221,26 @@ Deno.serve(async (req) => {
 
       const result = { imovel_id: imovel.id, source, synced: 0, errors: [] as string[] };
 
+      // ── SSRF protection: only allow HTTPS to known iCal providers ─────
+      const ALLOWED_HOSTS = /^([a-z0-9-]+\.)*(airbnb\.com|airbnb\.com\.br|booking\.com|admin\.booking\.com)$/i;
+      let parsedUrl: URL;
       try {
-        const response = await fetch(url, {
+        parsedUrl = new URL(url);
+      } catch {
+        result.errors.push("URL inválida");
+        results.push(result);
+        continue;
+      }
+      if (parsedUrl.protocol !== "https:" || !ALLOWED_HOSTS.test(parsedUrl.hostname)) {
+        result.errors.push(`URL não permitida (host: ${parsedUrl.hostname})`);
+        results.push(result);
+        continue;
+      }
+
+      try {
+        const response = await fetch(parsedUrl.toString(), {
           headers: { "User-Agent": "Mozilla/5.0 (compatible; CoupleWilhelm/1.0)" },
+          redirect: "error",
         });
 
         if (!response.ok) {
