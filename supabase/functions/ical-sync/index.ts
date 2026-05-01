@@ -195,7 +195,8 @@ Deno.serve(async (req) => {
   if (imovelId) {
     query = query.eq("id", imovelId);
   } else {
-    query = query.or("ical_url_airbnb.neq.null,ical_url_booking.neq.null");
+    // PostgREST: usar `not.is.null` (e não `neq.null`) para filtrar valores não nulos
+    query = query.or("ical_url_airbnb.not.is.null,ical_url_booking.not.is.null");
   }
 
   const { data: imoveis, error: fetchError } = await query;
