@@ -415,7 +415,8 @@ const ProprietarioDashboard: React.FC = () => {
 
     // ── Tabela de reservas
     const tableData = reservasFiltradas.map((r) => {
-      const f = calcFinanceiro(r, comissaoRate);
+      const rate = getRateForImovel(r.imovel_id);
+      const f = calcFinanceiro(r, rate);
       return [
         r.imovel?.nome_imovel || "—",
         new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
