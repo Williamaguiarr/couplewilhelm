@@ -109,8 +109,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
     setLoading(true);
     let query = supabase
       .from("ganhos_extras" as any)
-      .select("*, imoveis(nome_imovel)")
-      .order("data", { ascending: false });
+      .select("*, imoveis(nome_imovel)");
     
     if (reservaId) {
       query = query.eq("reserva_id", reservaId);
@@ -118,7 +117,13 @@ const GanhosExtrasDialog: React.FC<Props> = ({
       query = query.eq("imovel_id", imovelId);
     }
 
-    const { data } = await query;
+    const { data, error } = await query.order("data", { ascending: false });
+    
+    if (error) {
+      console.error("Erro ao buscar ganhos extras:", error);
+      toast({ title: "Erro ao buscar ganhos", description: error.message, variant: "destructive" });
+    }
+
     setGanhos((data || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
     setLoading(false);
   };
@@ -319,7 +324,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
         <div className="pt-4 border-t border-border mt-4">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             {reservaId ? "Ganhos vinculados a esta reserva" : "Últimos lançamentos"}
-            {!loading && ganhos.length > 0 && (
+            {!loading && (
               <Badge variant="secondary" className="text-[10px]">
                 {ganhos.length} registro{ganhos.length !== 1 ? "s" : ""}
               </Badge>
