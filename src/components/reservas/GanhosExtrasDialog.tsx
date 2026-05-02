@@ -109,12 +109,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
     setLoading(true);
     let query = supabase
       .from("ganhos_extras")
-      .select(`
-        *,
-        imovel:imoveis!ganhos_extras_imovel_id_fkey (
-          nome_imovel
-        )
-      `);
+      .select("*, imoveis(nome_imovel)");
     
     if (reservaId) {
       query = query.eq("reserva_id", reservaId);
@@ -131,7 +126,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 
     setGanhos((data || []).map((g: any) => ({ 
       ...g, 
-      imovel: g.imovel 
+      imovel: g.imoveis 
     })));
     setLoading(false);
   };
