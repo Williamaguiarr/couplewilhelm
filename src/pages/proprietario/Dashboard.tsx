@@ -738,7 +738,56 @@ const ProprietarioDashboard: React.FC = () => {
             )}
           </BentoBox>
 
-          {/* ── Custos Fixos (span 2) ── */}
+          {/* ── Ganhos Extras (full width) ── */}
+          {ganhosFiltrados.length > 0 && (
+            <BentoBox className="lg:col-span-4 !p-0 overflow-hidden" hover={false}>
+              <div className="px-5 sm:px-6 py-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <h2 className="font-display text-base text-foreground">Ganhos Extras</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Entradas avulsas — late checkout, hóspede extra, diárias extras
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Repasse Extra</p>
+                  <p className="font-display text-base text-primary font-semibold">{fmt(totaisGanhos.proprietario)}</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Imóvel</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead className="text-right">Repasse</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ganhosFiltrados.map((g) => {
+                      const com = g.aplicar_comissao ? g.valor * comissaoRate : 0;
+                      const rep = g.valor - com;
+                      return (
+                        <TableRow key={g.id} className="border-border hover:bg-muted/20">
+                          <TableCell className="text-foreground font-medium text-sm py-3">{g.imovel?.nome_imovel ?? "—"}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3">{g.descricao}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{g.tipo}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">
+                            {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell className="text-foreground text-sm text-right py-3">{fmt(g.valor)}</TableCell>
+                          <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(rep)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </BentoBox>
+          )}
+
           <div className="lg:col-span-4">
             <CustosFixosProprietario
               imoveis={imoveis}
