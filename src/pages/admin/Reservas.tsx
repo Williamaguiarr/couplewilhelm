@@ -430,17 +430,31 @@ const Reservas: React.FC = () => {
   };
 
   const fetchData = async () => {
-    const [{ data: reservasData }, { data: imoveisData }, { data: alertsData }] = await Promise.all([
+    const [{ data: reservasData }, { data: imoveisData }, { data: alertsData }, { data: ganhosData }] = await Promise.all([
       supabase
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
       supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel"),
-      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending")
+      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending"),
+      supabase.from("ganhos_extras" as any).select("reserva_id, valor, regime_comissao, aplicar_comissao")
     ]);
 
+    // Mapear ganhos por reserva
+    const ganhosPorReserva: Record<string, any[]> = {};
+    (ganhosData || []).forEach((g: any) => {
+      if (g.reserva_id) {
+        if (!ganhosPorReserva[g.reserva_id]) ganhosPorReserva[g.reserva_id] = [];
+        ganhosPorReserva[g.reserva_id].push(g);
+      }
+    });
+
     setReservas(
-      (reservasData || []).map((r: any) => ({ ...r, imovel: r.imoveis }))
+      (reservasData || []).map((r: any) => ({ 
+        ...r, 
+        imovel: r.imoveis,
+        ganhos_extras: ganhosPorReserva[r.id] || []
+      }))
     );
     setImoveis(imoveisData || []);
     setSyncAlerts(alertsData || []);
