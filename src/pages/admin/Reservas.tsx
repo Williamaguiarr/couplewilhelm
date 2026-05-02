@@ -430,17 +430,31 @@ const Reservas: React.FC = () => {
   };
 
   const fetchData = async () => {
-    const [{ data: reservasData }, { data: imoveisData }, { data: alertsData }] = await Promise.all([
+    const [{ data: reservasData }, { data: imoveisData }, { data: alertsData }, { data: ganhosData }] = await Promise.all([
       supabase
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
       supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel"),
-      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending")
+      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending"),
+      supabase.from("ganhos_extras" as any).select("reserva_id, valor, regime_comissao, aplicar_comissao")
     ]);
 
+    // Mapear ganhos por reserva
+    const ganhosPorReserva: Record<string, any[]> = {};
+    (ganhosData || []).forEach((g: any) => {
+      if (g.reserva_id) {
+        if (!ganhosPorReserva[g.reserva_id]) ganhosPorReserva[g.reserva_id] = [];
+        ganhosPorReserva[g.reserva_id].push(g);
+      }
+    });
+
     setReservas(
-      (reservasData || []).map((r: any) => ({ ...r, imovel: r.imoveis }))
+      (reservasData || []).map((r: any) => ({ 
+        ...r, 
+        imovel: r.imoveis,
+        ganhos_extras: ganhosPorReserva[r.id] || []
+      }))
     );
     setImoveis(imoveisData || []);
     setSyncAlerts(alertsData || []);
@@ -822,10 +836,29 @@ const Reservas: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {filteredReservas.map((r) => {
+              {filteredReservas.map((r: any) => {
                   const rateForRow = getRateForImovel(r.imovel_id);
-                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-                  const comissao = calcComissao(valorLiquido, rateForRow);
+                  const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+                  
+                  // Calcular valor dos ganhos extras vinculados
+                  const totalGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => acc + (g.valor || 0), 0);
+                  const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+                    const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+                    if (regime === "com_comissao") return acc + (g.valor * (1 - rateForRow));
+                    if (regime === "sem_comissao") return acc + g.valor;
+                    return acc; // exclusivo_adm = 0 repasse
+                  }, 0);
+
+                  const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+                    const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+                    if (regime === "com_comissao") return acc + (g.valor * rateForRow);
+                    if (regime === "exclusivo_adm") return acc + g.valor;
+                    return acc; // sem_comissao = 0 comissão
+                  }, 0);
+
+                  const comissaoTotal = calcComissao(valorLiquidoBase, rateForRow) + comissaoGanhosExtras;
+                  const repasseTotal = (r.valor_liquido_proprietario || 0) + repasseGanhosExtras;
+                  
                   const semValores = r.valor_bruto == null;
                   return (
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
@@ -844,10 +877,17 @@ const Reservas: React.FC = () => {
                       <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{r.num_hospedes ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.valor_bruto)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {fmt(r.valor_bruto)}
+                        {totalGanhosExtras > 0 && (
+                          <div className="text-[10px] text-primary font-medium">
+                            + {fmt(totalGanhosExtras)} (extra)
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.taxa_limpeza)}</TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissao)}</TableCell>
-                      <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(r.valor_liquido_proprietario)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissaoTotal)}</TableCell>
+                      <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(repasseTotal)}</TableCell>
                       <TableCell className="flex gap-1">
                         <Button 
                           variant="ghost" 
