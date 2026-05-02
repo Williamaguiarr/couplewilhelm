@@ -1010,94 +1010,101 @@ const AdminDashboard: React.FC = () => {
                 Abrir painel de gestão
               </Button>
             </div>
-          </div>
-        </div>
 
-      {/* Dialog Nova Despesa */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-foreground tracking-wide">
-              Nova Despesa Extra
-            </DialogTitle>
-          </DialogHeader>
+        {/* Dialog Nova Despesa */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="bg-card border-border sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display text-foreground tracking-wide">
+                Nova Despesa Extra
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Imóvel</Label>
-              <Select value={form.imovel_id} onValueChange={(v) => setForm((f) => ({ ...f, imovel_id: v }))}>
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder="Selecionar imóvel…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {imoveis.map((im) => (
-                    <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Descrição</Label>
-              <Input
-                value={form.descricao}
-                onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
-                placeholder="Ex: Troca de torneira, kit amenities…"
-                className="bg-background border-border"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4 py-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Tipo</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Imóvel</Label>
+                <Select value={form.imovel_id} onValueChange={(v) => setForm((f) => ({ ...f, imovel_id: v }))}>
                   <SelectTrigger className="bg-background border-border">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecionar imóvel…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {TIPOS.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    {imoveis.map((im) => (
+                      <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Data</Label>
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Descrição</Label>
                 <Input
-                  type="date"
-                  value={form.data}
-                  onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
+                  value={form.descricao}
+                  onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
+                  placeholder="Ex: Troca de torneira, kit amenities…"
+                  className="bg-background border-border"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Tipo</Label>
+                  <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIPOS.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Data</Label>
+                  <Input
+                    type="date"
+                    value={form.data}
+                    onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
+                    className="bg-background border-border"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Valor (R$)</Label>
+                <Input
+                  value={form.valor}
+                  onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
+                  placeholder="0,00"
                   className="bg-background border-border"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Valor (R$)</Label>
-              <Input
-                value={form.valor}
-                onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
-                placeholder="0,00"
-                className="bg-background border-border"
-              />
-            </div>
-          </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-border">
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !form.imovel_id || !form.descricao || !form.valor}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-border">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !form.imovel_id || !form.descricao || !form.valor}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {saving ? "Salvando…" : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Dialog Ganhos Extras (Global) */}
+        <GanhosExtrasDialog
+          open={ganhosDialogOpen}
+          onOpenChange={setGanhosDialogOpen}
+          imoveis={imoveis}
+          onChanged={fetchStats}
+        />
+      </div>
     </PageTransition>
   );
 };
