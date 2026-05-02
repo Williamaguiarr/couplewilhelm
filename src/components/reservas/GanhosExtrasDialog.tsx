@@ -324,7 +324,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
         <div className="pt-4 border-t border-border mt-4">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             {reservaId ? "Ganhos vinculados a esta reserva" : "Últimos lançamentos"}
-            {!loading && ganhos.length > 0 && (
+            {!loading && (
               <Badge variant="secondary" className="text-[10px]">
                 {ganhos.length} registro{ganhos.length !== 1 ? "s" : ""}
               </Badge>
