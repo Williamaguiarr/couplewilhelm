@@ -53,6 +53,7 @@ interface Imovel {
   ical_url_airbnb: string | null;
   ical_url_booking: string | null;
   ical_last_sync: string | null;
+  taxa_comissao: number | null;
   proprietario?: { nome: string | null; email: string | null };
   proprietario2?: { nome: string | null; email: string | null };
 }
