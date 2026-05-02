@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Sparkles, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/supabase-helpers";
 
@@ -41,7 +40,7 @@ export interface GanhoExtra {
   data: string;
   valor: number;
   regime_comissao: RegimeComissao;
-  aplicar_comissao?: boolean; // deprecated, kept for safety
+  aplicar_comissao?: boolean; 
   imovel?: { nome_imovel: string };
 }
 
@@ -74,8 +73,8 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   imoveis: Imovel[];
   onChanged?: () => void;
-  reservaId?: string; // Se fornecido, filtra e vincula a esta reserva
-  imovelId?: string; // Se fornecido, pré-seleciona o imóvel
+  reservaId?: string; 
+  imovelId?: string; 
 }
 
 const emptyForm = {
@@ -97,13 +96,14 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 }) => {
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
-  }, [imovelId]);
+    if (imovelId && !editingId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
+  }, [imovelId, editingId]);
 
   const fetchGanhos = async () => {
     setLoading(true);
@@ -123,7 +123,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 
   useEffect(() => {
     if (open) fetchGanhos();
-  }, [open]);
+  }, [open, reservaId]);
 
   const handleSave = async () => {
     if (!form.imovel_id || !form.descricao || !form.valor) {
@@ -131,26 +131,61 @@ const GanhosExtrasDialog: React.FC<Props> = ({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("ganhos_extras" as any).insert({
+    
+    const payload = {
       imovel_id: form.imovel_id,
       reserva_id: reservaId || null,
       tipo: form.tipo,
       descricao: form.descricao,
       data: form.data,
-      valor: parseFloat(form.valor.replace(",", ".")),
+      valor: parseFloat(form.valor.toString().replace(",", ".")),
       regime_comissao: form.regime_comissao,
-      // Backup mapping for existing logic
       aplicar_comissao: form.regime_comissao === "com_comissao",
-    });
+    };
+
+    let error;
+    if (editingId) {
+      const { error: updateError } = await supabase
+        .from("ganhos_extras" as any)
+        .update(payload)
+        .eq("id", editingId);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from("ganhos_extras" as any)
+        .insert(payload);
+      error = insertError;
+    }
+
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Ganho extra registrado!" });
+    toast({ title: editingId ? "Ganho extra atualizado!" : "Ganho extra registrado!" });
     setForm(emptyForm);
+    setEditingId(null);
+    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
     fetchGanhos();
     onChanged?.();
+  };
+
+  const handleEditClick = (g: GanhoExtra) => {
+    setEditingId(g.id);
+    setForm({
+      imovel_id: g.imovel_id,
+      tipo: g.tipo,
+      descricao: g.descricao,
+      data: g.data,
+      valor: g.valor.toString(),
+      regime_comissao: g.regime_comissao,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
   };
 
   const handleDelete = async (id: string) => {
@@ -261,74 +296,101 @@ const GanhosExtrasDialog: React.FC<Props> = ({
             </Select>
           </div>
 
-          <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" /> {saving ? "Salvando..." : "Adicionar Ganho Extra"}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2 flex-1">
+              {editingId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {saving ? "Salvando..." : editingId ? "Atualizar Ganho" : "Adicionar Ganho Extra"}
+            </Button>
+            {editingId && (
+              <Button variant="outline" onClick={cancelEdit} size="sm">
+                Cancelar Edição
+              </Button>
+            )}
+          </div>
         </div>
+        
+        <div className="pt-4 border-t border-border mt-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            {reservaId ? "Ganhos vinculados a esta reserva" : "Últimos lançamentos"}
+            {!loading && ganhos.length > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                {ganhos.length} registro{ganhos.length !== 1 ? "s" : ""}
+              </Badge>
+            )}
+          </h3>
 
-        {/* List */}
-        <div className="border border-border rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 flex justify-center">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : ganhos.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Nenhum ganho extra registrado
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Imóvel</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Comissão</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ganhos.map((g) => (
-                    <TableRow key={g.id}>
-                      <TableCell className="text-sm font-medium text-foreground">
-                        {g.imovel?.nome_imovel ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{g.descricao}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {ganhoTipoLabel(g.tipo)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="text-sm text-right font-semibold text-primary">
-                        {formatBRL(g.valor)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px]">
-                          {g.regime_comissao === "com_comissao" ? "Comissionada" : 
-                           g.regime_comissao === "sem_comissao" ? "Repasse Integral" : "Taxa Gestão"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleDelete(g.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </TableCell>
+          <div className="border border-border rounded-lg overflow-hidden">
+            {loading ? (
+              <div className="p-8 flex justify-center">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : ganhos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Nenhum ganho extra registrado
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Imóvel</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Comissão</TableHead>
+                      <TableHead className="w-20"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {ganhos.map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell className="text-sm font-medium text-foreground">
+                          {g.imovel?.nome_imovel ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{g.descricao}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {ganhoTipoLabel(g.tipo)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="text-sm text-right font-semibold text-primary">
+                          {formatBRL(g.valor)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px]">
+                            {g.regime_comissao === "com_comissao" ? "Comissionada" : 
+                             g.regime_comissao === "sem_comissao" ? "Repasse Integral" : "Taxa Gestão"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleEditClick(g)}
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(g.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
