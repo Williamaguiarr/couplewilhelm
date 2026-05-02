@@ -283,7 +283,10 @@ const ProprietarioDashboard: React.FC = () => {
   // Receita líquida do proprietário a partir de um ganho extra
   const ganhoProprietarioValor = (g: GanhoExtra): number => {
     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-    if (regime === "com_comissao") return g.valor * (1 - comissaoRate);
+    if (regime === "com_comissao") {
+      const rate = getRateForImovel(g.imovel_id);
+      return g.valor * (1 - rate);
+    }
     if (regime === "sem_comissao") return g.valor;
     if (regime === "exclusivo_adm") return 0;
     return 0;
