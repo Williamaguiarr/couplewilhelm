@@ -124,7 +124,12 @@ const GanhosExtrasDialog: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    if (open) fetchGanhos();
+    if (open) {
+      setEditingId(null);
+      setForm(emptyForm);
+      if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
+      fetchGanhos();
+    }
   }, [open, reservaId, imovelId]);
 
   const handleSave = async () => {
