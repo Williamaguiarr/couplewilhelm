@@ -272,6 +272,7 @@ export type Database = {
           nome_imovel: string
           proprietario_id: string | null
           proprietario_id_2: string | null
+          taxa_comissao: number | null
         }
         Insert: {
           admin_id?: string | null
@@ -284,6 +285,7 @@ export type Database = {
           nome_imovel: string
           proprietario_id?: string | null
           proprietario_id_2?: string | null
+          taxa_comissao?: number | null
         }
         Update: {
           admin_id?: string | null
@@ -296,6 +298,7 @@ export type Database = {
           nome_imovel?: string
           proprietario_id?: string | null
           proprietario_id_2?: string | null
+          taxa_comissao?: number | null
         }
         Relationships: [
           {
