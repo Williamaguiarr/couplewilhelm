@@ -433,7 +433,7 @@ const AdminDashboard: React.FC = () => {
   const fetchImoveis = async () => {
     const { data } = await supabase
       .from("imoveis")
-      .select("id, nome_imovel, proprietario_id, proprietario_id_2")
+      .select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao")
       .order("nome_imovel");
     setImoveis(data || []);
   };
