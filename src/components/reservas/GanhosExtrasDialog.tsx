@@ -309,9 +309,18 @@ const GanhosExtrasDialog: React.FC<Props> = ({
             )}
           </div>
         </div>
+        
+        <div className="pt-4 border-t border-border mt-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            {reservaId ? "Ganhos vinculados a esta reserva" : "Últimos lançamentos"}
+            {!loading && ganhos.length > 0 && (
+              <Badge variant="secondary" className="text-[10px]">
+                {ganhos.length} registro{ganhos.length !== 1 ? "s" : ""}
+              </Badge>
+            )}
+          </h3>
 
-        {/* List */}
-        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
