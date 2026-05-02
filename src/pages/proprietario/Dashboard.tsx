@@ -75,6 +75,17 @@ interface DespesaExtra {
   imovel?: { nome_imovel: string };
 }
 
+interface GanhoExtra {
+  id: string;
+  imovel_id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  tipo: string;
+  aplicar_comissao: boolean;
+  imovel?: { nome_imovel: string };
+}
+
 const fmt = (v: number | null) =>
   v != null
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
@@ -122,6 +133,7 @@ const ProprietarioDashboard: React.FC = () => {
   const { toast } = useToast();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
+  const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
@@ -181,7 +193,7 @@ const ProprietarioDashboard: React.FC = () => {
         }
       }
 
-      const [{ data: resData }, { data: despData }] = await Promise.all([
+      const [{ data: resData }, { data: despData }, { data: ganhosData }] = await Promise.all([
         supabase
           .from("reservas")
           .select("*, imoveis(nome_imovel)")
@@ -190,10 +202,15 @@ const ProprietarioDashboard: React.FC = () => {
           .from("despesas_extras" as any)
           .select("*, imoveis(nome_imovel)")
           .order("data", { ascending: false }),
+        supabase
+          .from("ganhos_extras" as any)
+          .select("*, imoveis(nome_imovel)")
+          .order("data", { ascending: false }),
       ]);
 
       setReservas((resData || []).map((r: any) => ({ ...r, imovel: r.imoveis })));
       setDespesas((despData || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
+      setGanhos((ganhosData || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
       setLoading(false);
     };
     fetchData();
@@ -240,17 +257,39 @@ const ProprietarioDashboard: React.FC = () => {
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
+  // Ganhos extras: pelo campo data (mês do ganho)
+  const ganhosFiltrados = ganhos.filter((g) => {
+    if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
+    const data = new Date(g.data + "T12:00:00");
+    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
+  });
+
   // Calcular métricas apenas para o imóvel selecionado
   const reservasImovelSelecionado = filterImovel === "todos"
     ? reservas
     : reservas.filter(r => r.imovel_id === filterImovel);
 
-  const receitaMesAtual = reservasImovelSelecionado
-    .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
-      return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
-    })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+  const ganhosImovelSelecionado = filterImovel === "todos"
+    ? ganhos
+    : ganhos.filter(g => g.imovel_id === filterImovel);
+
+  // Receita líquida do proprietário a partir de um ganho extra
+  const ganhoProprietarioValor = (g: GanhoExtra): number =>
+    g.aplicar_comissao ? g.valor * (1 - comissaoRate) : g.valor;
+
+  const receitaMesAtual =
+    reservasImovelSelecionado
+      .filter((r) => {
+        const fim = new Date(r.data_fim + "T12:00:00");
+        return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
+      })
+      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
+    + ganhosImovelSelecionado
+      .filter((g) => {
+        const data = new Date(g.data + "T12:00:00");
+        return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
+      })
+      .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
   const previsaoFutura = reservasImovelSelecionado
     .filter((r) => {
@@ -266,7 +305,7 @@ const ProprietarioDashboard: React.FC = () => {
     getDaysBetween(r.data_inicio, r.data_fim)
   );
 
-  const totais = reservasFiltradas.reduce(
+  const totaisReservas = reservasFiltradas.reduce(
     (acc, r) => {
       const f = calcFinanceiro(r, comissaoRate);
       return {
@@ -279,6 +318,29 @@ const ProprietarioDashboard: React.FC = () => {
     },
     { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
   );
+
+  // Totais de ganhos extras
+  const totaisGanhos = ganhosFiltrados.reduce(
+    (acc, g) => {
+      const comissao = g.aplicar_comissao ? g.valor * comissaoRate : 0;
+      const proprietario = g.valor - comissao;
+      return {
+        bruto: acc.bruto + g.valor,
+        comissao: acc.comissao + comissao,
+        proprietario: acc.proprietario + proprietario,
+      };
+    },
+    { bruto: 0, comissao: 0, proprietario: 0 }
+  );
+
+  // Totais combinados (reservas + ganhos extras)
+  const totais = {
+    bruto: totaisReservas.bruto + totaisGanhos.bruto,
+    limpeza: totaisReservas.limpeza,
+    plataforma: totaisReservas.plataforma,
+    comissao: totaisReservas.comissao + totaisGanhos.comissao,
+    proprietario: totaisReservas.proprietario + totaisGanhos.proprietario,
+  };
 
   const totalDespesas = despesasFiltradas.reduce((acc, d) => acc + d.valor, 0);
   const totalLiquido = totais.proprietario - totalDespesas;
@@ -312,6 +374,7 @@ const ProprietarioDashboard: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtBRL(totais.bruto) },
       { label: "Tx. Limpeza", value: fmtBRL(totais.limpeza) },
       { label: "Comissão OTA", value: fmtBRL(totais.plataforma) },
+      { label: "Ganhos Extras", value: fmtBRL(totaisGanhos.bruto) },
       { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtBRL(totais.comissao) },
       { label: "Despesas Extras", value: fmtBRL(totalDespesas) },
       { label: "Custos Fixos", value: fmtBRL(totalCustosFixos) },
@@ -356,6 +419,43 @@ const ProprietarioDashboard: React.FC = () => {
       },
       didDrawPage: footerCb,
     });
+
+    // ── Ganhos extras
+    if (ganhosFiltrados.length > 0) {
+      const finalY = (doc as any).lastAutoTable?.finalY ?? pageH - 40;
+      if (finalY + 40 > pageH - 20) { doc.addPage(); }
+      let gY = Math.min(finalY + 8, pageH - 60);
+      gY = drawSectionTitle(doc, "Ganhos Extras", gY + 6, palette, pageW);
+
+      autoTable(doc, {
+        startY: gY,
+        head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor", "Comissão ADM", "Repasse"]],
+        body: ganhosFiltrados.map((g) => {
+          const com = g.aplicar_comissao ? g.valor * comissaoRate : 0;
+          const rep = g.valor - com;
+          return [
+            g.imovel?.nome_imovel || "—",
+            g.descricao,
+            g.tipo,
+            new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR"),
+            fmtBRL(g.valor),
+            com > 0 ? `- ${fmtBRL(com)}` : "—",
+            fmtBRL(rep),
+          ];
+        }),
+        ...premiumTableStyles(palette),
+        columnStyles: {
+          0: { cellWidth: 38 },
+          1: { cellWidth: "auto" },
+          2: { cellWidth: 26 },
+          3: { cellWidth: 22, halign: "center" },
+          4: { cellWidth: 24, halign: "right" },
+          5: { cellWidth: 26, halign: "right" },
+          6: { cellWidth: 26, halign: "right", fontStyle: "bold", textColor: palette.primary },
+        },
+        didDrawPage: footerCb,
+      });
+    }
 
     // ── Despesas extras
     if (despesasFiltradas.length > 0) {
@@ -414,7 +514,7 @@ const ProprietarioDashboard: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={gerarPDF}
-            disabled={loading || (reservasFiltradas.length === 0 && despesasFiltradas.length === 0)}
+            disabled={loading || (reservasFiltradas.length === 0 && despesasFiltradas.length === 0 && ganhosFiltrados.length === 0)}
             className="gap-2 text-xs"
           >
             <FileText className="h-3.5 w-3.5" />
@@ -638,7 +738,56 @@ const ProprietarioDashboard: React.FC = () => {
             )}
           </BentoBox>
 
-          {/* ── Custos Fixos (span 2) ── */}
+          {/* ── Ganhos Extras (full width) ── */}
+          {ganhosFiltrados.length > 0 && (
+            <BentoBox className="lg:col-span-4 !p-0 overflow-hidden" hover={false}>
+              <div className="px-5 sm:px-6 py-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <h2 className="font-display text-base text-foreground">Ganhos Extras</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Entradas avulsas — late checkout, hóspede extra, diárias extras
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Repasse Extra</p>
+                  <p className="font-display text-base text-primary font-semibold">{fmt(totaisGanhos.proprietario)}</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Imóvel</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead className="text-right">Repasse</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ganhosFiltrados.map((g) => {
+                      const com = g.aplicar_comissao ? g.valor * comissaoRate : 0;
+                      const rep = g.valor - com;
+                      return (
+                        <TableRow key={g.id} className="border-border hover:bg-muted/20">
+                          <TableCell className="text-foreground font-medium text-sm py-3">{g.imovel?.nome_imovel ?? "—"}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3">{g.descricao}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{g.tipo}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">
+                            {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell className="text-foreground text-sm text-right py-3">{fmt(g.valor)}</TableCell>
+                          <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(rep)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </BentoBox>
+          )}
+
           <div className="lg:col-span-4">
             <CustosFixosProprietario
               imoveis={imoveis}

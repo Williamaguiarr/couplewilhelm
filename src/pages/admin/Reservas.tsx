@@ -40,7 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles } from "lucide-react";
+import GanhosExtrasDialog from "@/components/reservas/GanhosExtrasDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import autoTable from "jspdf-autotable";
@@ -307,6 +308,7 @@ const Reservas: React.FC = () => {
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [ganhosOpen, setGanhosOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -619,9 +621,12 @@ const Reservas: React.FC = () => {
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Reservas</h1>
             <p className="text-muted-foreground mt-1 text-sm">Gerencie as reservas de todos os imóveis</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={gerarPDF} disabled={filteredReservas.length === 0} className="gap-2">
               <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Gerar</span> PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setGanhosOpen(true)} className="gap-2 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
+              <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Ganhos</span> Extras
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -878,6 +883,12 @@ const Reservas: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GanhosExtrasDialog
+        open={ganhosOpen}
+        onOpenChange={setGanhosOpen}
+        imoveis={imoveis}
+      />
     </PageTransition>
   );
 };

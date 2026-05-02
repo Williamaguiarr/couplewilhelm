@@ -313,7 +313,7 @@ const AdminDashboard: React.FC = () => {
       return adminRate;
     };
 
-    const totais = (reservasDetalhadas || []).reduce(
+    const totaisReservas = (reservasDetalhadas || []).reduce(
       (acc, r) => {
         const valorBruto = r.valor_bruto || 0;
         const taxaLimpeza = r.taxa_limpeza || 0;
@@ -332,6 +332,37 @@ const AdminDashboard: React.FC = () => {
       },
       { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
     );
+
+    // ── Ganhos extras do mês
+    let ganhosQuery = supabase
+      .from("ganhos_extras" as any)
+      .select("imovel_id, valor, aplicar_comissao")
+      .gte("data", firstDay)
+      .lte("data", lastDay);
+    if (imovelIds) ganhosQuery = ganhosQuery.in("imovel_id", imovelIds);
+    const { data: ganhosMes } = await ganhosQuery;
+
+    const totaisGanhos = (ganhosMes || []).reduce(
+      (acc: any, g: any) => {
+        const rate = g.aplicar_comissao ? getOwnerRate(g.imovel_id) : 0;
+        const com = g.valor * rate;
+        const prop = g.valor - com;
+        return {
+          valorBruto: acc.valorBruto + g.valor,
+          comissaoCW: acc.comissaoCW + com,
+          valorProprietario: acc.valorProprietario + prop,
+        };
+      },
+      { valorBruto: 0, comissaoCW: 0, valorProprietario: 0 }
+    );
+
+    const totais = {
+      valorBruto: totaisReservas.valorBruto + totaisGanhos.valorBruto,
+      taxaLimpeza: totaisReservas.taxaLimpeza,
+      valorLiquido: totaisReservas.valorLiquido + totaisGanhos.valorBruto,
+      comissaoCW: totaisReservas.comissaoCW + totaisGanhos.comissaoCW,
+      valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
+    };
 
     // ── Previsão futura: reservas com data_fim após o mês selecionado
     const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
@@ -369,7 +400,7 @@ const AdminDashboard: React.FC = () => {
       totalProprietarios: filtroProprietario === "todos" ? (propCount || 0) : 1,
       totalImoveis: imovelCount || 0,
       totalReservas: reservaCount || 0,
-      receitaMes,
+      receitaMes: receitaMes + totaisGanhos.valorProprietario,
     });
     setFinanceiro(totais);
     setLoading(false);
