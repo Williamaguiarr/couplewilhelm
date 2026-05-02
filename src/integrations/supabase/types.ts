@@ -173,6 +173,8 @@ export type Database = {
           descricao: string
           id: string
           imovel_id: string
+          regime_comissao: string | null
+          reserva_id: string | null
           tipo: string
           updated_at: string
           valor: number
@@ -184,6 +186,8 @@ export type Database = {
           descricao: string
           id?: string
           imovel_id: string
+          regime_comissao?: string | null
+          reserva_id?: string | null
           tipo?: string
           updated_at?: string
           valor?: number
@@ -195,11 +199,66 @@ export type Database = {
           descricao?: string
           id?: string
           imovel_id?: string
+          regime_comissao?: string | null
+          reserva_id?: string | null
           tipo?: string
           updated_at?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ganhos_extras_reserva_id_fkey"
+            columns: ["reserva_id"]
+            isOneToOne: false
+            referencedRelation: "reservas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ical_sync_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          imovel_id: string
+          plataforma: string
+          reserva_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imovel_id: string
+          plataforma: string
+          reserva_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imovel_id?: string
+          plataforma?: string
+          reserva_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ical_sync_alerts_imovel_id_fkey"
+            columns: ["imovel_id"]
+            isOneToOne: false
+            referencedRelation: "imoveis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ical_sync_alerts_reserva_id_fkey"
+            columns: ["reserva_id"]
+            isOneToOne: false
+            referencedRelation: "reservas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       imoveis: {
         Row: {
@@ -285,6 +344,7 @@ export type Database = {
           created_at: string | null
           data_fim: string
           data_inicio: string
+          ical_uid: string | null
           id: string
           imovel_id: string
           nome_hospede: string | null
@@ -300,6 +360,7 @@ export type Database = {
           created_at?: string | null
           data_fim: string
           data_inicio: string
+          ical_uid?: string | null
           id?: string
           imovel_id: string
           nome_hospede?: string | null
@@ -315,6 +376,7 @@ export type Database = {
           created_at?: string | null
           data_fim?: string
           data_inicio?: string
+          ical_uid?: string | null
           id?: string
           imovel_id?: string
           nome_hospede?: string | null
