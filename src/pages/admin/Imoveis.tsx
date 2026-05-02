@@ -81,6 +81,7 @@ const Imoveis: React.FC = () => {
     proprietario_id_2: "",
     ical_url_airbnb: "",
     ical_url_booking: "",
+    taxa_comissao: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
