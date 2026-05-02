@@ -970,8 +970,48 @@ const AdminDashboard: React.FC = () => {
               </p>
             </div>
           )}
+          </div>
+          
+          {/* Coluna: Receitas */}
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <h2 className="font-display text-lg sm:text-xl text-foreground">Receitas Extras</h2>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  Ganhos avulsos e comissionados
+                </p>
+              </div>
+              <Button
+                onClick={() => setGanhosDialogOpen(true)}
+                size="sm"
+                variant="outline"
+                className="gap-2 h-8 text-xs border-border text-primary hover:text-primary hover:bg-primary/5"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Gerenciar Receitas
+              </Button>
+            </div>
+
+            <div className="border border-border rounded-xl bg-card p-8 flex flex-col items-center justify-center gap-3 text-center h-[300px]">
+              <div className="h-12 w-12 rounded-xl bg-primary/8 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">Gestão de Receitas Extras</p>
+                <p className="text-xs text-muted-foreground max-w-[200px]">
+                  Visualize e edite todos os ganhos extras (vinculados a reservas ou globais)
+                </p>
+              </div>
+              <Button 
+                variant="link" 
+                onClick={() => setGanhosDialogOpen(true)}
+                className="text-primary text-xs"
+              >
+                Abrir painel de gestão
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Dialog Nova Despesa */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
