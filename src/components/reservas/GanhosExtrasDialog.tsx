@@ -30,14 +30,18 @@ import { Plus, Trash2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/supabase-helpers";
 
+export type RegimeComissao = "com_comissao" | "sem_comissao" | "exclusivo_adm";
+
 export interface GanhoExtra {
   id: string;
   imovel_id: string;
+  reserva_id?: string | null;
   tipo: string;
   descricao: string;
   data: string;
   valor: number;
-  aplicar_comissao: boolean;
+  regime_comissao: RegimeComissao;
+  aplicar_comissao?: boolean; // deprecated, kept for safety
   imovel?: { nome_imovel: string };
 }
 
@@ -46,7 +50,14 @@ export const GANHO_TIPOS = [
   { value: "early_checkin", label: "Early Check-in" },
   { value: "hospede_extra", label: "Hóspede Extra" },
   { value: "diaria_extra", label: "Diária Extra" },
+  { value: "limpeza_extra", label: "Taxa de Limpeza Extra" },
   { value: "outros", label: "Outros" },
+];
+
+export const REGIME_COMISSAO_OPTIONS = [
+  { value: "com_comissao", label: "Com comissão para administração", description: "O % padrão é aplicado sobre o valor." },
+  { value: "sem_comissao", label: "Sem comissão para administração", description: "100% repassado ao proprietário." },
+  { value: "exclusivo_adm", label: "Exclusivo da administração", description: "100% para a gestora (não entra no repasse)." },
 ];
 
 export const ganhoTipoLabel = (v: string) =>
@@ -62,6 +73,8 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   imoveis: Imovel[];
   onChanged?: () => void;
+  reservaId?: string; // Se fornecido, filtra e vincula a esta reserva
+  imovelId?: string; // Se fornecido, pré-seleciona o imóvel
 }
 
 const emptyForm = {
@@ -70,22 +83,39 @@ const emptyForm = {
   descricao: "",
   data: new Date().toISOString().split("T")[0],
   valor: "",
-  aplicar_comissao: true,
+  regime_comissao: "com_comissao" as RegimeComissao,
 };
 
-const GanhosExtrasDialog: React.FC<Props> = ({ open, onOpenChange, imoveis, onChanged }) => {
+const GanhosExtrasDialog: React.FC<Props> = ({ 
+  open, 
+  onOpenChange, 
+  imoveis, 
+  onChanged,
+  reservaId,
+  imovelId
+}) => {
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
+  }, [imovelId]);
+
   const fetchGanhos = async () => {
     setLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from("ganhos_extras" as any)
       .select("*, imoveis(nome_imovel)")
       .order("data", { ascending: false });
+    
+    if (reservaId) {
+      query = query.eq("reserva_id", reservaId);
+    }
+
+    const { data } = await query;
     setGanhos((data || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
     setLoading(false);
   };
@@ -102,11 +132,14 @@ const GanhosExtrasDialog: React.FC<Props> = ({ open, onOpenChange, imoveis, onCh
     setSaving(true);
     const { error } = await supabase.from("ganhos_extras" as any).insert({
       imovel_id: form.imovel_id,
+      reserva_id: reservaId || null,
       tipo: form.tipo,
       descricao: form.descricao,
       data: form.data,
       valor: parseFloat(form.valor.replace(",", ".")),
-      aplicar_comissao: form.aplicar_comissao,
+      regime_comissao: form.regime_comissao,
+      // Backup mapping for existing logic
+      aplicar_comissao: form.regime_comissao === "com_comissao",
     });
     setSaving(false);
     if (error) {
@@ -205,21 +238,24 @@ const GanhosExtrasDialog: React.FC<Props> = ({ open, onOpenChange, imoveis, onCh
             </div>
           </div>
 
-          <div className="flex items-start gap-2 rounded-md bg-background border border-border p-3">
-            <Checkbox
-              id="aplicar_comissao"
-              checked={form.aplicar_comissao}
-              onCheckedChange={(c) => setForm({ ...form, aplicar_comissao: !!c })}
-              className="mt-0.5"
-            />
-            <div className="space-y-0.5">
-              <Label htmlFor="aplicar_comissao" className="text-sm text-foreground cursor-pointer">
-                Aplicar comissão da administradora
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Se marcado, o % de comissão ADM será descontado deste valor (igual a uma reserva). Caso contrário, 100% vai ao proprietário.
-              </p>
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground text-xs uppercase tracking-wide">Regime de Comissão *</Label>
+            <Select 
+              value={form.regime_comissao} 
+              onValueChange={(v) => setForm({ ...form, regime_comissao: v as RegimeComissao })}
+            >
+              <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-card">
+                {REGIME_COMISSAO_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <div className="flex flex-col text-left">
+                      <span>{opt.label}</span>
+                      <span className="text-[10px] text-muted-foreground leading-tight">{opt.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
@@ -270,11 +306,10 @@ const GanhosExtrasDialog: React.FC<Props> = ({ open, onOpenChange, imoveis, onCh
                         {formatBRL(g.valor)}
                       </TableCell>
                       <TableCell>
-                        {g.aplicar_comissao ? (
-                          <Badge variant="outline" className="text-[10px]">ADM aplica</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] border-primary/50 text-primary">100% prop.</Badge>
-                        )}
+                        <Badge variant="outline" className="text-[10px]">
+                          {form.regime_comissao === "com_comissao" ? "ADM aplica" : 
+                           form.regime_comissao === "sem_comissao" ? "100% prop." : "100% ADM"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <button
