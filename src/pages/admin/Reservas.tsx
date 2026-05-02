@@ -919,7 +919,63 @@ const Reservas: React.FC = () => {
         open={ganhosOpen}
         onOpenChange={setGanhosOpen}
         imoveis={imoveis}
+        onChanged={fetchData}
+        reservaId={selectedReservaForGanhos?.id}
+        imovelId={selectedReservaForGanhos?.imovelId}
       />
+
+      <Dialog open={alertsOpen} onOpenChange={setAlertsOpen}>
+        <DialogContent className="bg-card border-border max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-warning">
+              <AlertCircle className="h-5 w-5" /> Alertas de Sincronização iCal
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              As reservas abaixo não foram encontradas no feed iCal mais recente e podem ter sido canceladas.
+            </p>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {syncAlerts.map((alert) => (
+              <div key={alert.id} className="p-3 border border-border rounded-lg bg-muted/20 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="font-medium text-foreground">{alert.imoveis?.nome_imovel}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Hóspede: {alert.reservas?.nome_hospede || "—"} | {new Date(alert.reservas?.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")} a {new Date(alert.reservas?.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
+                  </div>
+                  <Badge variant="outline" className="text-[10px] uppercase">{alert.plataforma}</Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    className="h-8 px-3"
+                    onClick={async () => {
+                      await supabase.from("reservas").delete().eq("id", alert.reserva_id);
+                      await supabase.from("ical_sync_alerts").update({ status: "resolved" }).eq("id", alert.id);
+                      toast({ title: "Reserva excluída e alerta resolvido" });
+                      fetchData();
+                    }}
+                  >
+                    Excluir Reserva
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-8 px-3"
+                    onClick={async () => {
+                      await supabase.from("ical_sync_alerts").update({ status: "dismissed" }).eq("id", alert.id);
+                      toast({ title: "Alerta ignorado" });
+                      fetchData();
+                    }}
+                  >
+                    Ignorar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 };
