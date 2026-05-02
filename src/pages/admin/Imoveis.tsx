@@ -176,6 +176,7 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: form.proprietario_id_2 || null,
       ical_url_airbnb: form.ical_url_airbnb || null,
       ical_url_booking: form.ical_url_booking || null,
+      taxa_comissao: form.taxa_comissao ? parseFloat(form.taxa_comissao.replace(",", ".")) : null,
     };
 
     if (editId) {
