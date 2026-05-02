@@ -872,24 +872,27 @@ const AdminDashboard: React.FC = () => {
           imoveis={imoveis}
         />
 
-        {/* Despesas Extras */}
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <div>
-              <h2 className="font-display text-lg sm:text-xl text-foreground">Despesas Extras</h2>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                Manutenções, amenities e outros custos vinculados aos imóveis
-              </p>
+        {/* Receitas e Despesas Extras */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Coluna: Despesas */}
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <h2 className="font-display text-lg sm:text-xl text-foreground">Despesas Extras</h2>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  Custos vinculados aos imóveis
+                </p>
+              </div>
+              <Button
+                onClick={() => setDialogOpen(true)}
+                size="sm"
+                variant="outline"
+                className="gap-2 h-8 text-xs border-border"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nova Despesa
+              </Button>
             </div>
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Nova Despesa
-            </Button>
-          </div>
 
           <div className="border border-border rounded-xl overflow-hidden">
             {despesasFiltradas.length === 0 ? (
