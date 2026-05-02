@@ -207,6 +207,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ganhos_extras_imovel_id_fkey"
+            columns: ["imovel_id"]
+            isOneToOne: false
+            referencedRelation: "imoveis"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ganhos_extras_reserva_id_fkey"
             columns: ["reserva_id"]
             isOneToOne: false
