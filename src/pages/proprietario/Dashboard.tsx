@@ -152,6 +152,12 @@ const ProprietarioDashboard: React.FC = () => {
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
 
+  const getRateForImovel = useCallback((imovelId: string) => {
+    const im = imoveis.find(i => i.id === imovelId);
+    if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
+    return comissaoRate;
+  }, [imoveis, comissaoRate]);
+
   
   const anoAtual = now.getFullYear();
   const anos = Array.from({ length: 4 }, (_, i) => anoAtual - 2 + i);
