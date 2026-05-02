@@ -186,7 +186,9 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                 <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent className="bg-card">
                   {imoveis.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>{i.nome_imovel}</SelectItem>
+                    <SelectItem key={i.id} value={i.id}>
+                      {i.nome_imovel} {i.taxa_comissao != null ? `(${i.taxa_comissao}%)` : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
