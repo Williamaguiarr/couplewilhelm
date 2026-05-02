@@ -171,10 +171,10 @@ const ProprietarioDashboard: React.FC = () => {
 
       const { data: imoveisData } = await supabase
         .from("imoveis")
-        .select("id, nome_imovel, admin_id")
+        .select("id, nome_imovel, admin_id, taxa_comissao")
         .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
-      setImoveis((imoveisData || []).map(({ id, nome_imovel }) => ({ id, nome_imovel })));
+      setImoveis((imoveisData || []).map(({ id, nome_imovel, taxa_comissao }) => ({ id, nome_imovel, taxa_comissao })));
 
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
