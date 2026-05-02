@@ -465,7 +465,8 @@ const ProprietarioDashboard: React.FC = () => {
           .filter(g => g.regime_comissao !== "exclusivo_adm") // Hide exclusive ADM from owner report
           .map((g) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-            const com = regime === "com_comissao" ? g.valor * comissaoRate : 0;
+            const rate = getRateForImovel(g.imovel_id);
+            const com = regime === "com_comissao" ? g.valor * rate : 0;
             const rep = g.valor - com;
             return [
               g.imovel?.nome_imovel || "—",
