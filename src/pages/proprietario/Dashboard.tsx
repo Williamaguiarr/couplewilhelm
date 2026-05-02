@@ -419,6 +419,43 @@ const ProprietarioDashboard: React.FC = () => {
       didDrawPage: footerCb,
     });
 
+    // ── Ganhos extras
+    if (ganhosFiltrados.length > 0) {
+      const finalY = (doc as any).lastAutoTable?.finalY ?? pageH - 40;
+      if (finalY + 40 > pageH - 20) { doc.addPage(); }
+      let gY = Math.min(finalY + 8, pageH - 60);
+      gY = drawSectionTitle(doc, "Ganhos Extras", gY + 6, palette, pageW);
+
+      autoTable(doc, {
+        startY: gY,
+        head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor", "Comissão ADM", "Repasse"]],
+        body: ganhosFiltrados.map((g) => {
+          const com = g.aplicar_comissao ? g.valor * comissaoRate : 0;
+          const rep = g.valor - com;
+          return [
+            g.imovel?.nome_imovel || "—",
+            g.descricao,
+            g.tipo,
+            new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR"),
+            fmtBRL(g.valor),
+            com > 0 ? `- ${fmtBRL(com)}` : "—",
+            fmtBRL(rep),
+          ];
+        }),
+        ...premiumTableStyles(palette),
+        columnStyles: {
+          0: { cellWidth: 38 },
+          1: { cellWidth: "auto" },
+          2: { cellWidth: 26 },
+          3: { cellWidth: 22, halign: "center" },
+          4: { cellWidth: 24, halign: "right" },
+          5: { cellWidth: 26, halign: "right" },
+          6: { cellWidth: 26, halign: "right", fontStyle: "bold", textColor: palette.primary },
+        },
+        didDrawPage: footerCb,
+      });
+    }
+
     // ── Despesas extras
     if (despesasFiltradas.length > 0) {
       const finalY = (doc as any).lastAutoTable?.finalY ?? pageH - 40;
