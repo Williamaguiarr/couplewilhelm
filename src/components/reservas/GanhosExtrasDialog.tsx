@@ -97,13 +97,14 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 }) => {
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
-  }, [imovelId]);
+    if (imovelId && !editingId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
+  }, [imovelId, editingId]);
 
   const fetchGanhos = async () => {
     setLoading(true);
@@ -131,26 +132,61 @@ const GanhosExtrasDialog: React.FC<Props> = ({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("ganhos_extras" as any).insert({
+    
+    const payload = {
       imovel_id: form.imovel_id,
       reserva_id: reservaId || null,
       tipo: form.tipo,
       descricao: form.descricao,
       data: form.data,
-      valor: parseFloat(form.valor.replace(",", ".")),
+      valor: parseFloat(form.valor.toString().replace(",", ".")),
       regime_comissao: form.regime_comissao,
-      // Backup mapping for existing logic
       aplicar_comissao: form.regime_comissao === "com_comissao",
-    });
+    };
+
+    let error;
+    if (editingId) {
+      const { error: updateError } = await supabase
+        .from("ganhos_extras" as any)
+        .update(payload)
+        .eq("id", editingId);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from("ganhos_extras" as any)
+        .insert(payload);
+      error = insertError;
+    }
+
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Ganho extra registrado!" });
+    toast({ title: editingId ? "Ganho extra atualizado!" : "Ganho extra registrado!" });
     setForm(emptyForm);
+    setEditingId(null);
+    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
     fetchGanhos();
     onChanged?.();
+  };
+
+  const handleEditClick = (g: GanhoExtra) => {
+    setEditingId(g.id);
+    setForm({
+      imovel_id: g.imovel_id,
+      tipo: g.tipo,
+      descricao: g.descricao,
+      data: g.data,
+      valor: g.valor.toString(),
+      regime_comissao: g.regime_comissao,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    if (imovelId) setForm(prev => ({ ...prev, imovel_id: imovelId }));
   };
 
   const handleDelete = async (id: string) => {
@@ -261,9 +297,17 @@ const GanhosExtrasDialog: React.FC<Props> = ({
             </Select>
           </div>
 
-          <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" /> {saving ? "Salvando..." : "Adicionar Ganho Extra"}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2 flex-1">
+              {editingId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {saving ? "Salvando..." : editingId ? "Atualizar Ganho" : "Adicionar Ganho Extra"}
+            </Button>
+            {editingId && (
+              <Button variant="outline" onClick={cancelEdit} size="sm">
+                Cancelar Edição
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* List */}
@@ -287,7 +331,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Comissão</TableHead>
-                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -315,13 +359,22 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <button
-                          onClick={() => handleDelete(g.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditClick(g)}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(g.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
