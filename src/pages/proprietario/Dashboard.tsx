@@ -75,6 +75,17 @@ interface DespesaExtra {
   imovel?: { nome_imovel: string };
 }
 
+interface GanhoExtra {
+  id: string;
+  imovel_id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  tipo: string;
+  aplicar_comissao: boolean;
+  imovel?: { nome_imovel: string };
+}
+
 const fmt = (v: number | null) =>
   v != null
     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
@@ -122,6 +133,7 @@ const ProprietarioDashboard: React.FC = () => {
   const { toast } = useToast();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
+  const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
@@ -181,7 +193,7 @@ const ProprietarioDashboard: React.FC = () => {
         }
       }
 
-      const [{ data: resData }, { data: despData }] = await Promise.all([
+      const [{ data: resData }, { data: despData }, { data: ganhosData }] = await Promise.all([
         supabase
           .from("reservas")
           .select("*, imoveis(nome_imovel)")
@@ -190,10 +202,15 @@ const ProprietarioDashboard: React.FC = () => {
           .from("despesas_extras" as any)
           .select("*, imoveis(nome_imovel)")
           .order("data", { ascending: false }),
+        supabase
+          .from("ganhos_extras" as any)
+          .select("*, imoveis(nome_imovel)")
+          .order("data", { ascending: false }),
       ]);
 
       setReservas((resData || []).map((r: any) => ({ ...r, imovel: r.imoveis })));
       setDespesas((despData || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
+      setGanhos((ganhosData || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
       setLoading(false);
     };
     fetchData();
