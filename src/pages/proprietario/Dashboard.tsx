@@ -514,7 +514,7 @@ const ProprietarioDashboard: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={gerarPDF}
-            disabled={loading || (reservasFiltradas.length === 0 && despesasFiltradas.length === 0)}
+            disabled={loading || (reservasFiltradas.length === 0 && despesasFiltradas.length === 0 && ganhosFiltrados.length === 0)}
             className="gap-2 text-xs"
           >
             <FileText className="h-3.5 w-3.5" />
