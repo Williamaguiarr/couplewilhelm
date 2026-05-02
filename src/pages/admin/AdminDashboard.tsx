@@ -64,6 +64,7 @@ interface Imovel {
   nome_imovel: string;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
+  taxa_comissao: number | null;
 }
 
 interface Proprietario {
