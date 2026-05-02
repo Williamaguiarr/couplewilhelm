@@ -66,6 +66,7 @@ export const ganhoTipoLabel = (v: string) =>
 interface Imovel {
   id: string;
   nome_imovel: string;
+  taxa_comissao?: number | null;
 }
 
 interface Props {
