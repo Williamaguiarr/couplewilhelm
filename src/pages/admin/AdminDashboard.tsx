@@ -308,9 +308,15 @@ const AdminDashboard: React.FC = () => {
 
     const getOwnerRate = (imovelId: string): number => {
       const im = imoveis.find((i) => i.id === imovelId);
+      // Prioridade 1: Taxa específica do imóvel
+      if (im?.taxa_comissao != null) {
+        return im.taxa_comissao / 100;
+      }
+      // Prioridade 2: Taxa do proprietário
       if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) {
         return ownerRatesMap[im.proprietario_id];
       }
+      // Prioridade 3: Taxa global do sistema
       return adminRate;
     };
 
