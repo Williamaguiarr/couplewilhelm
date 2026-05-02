@@ -126,7 +126,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 
     setGanhos((data || []).map((g: any) => ({ 
       ...g, 
-      imovel: g.imovel 
+      imovel: g.imoveis 
     })));
     setLoading(false);
   };
