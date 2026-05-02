@@ -336,7 +336,7 @@ const AdminDashboard: React.FC = () => {
     // ── Ganhos extras do mês
     let ganhosQuery = supabase
       .from("ganhos_extras" as any)
-      .select("imovel_id, valor, aplicar_comissao")
+      .select("imovel_id, valor, regime_comissao, aplicar_comissao")
       .gte("data", firstDay)
       .lte("data", lastDay);
     if (imovelIds) ganhosQuery = ganhosQuery.in("imovel_id", imovelIds);
@@ -344,9 +344,24 @@ const AdminDashboard: React.FC = () => {
 
     const totaisGanhos = (ganhosMes || []).reduce(
       (acc: any, g: any) => {
-        const rate = g.aplicar_comissao ? getOwnerRate(g.imovel_id) : 0;
-        const com = g.valor * rate;
-        const prop = g.valor - com;
+        let com = 0;
+        let prop = 0;
+        
+        // Novo regime_comissao ou fallback para aplicar_comissao legado
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+
+        if (regime === "com_comissao") {
+          const rate = getOwnerRate(g.imovel_id);
+          com = g.valor * rate;
+          prop = g.valor - com;
+        } else if (regime === "sem_comissao") {
+          com = 0;
+          prop = g.valor;
+        } else if (regime === "exclusivo_adm") {
+          com = g.valor;
+          prop = 0;
+        }
+
         return {
           valorBruto: acc.valorBruto + g.valor,
           comissaoCW: acc.comissaoCW + com,

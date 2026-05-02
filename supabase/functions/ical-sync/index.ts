@@ -252,12 +252,49 @@ Deno.serve(async (req) => {
         const icalText = await response.text();
         const events = parseICal(icalText);
 
+        // 1. Coletar todos os UIDs de eventos ativos no iCal para este imóvel/fonte
+        const currentEventUids = new Set(events.map(e => e.uid));
+
         // Janela: somente eventos dos próximos 3 meses (a partir de hoje)
         const today = new Date();
         const todayStr = today.toISOString().split("T")[0];
         const limitDate = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
         const limitStr = limitDate.toISOString().split("T")[0];
 
+        // 2. Detectar cancelamentos: reservas locais com ical_uid que não estão mais no iCal
+        // Buscamos apenas reservas que estão dentro da nossa janela de interesse (hoje até 3 meses)
+        const { data: localReservas } = await supabase
+          .from("reservas")
+          .select("id, ical_uid, data_inicio")
+          .eq("imovel_id", imovel.id)
+          .eq("plataforma_origem", source)
+          .not("ical_uid", "is", null)
+          .gte("data_fim", todayStr)
+          .lte("data_inicio", limitStr);
+
+        for (const res of localReservas ?? []) {
+          if (!currentEventUids.has(res.ical_uid!)) {
+            // Reserva sumiu do iCal -> Possível cancelamento
+            // Criar alerta se não existir um pendente
+            const { data: existingAlert } = await supabase
+              .from("ical_sync_alerts")
+              .select("id")
+              .eq("reserva_id", res.id)
+              .eq("status", "pending")
+              .maybeSingle();
+
+            if (!existingAlert) {
+              await supabase.from("ical_sync_alerts").insert({
+                reserva_id: res.id,
+                imovel_id: imovel.id,
+                plataforma: source,
+                status: "pending"
+              });
+            }
+          }
+        }
+
+        // 3. Processar/Sincronizar eventos do iCal
         for (const event of events) {
           // Pula eventos fora da janela: já passaram (data_fim < hoje) ou começam após o limite
           if (event.dtend < todayStr) continue;
@@ -269,7 +306,6 @@ Deno.serve(async (req) => {
           const obsLines: string[] = [`[${source.toUpperCase()}] ${event.summary}`.trim()];
           if (phone) obsLines.push(`Tel: ${phone}`);
           if (event.description) {
-            // Add raw description for reference (truncated)
             const descClean = event.description.replace(/\\n/g, " | ").replace(/\\,/g, ",");
             if (descClean.length > 0) {
               obsLines.push(descClean.length > 300 ? descClean.slice(0, 300) + "..." : descClean);
@@ -284,25 +320,37 @@ Deno.serve(async (req) => {
             nome_hospede: guestName,
             plataforma_origem: source,
             num_hospedes: numGuests,
-            valor_bruto: null,
-            taxa_limpeza: null,
-            valor_liquido_proprietario: null,
+            ical_uid: event.uid,
           };
 
-          const { data: existing } = await supabase
+          // Tentar encontrar por ical_uid primeiro (mais preciso)
+          const { data: existingByUid } = await supabase
             .from("reservas")
             .select("id")
             .eq("imovel_id", imovel.id)
-            .eq("data_inicio", event.dtstart)
-            .eq("data_fim", event.dtend)
+            .eq("ical_uid", event.uid)
             .maybeSingle();
 
-          if (!existing) {
-            const { error: insertError } = await supabase.from("reservas").insert(payload);
-            if (insertError) {
-              result.errors.push(insertError.message);
+          if (!existingByUid) {
+            // Fallback por datas se não tiver UID (retrocompatibilidade ou mudança de UID)
+            const { data: existingByDates } = await supabase
+              .from("reservas")
+              .select("id")
+              .eq("imovel_id", imovel.id)
+              .eq("data_inicio", event.dtstart)
+              .eq("data_fim", event.dtend)
+              .maybeSingle();
+
+            if (!existingByDates) {
+              const { error: insertError } = await supabase.from("reservas").insert(payload);
+              if (insertError) {
+                result.errors.push(insertError.message);
+              } else {
+                result.synced++;
+              }
             } else {
-              result.synced++;
+              // Se achou por data mas não tinha UID, atualiza com o UID
+              await supabase.from("reservas").update({ ical_uid: event.uid }).eq("id", existingByDates.id);
             }
           }
         }
