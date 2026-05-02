@@ -165,6 +165,42 @@ export type Database = {
           },
         ]
       }
+      ganhos_extras: {
+        Row: {
+          aplicar_comissao: boolean
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          imovel_id: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          aplicar_comissao?: boolean
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          imovel_id: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          aplicar_comissao?: boolean
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          imovel_id?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       imoveis: {
         Row: {
           admin_id: string | null
