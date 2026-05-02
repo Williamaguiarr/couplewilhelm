@@ -129,7 +129,10 @@ const GanhosExtrasDialog: React.FC<Props> = ({
       toast({ title: "Erro ao buscar ganhos", description: error.message, variant: "destructive" });
     }
 
-    setGanhos((data || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
+    setGanhos((data || []).map((g: any) => ({ 
+      ...g, 
+      imovel: g.imoveis || g.imoveis_ganhos_extras_imovel_id_fkey 
+    })));
     setLoading(false);
   };
 
