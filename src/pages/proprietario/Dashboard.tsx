@@ -82,6 +82,7 @@ interface GanhoExtra {
   valor: number;
   data: string;
   tipo: string;
+  regime_comissao?: string;
   aplicar_comissao: boolean;
   imovel?: { nome_imovel: string };
 }
@@ -274,8 +275,13 @@ const ProprietarioDashboard: React.FC = () => {
     : ganhos.filter(g => g.imovel_id === filterImovel);
 
   // Receita líquida do proprietário a partir de um ganho extra
-  const ganhoProprietarioValor = (g: GanhoExtra): number =>
-    g.aplicar_comissao ? g.valor * (1 - comissaoRate) : g.valor;
+  const ganhoProprietarioValor = (g: GanhoExtra): number => {
+    const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+    if (regime === "com_comissao") return g.valor * (1 - comissaoRate);
+    if (regime === "sem_comissao") return g.valor;
+    if (regime === "exclusivo_adm") return 0;
+    return 0;
+  };
 
   const receitaMesAtual =
     reservasImovelSelecionado
@@ -322,10 +328,23 @@ const ProprietarioDashboard: React.FC = () => {
   // Totais de ganhos extras
   const totaisGanhos = ganhosFiltrados.reduce(
     (acc, g) => {
-      const comissao = g.aplicar_comissao ? g.valor * comissaoRate : 0;
-      const proprietario = g.valor - comissao;
+      const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+      let comissao = 0;
+      let proprietario = 0;
+
+      if (regime === "com_comissao") {
+        comissao = g.valor * comissaoRate;
+        proprietario = g.valor - comissao;
+      } else if (regime === "sem_comissao") {
+        comissao = 0;
+        proprietario = g.valor;
+      } else if (regime === "exclusivo_adm") {
+        comissao = g.valor;
+        proprietario = 0;
+      }
+
       return {
-        bruto: acc.bruto + g.valor,
+        bruto: acc.bruto + (regime === "exclusivo_adm" ? 0 : g.valor), // Do not show exclusive ADM in owner gross total
         comissao: acc.comissao + comissao,
         proprietario: acc.proprietario + proprietario,
       };
@@ -430,19 +449,22 @@ const ProprietarioDashboard: React.FC = () => {
       autoTable(doc, {
         startY: gY,
         head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor", "Comissão ADM", "Repasse"]],
-        body: ganhosFiltrados.map((g) => {
-          const com = g.aplicar_comissao ? g.valor * comissaoRate : 0;
-          const rep = g.valor - com;
-          return [
-            g.imovel?.nome_imovel || "—",
-            g.descricao,
-            g.tipo,
-            new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR"),
-            fmtBRL(g.valor),
-            com > 0 ? `- ${fmtBRL(com)}` : "—",
-            fmtBRL(rep),
-          ];
-        }),
+        body: ganhosFiltrados
+          .filter(g => g.regime_comissao !== "exclusivo_adm") // Hide exclusive ADM from owner report
+          .map((g) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            const com = regime === "com_comissao" ? g.valor * comissaoRate : 0;
+            const rep = g.valor - com;
+            return [
+              g.imovel?.nome_imovel || "—",
+              g.descricao,
+              g.tipo,
+              new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR"),
+              fmtBRL(g.valor),
+              com > 0 ? `- ${fmtBRL(com)}` : "—",
+              fmtBRL(rep),
+            ];
+          }),
         ...premiumTableStyles(palette),
         columnStyles: {
           0: { cellWidth: 38 },
