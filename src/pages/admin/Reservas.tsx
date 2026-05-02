@@ -877,10 +877,17 @@ const Reservas: React.FC = () => {
                       <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{r.num_hospedes ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.valor_bruto)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {fmt(r.valor_bruto)}
+                        {totalGanhosExtras > 0 && (
+                          <div className="text-[10px] text-primary font-medium">
+                            + {fmt(totalGanhosExtras)} (extra)
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.taxa_limpeza)}</TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissao)}</TableCell>
-                      <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(r.valor_liquido_proprietario)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissaoTotal)}</TableCell>
+                      <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(repasseTotal)}</TableCell>
                       <TableCell className="flex gap-1">
                         <Button 
                           variant="ghost" 
