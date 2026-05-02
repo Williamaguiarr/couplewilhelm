@@ -309,6 +309,9 @@ const Reservas: React.FC = () => {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [ganhosOpen, setGanhosOpen] = useState(false);
+  const [selectedReservaForGanhos, setSelectedReservaForGanhos] = useState<{id: string, imovelId: string} | null>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [syncAlerts, setSyncAlerts] = useState<any[]>([]);
 
   const { toast } = useToast();
 
@@ -426,18 +429,20 @@ const Reservas: React.FC = () => {
   };
 
   const fetchData = async () => {
-    const [{ data: reservasData }, { data: imoveisData }] = await Promise.all([
+    const [{ data: reservasData }, { data: imoveisData }, { data: alertsData }] = await Promise.all([
       supabase
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
       supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2").order("nome_imovel"),
+      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending")
     ]);
 
     setReservas(
       (reservasData || []).map((r: any) => ({ ...r, imovel: r.imoveis }))
     );
     setImoveis(imoveisData || []);
+    setSyncAlerts(alertsData || []);
 
     // Buscar comissão do admin como fallback
     if (user) {
@@ -622,10 +627,24 @@ const Reservas: React.FC = () => {
             <p className="text-muted-foreground mt-1 text-sm">Gerencie as reservas de todos os imóveis</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {syncAlerts.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setAlertsOpen(true)} 
+                className="gap-2 bg-warning/10 text-warning border-warning/50 hover:bg-warning/20 animate-pulse"
+              >
+                <AlertCircle className="h-4 w-4" /> 
+                {syncAlerts.length} Alerta{syncAlerts.length > 1 ? "s" : ""} iCal
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={gerarPDF} disabled={filteredReservas.length === 0} className="gap-2">
               <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Gerar</span> PDF
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setGanhosOpen(true)} className="gap-2 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
+            <Button variant="outline" size="sm" onClick={() => {
+              setSelectedReservaForGanhos(null);
+              setGanhosOpen(true);
+            }} className="gap-2 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
               <Sparkles className="h-4 w-4" /> <span className="hidden sm:inline">Ganhos</span> Extras
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
@@ -828,6 +847,18 @@ const Reservas: React.FC = () => {
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissao)}</TableCell>
                       <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(r.valor_liquido_proprietario)}</TableCell>
                       <TableCell className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            setSelectedReservaForGanhos({ id: r.id, imovelId: r.imovel_id });
+                            setGanhosOpen(true);
+                          }} 
+                          className="h-8 w-8 hover:text-primary"
+                          title="Receitas Extras"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
