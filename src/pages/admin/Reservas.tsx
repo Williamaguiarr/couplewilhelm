@@ -479,13 +479,14 @@ const Reservas: React.FC = () => {
     setLoading(false);
   };
 
-  // Helper: get commission rate for a given imovel_id based on owner
+  // Helper: get commission rate for a given imovel_id
   const getRateForImovel = (imovelId: string): number => {
     const im = imoveis.find((i) => i.id === imovelId);
+    if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
     if (im?.proprietario_id && ownerRates[im.proprietario_id] != null) {
       return ownerRates[im.proprietario_id];
     }
-    return comissaoRate; // fallback to admin rate
+    return comissaoRate;
   };
 
   useEffect(() => {
