@@ -73,6 +73,7 @@ interface Imovel {
   nome_imovel: string;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
+  taxa_comissao?: number | null;
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
