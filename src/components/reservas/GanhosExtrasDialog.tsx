@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +40,7 @@ export interface GanhoExtra {
   data: string;
   valor: number;
   regime_comissao: RegimeComissao;
-  aplicar_comissao?: boolean; // deprecated, kept for safety
+  aplicar_comissao?: boolean; 
   imovel?: { nome_imovel: string };
 }
 
@@ -74,8 +73,8 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   imoveis: Imovel[];
   onChanged?: () => void;
-  reservaId?: string; // Se fornecido, filtra e vincula a esta reserva
-  imovelId?: string; // Se fornecido, pré-seleciona o imóvel
+  reservaId?: string; 
+  imovelId?: string; 
 }
 
 const emptyForm = {
@@ -124,7 +123,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 
   useEffect(() => {
     if (open) fetchGanhos();
-  }, [open]);
+  }, [open, reservaId]);
 
   const handleSave = async () => {
     if (!form.imovel_id || !form.descricao || !form.valor) {
@@ -321,76 +320,77 @@ const GanhosExtrasDialog: React.FC<Props> = ({
           </h3>
 
           <div className="border border-border rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 flex justify-center">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : ganhos.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Nenhum ganho extra registrado
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Imóvel</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Comissão</TableHead>
-                    <TableHead className="w-20"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ganhos.map((g) => (
-                    <TableRow key={g.id}>
-                      <TableCell className="text-sm font-medium text-foreground">
-                        {g.imovel?.nome_imovel ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{g.descricao}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {ganhoTipoLabel(g.tipo)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="text-sm text-right font-semibold text-primary">
-                        {formatBRL(g.valor)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px]">
-                          {g.regime_comissao === "com_comissao" ? "Comissionada" : 
-                           g.regime_comissao === "sem_comissao" ? "Repasse Integral" : "Taxa Gestão"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditClick(g)}
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                            title="Editar"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(g.id)}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </TableCell>
+            {loading ? (
+              <div className="p-8 flex justify-center">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : ganhos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Nenhum ganho extra registrado
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Imóvel</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Comissão</TableHead>
+                      <TableHead className="w-20"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {ganhos.map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell className="text-sm font-medium text-foreground">
+                          {g.imovel?.nome_imovel ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{g.descricao}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {ganhoTipoLabel(g.tipo)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="text-sm text-right font-semibold text-primary">
+                          {formatBRL(g.valor)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px]">
+                            {g.regime_comissao === "com_comissao" ? "Comissionada" : 
+                             g.regime_comissao === "sem_comissao" ? "Repasse Integral" : "Taxa Gestão"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleEditClick(g)}
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(g.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
