@@ -146,6 +146,7 @@ const AdminDashboard: React.FC = () => {
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [ganhosDialogOpen, setGanhosDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     imovel_id: "",
