@@ -343,7 +343,8 @@ const ProprietarioDashboard: React.FC = () => {
       let proprietario = 0;
 
       if (regime === "com_comissao") {
-        comissao = g.valor * comissaoRate;
+        const rate = getRateForImovel(g.imovel_id);
+        comissao = g.valor * rate;
         proprietario = g.valor - comissao;
       } else if (regime === "sem_comissao") {
         comissao = 0;
