@@ -374,6 +374,7 @@ const ProprietarioDashboard: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtBRL(totais.bruto) },
       { label: "Tx. Limpeza", value: fmtBRL(totais.limpeza) },
       { label: "Comissão OTA", value: fmtBRL(totais.plataforma) },
+      { label: "Ganhos Extras", value: fmtBRL(totaisGanhos.bruto) },
       { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtBRL(totais.comissao) },
       { label: "Despesas Extras", value: fmtBRL(totalDespesas) },
       { label: "Custos Fixos", value: fmtBRL(totalCustosFixos) },
