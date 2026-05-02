@@ -114,6 +114,8 @@ const GanhosExtrasDialog: React.FC<Props> = ({
     
     if (reservaId) {
       query = query.eq("reserva_id", reservaId);
+    } else if (imovelId) {
+      query = query.eq("imovel_id", imovelId);
     }
 
     const { data } = await query;
@@ -123,7 +125,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
 
   useEffect(() => {
     if (open) fetchGanhos();
-  }, [open, reservaId]);
+  }, [open, reservaId, imovelId]);
 
   const handleSave = async () => {
     if (!form.imovel_id || !form.descricao || !form.valor) {

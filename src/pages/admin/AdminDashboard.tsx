@@ -119,6 +119,7 @@ const AdminDashboard: React.FC = () => {
 
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
   const [filtroProprietario, setFiltroProprietario] = useState<string>("todos");
+  const [filtroImovel, setFiltroImovel] = useState<string>("todos");
 
   const [stats, setStats] = useState({
     totalProprietarios: 0,
@@ -459,15 +460,34 @@ const AdminDashboard: React.FC = () => {
               </Select>
               <button onClick={() => navegarMes(1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
             </div>
-            {proprietarios.length > 0 && (
-              <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
-                <SelectTrigger className="w-full sm:w-[190px] h-9"><SelectValue placeholder="Filtrar proprietário…" /></SelectTrigger>
+            <div className="flex flex-wrap items-center gap-2">
+              {proprietarios.length > 0 && (
+                <Select 
+                  value={filtroProprietario} 
+                  onValueChange={(v) => {
+                    setFiltroProprietario(v);
+                    setFiltroImovel("todos");
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[190px] h-9 shadow-sm"><SelectValue placeholder="Proprietário…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos Proprietários</SelectItem>
+                    {proprietarios.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              <Select value={filtroImovel} onValueChange={setFiltroImovel}>
+                <SelectTrigger className="w-full sm:w-[190px] h-9 shadow-sm"><SelectValue placeholder="Imóvel…" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os proprietários</SelectItem>
-                  {proprietarios.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
+                  <SelectItem value="todos">Todos Imóveis</SelectItem>
+                  {imoveis
+                    .filter(im => filtroProprietario === "todos" || im.proprietario_id === filtroProprietario || im.proprietario_id_2 === filtroProprietario)
+                    .map(im => <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>)
+                  }
                 </SelectContent>
               </Select>
-            )}
+            </div>
             <Button onClick={gerarPDF} disabled={loading} variant="outline" size="sm" className="gap-2"><FileDown className="h-4 w-4" /> Exportar PDF</Button>
           </div>
         </div>
@@ -563,7 +583,13 @@ const AdminDashboard: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        <GanhosExtrasDialog open={ganhosDialogOpen} onOpenChange={setGanhosDialogOpen} imoveis={imoveis} onChanged={fetchStats} />
+        <GanhosExtrasDialog 
+          open={ganhosDialogOpen} 
+          onOpenChange={setGanhosDialogOpen} 
+          imoveis={imoveis} 
+          onChanged={fetchStats} 
+          imovelId={filtroImovel !== "todos" ? filtroImovel : undefined}
+        />
       </div>
     </PageTransition>
   );
