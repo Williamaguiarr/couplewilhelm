@@ -257,17 +257,39 @@ const ProprietarioDashboard: React.FC = () => {
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
+  // Ganhos extras: pelo campo data (mês do ganho)
+  const ganhosFiltrados = ganhos.filter((g) => {
+    if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
+    const data = new Date(g.data + "T12:00:00");
+    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
+  });
+
   // Calcular métricas apenas para o imóvel selecionado
   const reservasImovelSelecionado = filterImovel === "todos"
     ? reservas
     : reservas.filter(r => r.imovel_id === filterImovel);
 
-  const receitaMesAtual = reservasImovelSelecionado
-    .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
-      return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
-    })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+  const ganhosImovelSelecionado = filterImovel === "todos"
+    ? ganhos
+    : ganhos.filter(g => g.imovel_id === filterImovel);
+
+  // Receita líquida do proprietário a partir de um ganho extra
+  const ganhoProprietarioValor = (g: GanhoExtra): number =>
+    g.aplicar_comissao ? g.valor * (1 - comissaoRate) : g.valor;
+
+  const receitaMesAtual =
+    reservasImovelSelecionado
+      .filter((r) => {
+        const fim = new Date(r.data_fim + "T12:00:00");
+        return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
+      })
+      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
+    + ganhosImovelSelecionado
+      .filter((g) => {
+        const data = new Date(g.data + "T12:00:00");
+        return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
+      })
+      .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
   const previsaoFutura = reservasImovelSelecionado
     .filter((r) => {
@@ -283,7 +305,7 @@ const ProprietarioDashboard: React.FC = () => {
     getDaysBetween(r.data_inicio, r.data_fim)
   );
 
-  const totais = reservasFiltradas.reduce(
+  const totaisReservas = reservasFiltradas.reduce(
     (acc, r) => {
       const f = calcFinanceiro(r, comissaoRate);
       return {
@@ -296,6 +318,29 @@ const ProprietarioDashboard: React.FC = () => {
     },
     { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
   );
+
+  // Totais de ganhos extras
+  const totaisGanhos = ganhosFiltrados.reduce(
+    (acc, g) => {
+      const comissao = g.aplicar_comissao ? g.valor * comissaoRate : 0;
+      const proprietario = g.valor - comissao;
+      return {
+        bruto: acc.bruto + g.valor,
+        comissao: acc.comissao + comissao,
+        proprietario: acc.proprietario + proprietario,
+      };
+    },
+    { bruto: 0, comissao: 0, proprietario: 0 }
+  );
+
+  // Totais combinados (reservas + ganhos extras)
+  const totais = {
+    bruto: totaisReservas.bruto + totaisGanhos.bruto,
+    limpeza: totaisReservas.limpeza,
+    plataforma: totaisReservas.plataforma,
+    comissao: totaisReservas.comissao + totaisGanhos.comissao,
+    proprietario: totaisReservas.proprietario + totaisGanhos.proprietario,
+  };
 
   const totalDespesas = despesasFiltradas.reduce((acc, d) => acc + d.valor, 0);
   const totalLiquido = totais.proprietario - totalDespesas;
