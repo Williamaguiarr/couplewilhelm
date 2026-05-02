@@ -135,7 +135,7 @@ const ProprietarioDashboard: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
-  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string }[]>([]);
+  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string; taxa_comissao?: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
