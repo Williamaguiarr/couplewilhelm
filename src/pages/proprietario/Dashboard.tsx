@@ -135,7 +135,7 @@ const ProprietarioDashboard: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
-  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string }[]>([]);
+  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string; taxa_comissao?: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
@@ -151,6 +151,12 @@ const ProprietarioDashboard: React.FC = () => {
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
+
+  const getRateForImovel = useCallback((imovelId: string) => {
+    const im = imoveis.find(i => i.id === imovelId);
+    if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
+    return comissaoRate;
+  }, [imoveis, comissaoRate]);
 
   
   const anoAtual = now.getFullYear();
@@ -171,10 +177,10 @@ const ProprietarioDashboard: React.FC = () => {
 
       const { data: imoveisData } = await supabase
         .from("imoveis")
-        .select("id, nome_imovel, admin_id")
+        .select("id, nome_imovel, admin_id, taxa_comissao")
         .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
-      setImoveis((imoveisData || []).map(({ id, nome_imovel }) => ({ id, nome_imovel })));
+      setImoveis((imoveisData || []).map(({ id, nome_imovel, taxa_comissao }) => ({ id, nome_imovel, taxa_comissao })));
 
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
@@ -277,7 +283,10 @@ const ProprietarioDashboard: React.FC = () => {
   // Receita líquida do proprietário a partir de um ganho extra
   const ganhoProprietarioValor = (g: GanhoExtra): number => {
     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-    if (regime === "com_comissao") return g.valor * (1 - comissaoRate);
+    if (regime === "com_comissao") {
+      const rate = getRateForImovel(g.imovel_id);
+      return g.valor * (1 - rate);
+    }
     if (regime === "sem_comissao") return g.valor;
     if (regime === "exclusivo_adm") return 0;
     return 0;
@@ -313,7 +322,8 @@ const ProprietarioDashboard: React.FC = () => {
 
   const totaisReservas = reservasFiltradas.reduce(
     (acc, r) => {
-      const f = calcFinanceiro(r, comissaoRate);
+      const rate = getRateForImovel(r.imovel_id);
+      const f = calcFinanceiro(r, rate);
       return {
         bruto: acc.bruto + f.bruto,
         limpeza: acc.limpeza + f.limpeza,
@@ -333,7 +343,8 @@ const ProprietarioDashboard: React.FC = () => {
       let proprietario = 0;
 
       if (regime === "com_comissao") {
-        comissao = g.valor * comissaoRate;
+        const rate = getRateForImovel(g.imovel_id);
+        comissao = g.valor * rate;
         proprietario = g.valor - comissao;
       } else if (regime === "sem_comissao") {
         comissao = 0;
@@ -394,7 +405,7 @@ const ProprietarioDashboard: React.FC = () => {
       { label: "Tx. Limpeza", value: fmtBRL(totais.limpeza) },
       { label: "Comissão OTA", value: fmtBRL(totais.plataforma) },
       { label: "Ganhos Extras", value: fmtBRL(totaisGanhos.bruto) },
-      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtBRL(totais.comissao) },
+      { label: "Comissão ADM", value: fmtBRL(totais.comissao) },
       { label: "Despesas Extras", value: fmtBRL(totalDespesas) },
       { label: "Custos Fixos", value: fmtBRL(totalCustosFixos) },
       { label: "Líquido Final", value: fmtBRL(totalLiquido - totalCustosFixos), highlight: true },
@@ -404,7 +415,8 @@ const ProprietarioDashboard: React.FC = () => {
 
     // ── Tabela de reservas
     const tableData = reservasFiltradas.map((r) => {
-      const f = calcFinanceiro(r, comissaoRate);
+      const rate = getRateForImovel(r.imovel_id);
+      const f = calcFinanceiro(r, rate);
       return [
         r.imovel?.nome_imovel || "—",
         new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
@@ -453,7 +465,8 @@ const ProprietarioDashboard: React.FC = () => {
           .filter(g => g.regime_comissao !== "exclusivo_adm") // Hide exclusive ADM from owner report
           .map((g) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-            const com = regime === "com_comissao" ? g.valor * comissaoRate : 0;
+            const rate = getRateForImovel(g.imovel_id);
+            const com = regime === "com_comissao" ? g.valor * rate : 0;
             const rep = g.valor - com;
             return [
               g.imovel?.nome_imovel || "—",

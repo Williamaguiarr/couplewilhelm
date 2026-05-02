@@ -53,6 +53,7 @@ interface Imovel {
   ical_url_airbnb: string | null;
   ical_url_booking: string | null;
   ical_last_sync: string | null;
+  taxa_comissao: number | null;
   proprietario?: { nome: string | null; email: string | null };
   proprietario2?: { nome: string | null; email: string | null };
 }
@@ -80,6 +81,7 @@ const Imoveis: React.FC = () => {
     proprietario_id_2: "",
     ical_url_airbnb: "",
     ical_url_booking: "",
+    taxa_comissao: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
@@ -132,6 +134,7 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: "",
       ical_url_airbnb: "",
       ical_url_booking: "",
+      taxa_comissao: "",
     });
 
   const openEdit = (imovel: Imovel) => {
@@ -143,6 +146,7 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: imovel.proprietario_id_2 || "",
       ical_url_airbnb: imovel.ical_url_airbnb || "",
       ical_url_booking: imovel.ical_url_booking || "",
+      taxa_comissao: imovel.taxa_comissao?.toString() || "",
     });
     setOpen(true);
   };
@@ -172,6 +176,7 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: form.proprietario_id_2 || null,
       ical_url_airbnb: form.ical_url_airbnb || null,
       ical_url_booking: form.ical_url_booking || null,
+      taxa_comissao: form.taxa_comissao ? parseFloat(form.taxa_comissao.replace(",", ".")) : null,
     };
 
     if (editId) {
@@ -323,6 +328,19 @@ const Imoveis: React.FC = () => {
                     onChange={(e) => setForm({ ...form, nome_imovel: e.target.value })}
                     placeholder="Ex: Apartamento Ipanema 101"
                     required
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Taxa de Comissão (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={form.taxa_comissao}
+                    onChange={(e) => setForm({ ...form, taxa_comissao: e.target.value })}
+                    placeholder="Ex: 25 (deixe vazio para usar a taxa do proprietário)"
                     className="bg-background"
                   />
                 </div>

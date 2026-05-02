@@ -73,6 +73,7 @@ interface Imovel {
   nome_imovel: string;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
+  taxa_comissao?: number | null;
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
@@ -434,7 +435,7 @@ const Reservas: React.FC = () => {
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
-      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel"),
       supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending")
     ]);
 
@@ -478,13 +479,14 @@ const Reservas: React.FC = () => {
     setLoading(false);
   };
 
-  // Helper: get commission rate for a given imovel_id based on owner
+  // Helper: get commission rate for a given imovel_id
   const getRateForImovel = (imovelId: string): number => {
     const im = imoveis.find((i) => i.id === imovelId);
+    if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
     if (im?.proprietario_id && ownerRates[im.proprietario_id] != null) {
       return ownerRates[im.proprietario_id];
     }
-    return comissaoRate; // fallback to admin rate
+    return comissaoRate;
   };
 
   useEffect(() => {

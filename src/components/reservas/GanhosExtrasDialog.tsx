@@ -55,7 +55,7 @@ export const GANHO_TIPOS = [
 ];
 
 export const REGIME_COMISSAO_OPTIONS = [
-  { value: "com_comissao", label: "Com comissão para administração", description: "O % padrão é aplicado sobre o valor." },
+  { value: "com_comissao", label: "Com comissão para administração", description: "A porcentagem administrativa do imóvel é aplicada sobre o valor." },
   { value: "sem_comissao", label: "Sem comissão para administração", description: "100% repassado ao proprietário." },
   { value: "exclusivo_adm", label: "Exclusivo da administração", description: "100% para a gestora (não entra no repasse)." },
 ];
@@ -66,6 +66,7 @@ export const ganhoTipoLabel = (v: string) =>
 interface Imovel {
   id: string;
   nome_imovel: string;
+  taxa_comissao?: number | null;
 }
 
 interface Props {
@@ -185,7 +186,9 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                 <SelectTrigger className="bg-background"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent className="bg-card">
                   {imoveis.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>{i.nome_imovel}</SelectItem>
+                    <SelectItem key={i.id} value={i.id}>
+                      {i.nome_imovel} {i.taxa_comissao != null ? `(${i.taxa_comissao}%)` : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

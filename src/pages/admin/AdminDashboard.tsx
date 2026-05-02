@@ -64,6 +64,7 @@ interface Imovel {
   nome_imovel: string;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
+  taxa_comissao: number | null;
 }
 
 interface Proprietario {
@@ -307,9 +308,15 @@ const AdminDashboard: React.FC = () => {
 
     const getOwnerRate = (imovelId: string): number => {
       const im = imoveis.find((i) => i.id === imovelId);
+      // Prioridade 1: Taxa específica do imóvel
+      if (im?.taxa_comissao != null) {
+        return im.taxa_comissao / 100;
+      }
+      // Prioridade 2: Taxa do proprietário
       if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) {
         return ownerRatesMap[im.proprietario_id];
       }
+      // Prioridade 3: Taxa global do sistema
       return adminRate;
     };
 
@@ -432,7 +439,7 @@ const AdminDashboard: React.FC = () => {
   const fetchImoveis = async () => {
     const { data } = await supabase
       .from("imoveis")
-      .select("id, nome_imovel, proprietario_id, proprietario_id_2")
+      .select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao")
       .order("nome_imovel");
     setImoveis(data || []);
   };
