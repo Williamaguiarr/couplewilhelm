@@ -405,7 +405,7 @@ const ProprietarioDashboard: React.FC = () => {
       { label: "Tx. Limpeza", value: fmtBRL(totais.limpeza) },
       { label: "Comissão OTA", value: fmtBRL(totais.plataforma) },
       { label: "Ganhos Extras", value: fmtBRL(totaisGanhos.bruto) },
-      { label: `Comissão (${Math.round(comissaoRate * 100)}%)`, value: fmtBRL(totais.comissao) },
+      { label: "Comissão ADM", value: fmtBRL(totais.comissao) },
       { label: "Despesas Extras", value: fmtBRL(totalDespesas) },
       { label: "Custos Fixos", value: fmtBRL(totalCustosFixos) },
       { label: "Líquido Final", value: fmtBRL(totalLiquido - totalCustosFixos), highlight: true },
