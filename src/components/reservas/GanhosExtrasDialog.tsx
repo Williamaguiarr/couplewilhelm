@@ -310,8 +310,8 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px]">
-                          {form.regime_comissao === "com_comissao" ? "ADM aplica" : 
-                           form.regime_comissao === "sem_comissao" ? "100% prop." : "100% ADM"}
+                          {g.regime_comissao === "com_comissao" ? "Comissionada" : 
+                           g.regime_comissao === "sem_comissao" ? "Repasse Integral" : "Taxa Gestão"}
                         </Badge>
                       </TableCell>
                       <TableCell>
