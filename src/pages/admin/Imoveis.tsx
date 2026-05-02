@@ -332,6 +332,19 @@ const Imoveis: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-muted-foreground">Taxa de Comissão (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={form.taxa_comissao}
+                    onChange={(e) => setForm({ ...form, taxa_comissao: e.target.value })}
+                    placeholder="Ex: 25 (deixe vazio para usar a taxa do proprietário)"
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label className="text-muted-foreground">Endereço</Label>
                   <Input
                     value={form.endereco}
