@@ -108,8 +108,13 @@ const GanhosExtrasDialog: React.FC<Props> = ({
   const fetchGanhos = async () => {
     setLoading(true);
     let query = supabase
-      .from("ganhos_extras" as any)
-      .select("*, imoveis(nome_imovel)");
+      .from("ganhos_extras")
+      .select(`
+        *,
+        imoveis!ganhos_extras_imovel_id_fkey (
+          nome_imovel
+        )
+      `);
     
     if (reservaId) {
       query = query.eq("reserva_id", reservaId);
@@ -124,7 +129,10 @@ const GanhosExtrasDialog: React.FC<Props> = ({
       toast({ title: "Erro ao buscar ganhos", description: error.message, variant: "destructive" });
     }
 
-    setGanhos((data || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
+    setGanhos((data || []).map((g: any) => ({ 
+      ...g, 
+      imovel: g.imoveis || g.imoveis_ganhos_extras_imovel_id_fkey 
+    })));
     setLoading(false);
   };
 
