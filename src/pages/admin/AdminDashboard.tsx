@@ -400,7 +400,7 @@ const AdminDashboard: React.FC = () => {
       totalProprietarios: filtroProprietario === "todos" ? (propCount || 0) : 1,
       totalImoveis: imovelCount || 0,
       totalReservas: reservaCount || 0,
-      receitaMes,
+      receitaMes: receitaMes + totaisGanhos.valorProprietario,
     });
     setFinanceiro(totais);
     setLoading(false);
