@@ -45,10 +45,12 @@ import {
   ChevronRight,
   FileDown,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
 import FinancialYearComparison from "@/components/dashboard/FinancialYearComparison";
+import GanhosExtrasDialog from "@/components/reservas/GanhosExtrasDialog";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import autoTable from "jspdf-autotable";
@@ -102,7 +104,6 @@ const MESES = [
 ];
 
 const now = new Date();
-// Gerar anos disponíveis: de 2 anos atrás até o ano atual
 const ANOS = Array.from(
   { length: now.getFullYear() - 2023 + 2 },
   (_, i) => 2024 + i
@@ -113,11 +114,9 @@ const AdminDashboard: React.FC = () => {
   const { theme } = useTheme();
   const { toast } = useToast();
 
-  // Filtro mês/ano
-  const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); // 0-indexed
+  const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); 
   const [anoSelecionado, setAnoSelecionado] = useState(now.getFullYear());
 
-  // Filtro por proprietário
   const [proprietarios, setProprietarios] = useState<Proprietario[]>([]);
   const [filtroProprietario, setFiltroProprietario] = useState<string>("todos");
 
@@ -142,10 +141,10 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [reservasSemValores, setReservasSemValores] = useState(0);
 
-  // Despesas extras
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [ganhosDialogOpen, setGanhosDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     imovel_id: "",
@@ -207,22 +206,13 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
-    const firstDay = new Date(anoSelecionado, mesSelecionado, 1)
-      .toISOString()
-      .split("T")[0];
-    const lastDay = new Date(anoSelecionado, mesSelecionado + 1, 0)
-      .toISOString()
-      .split("T")[0];
+    const firstDay = new Date(anoSelecionado, mesSelecionado, 1).toISOString().split("T")[0];
+    const lastDay = new Date(anoSelecionado, mesSelecionado + 1, 0).toISOString().split("T")[0];
 
-    // Determinar quais imovel_ids usar com base no filtro de proprietário
     let imovelIds: string[] | null = null;
     if (filtroProprietario !== "todos" && imoveis.length > 0) {
       imovelIds = imoveis
-        .filter(
-          (im) =>
-            im.proprietario_id === filtroProprietario ||
-            im.proprietario_id_2 === filtroProprietario
-        )
+        .filter((im) => im.proprietario_id === filtroProprietario || im.proprietario_id_2 === filtroProprietario)
         .map((im) => im.id);
     }
 
@@ -233,27 +223,10 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let reservasMesQuery = supabase
-      .from("reservas")
-      .select("valor_liquido_proprietario")
-      .gte("data_fim", firstDay)
-      .lte("data_fim", lastDay);
-
-    let reservasDetalhadasQuery = supabase
-      .from("reservas")
-      .select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
-      .gte("data_fim", firstDay)
-      .lte("data_fim", lastDay);
-
-    let reservaCountQuery = supabase
-      .from("reservas")
-      .select("*", { count: "exact", head: true })
-      .gte("data_fim", firstDay)
-      .lte("data_fim", lastDay);
-
-    let imovelCountQuery = supabase
-      .from("imoveis")
-      .select("*", { count: "exact", head: true });
+    let reservasMesQuery = supabase.from("reservas").select("valor_liquido_proprietario").gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario").gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservaCountQuery = supabase.from("reservas").select("*", { count: "exact", head: true }).gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let imovelCountQuery = supabase.from("imoveis").select("*", { count: "exact", head: true });
 
     if (imovelIds) {
       reservasMesQuery = reservasMesQuery.in("imovel_id", imovelIds);
@@ -262,34 +235,18 @@ const AdminDashboard: React.FC = () => {
       imovelCountQuery = imovelCountQuery.in("id", imovelIds);
     }
 
-    const [
-      { count: propCount },
-      { count: imovelCount },
-      { count: reservaCount },
-      { data: reservasMes },
-      { data: reservasDetalhadas },
-    ] = await Promise.all([
-      supabase
-        .from("admin_proprietarios")
-        .select("*", { count: "exact", head: true }),
+    const [{ count: propCount }, { count: imovelCount }, { count: reservaCount }, { data: reservasMes }, { data: reservasDetalhadas }] = await Promise.all([
+      supabase.from("admin_proprietarios").select("*", { count: "exact", head: true }),
       imovelCountQuery,
       reservaCountQuery,
       reservasMesQuery,
       reservasDetalhadasQuery,
     ]);
 
-    const receitaMes = (reservasMes || []).reduce(
-      (acc, r) => acc + (r.valor_liquido_proprietario || 0),
-      0
-    );
-
-    const { data: adminConfig } = await supabase
-      .from("admin_configs")
-      .select("comissao_cw")
-      .single();
+    const receitaMes = (reservasMes || []).reduce((acc, r) => acc + (r.valor_liquido_proprietario || 0), 0);
+    const { data: adminConfig } = await supabase.from("admin_configs").select("comissao_cw").single();
     const adminRate = adminConfig?.comissao_cw ?? 0.25;
 
-    // Buscar comissão por proprietário
     const ownerIds = new Set<string>();
     imoveis.forEach((im) => {
       if (im.proprietario_id) ownerIds.add(im.proprietario_id);
@@ -297,10 +254,7 @@ const AdminDashboard: React.FC = () => {
     });
     let ownerRatesMap: Record<string, number> = {};
     if (ownerIds.size > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, comissao_percentual")
-        .in("id", Array.from(ownerIds));
+      const { data: profiles } = await supabase.from("profiles").select("id, comissao_percentual").in("id", Array.from(ownerIds));
       (profiles || []).forEach((p: any) => {
         ownerRatesMap[p.id] = (p.comissao_percentual ?? 25) / 100;
       });
@@ -308,15 +262,8 @@ const AdminDashboard: React.FC = () => {
 
     const getOwnerRate = (imovelId: string): number => {
       const im = imoveis.find((i) => i.id === imovelId);
-      // Prioridade 1: Taxa específica do imóvel
-      if (im?.taxa_comissao != null) {
-        return im.taxa_comissao / 100;
-      }
-      // Prioridade 2: Taxa do proprietário
-      if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) {
-        return ownerRatesMap[im.proprietario_id];
-      }
-      // Prioridade 3: Taxa global do sistema
+      if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
+      if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) return ownerRatesMap[im.proprietario_id];
       return adminRate;
     };
 
@@ -340,35 +287,23 @@ const AdminDashboard: React.FC = () => {
       { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
     );
 
-    // ── Ganhos extras do mês
-    let ganhosQuery = supabase
-      .from("ganhos_extras" as any)
-      .select("imovel_id, valor, regime_comissao, aplicar_comissao")
-      .gte("data", firstDay)
-      .lte("data", lastDay);
+    let ganhosQuery = supabase.from("ganhos_extras" as any).select("imovel_id, valor, regime_comissao, aplicar_comissao").gte("data", firstDay).lte("data", lastDay);
     if (imovelIds) ganhosQuery = ganhosQuery.in("imovel_id", imovelIds);
     const { data: ganhosMes } = await ganhosQuery;
 
     const totaisGanhos = (ganhosMes || []).reduce(
       (acc: any, g: any) => {
-        let com = 0;
-        let prop = 0;
-        
-        // Novo regime_comissao ou fallback para aplicar_comissao legado
+        let com = 0; let prop = 0;
         const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-
         if (regime === "com_comissao") {
           const rate = getOwnerRate(g.imovel_id);
           com = g.valor * rate;
           prop = g.valor - com;
         } else if (regime === "sem_comissao") {
-          com = 0;
           prop = g.valor;
         } else if (regime === "exclusivo_adm") {
           com = g.valor;
-          prop = 0;
         }
-
         return {
           valorBruto: acc.valorBruto + g.valor,
           comissaoCW: acc.comissaoCW + com,
@@ -386,17 +321,9 @@ const AdminDashboard: React.FC = () => {
       valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
     };
 
-    // ── Previsão futura: reservas com data_fim após o mês selecionado
     const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
-    let futureQuery = supabase
-      .from("reservas")
-      .select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario")
-      .gte("data_fim", futureStart);
-
-    if (imovelIds) {
-      futureQuery = futureQuery.in("imovel_id", imovelIds);
-    }
-
+    let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario").gte("data_fim", futureStart);
+    if (imovelIds) futureQuery = futureQuery.in("imovel_id", imovelIds);
     const { data: futureReservas } = await futureQuery;
 
     const futuroTotais = (futureReservas || []).reduce(
@@ -429,18 +356,12 @@ const AdminDashboard: React.FC = () => {
   };
 
   const fetchDespesas = async () => {
-    const { data } = await supabase
-      .from("despesas_extras" as any)
-      .select("*, imoveis(nome_imovel)")
-      .order("data", { ascending: false });
+    const { data } = await supabase.from("despesas_extras" as any).select("*, imoveis(nome_imovel)").order("data", { ascending: false });
     setDespesas((data || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
   };
 
   const fetchImoveis = async () => {
-    const { data } = await supabase
-      .from("imoveis")
-      .select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao")
-      .order("nome_imovel");
+    const { data } = await supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel");
     setImoveis(data || []);
   };
 
@@ -467,124 +388,38 @@ const AdminDashboard: React.FC = () => {
 
   const gerarPDF = async () => {
     try {
-    const mesNome = MESES[mesSelecionado];
-    const nomeProprietario =
-      filtroProprietario === "todos"
-        ? "Todos os proprietários"
-        : proprietarioSelecionado?.nome || proprietarioSelecionado?.email || "—";
-
-    const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
-
-    // ── Header
-    let y = drawHeader(doc, {
-      title: "Visão Geral — Relatório Financeiro",
-      subtitle: companyName,
-      lines: [
-        `Período: ${mesNome} / ${anoSelecionado}`,
-        `Proprietário: ${nomeProprietario}`,
-        genTimestamp(),
-      ],
-      palette, logoData, companyName, pageW,
-    });
-
-    y += 6;
-
-    // ── Estatísticas
-    y = drawSummaryCards(doc, [
-      { label: "Proprietários", value: String(stats.totalProprietarios) },
-      { label: "Imóveis", value: String(stats.totalImoveis) },
-      { label: "Reservas", value: String(stats.totalReservas) },
-      { label: "Repasse", value: fmt(stats.receitaMes), highlight: true },
-    ], { startY: y, pageW, palette });
-
-    y += 4;
-
-    // ── Detalhamento Financeiro
-    y = drawSectionTitle(doc, "Detalhamento Financeiro", y, palette, pageW);
-
-    const finData = [
-      ["Receita Bruta", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
-      ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
-      ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma (Airbnb, Booking...)"],
-      ["= Receita Líquida", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
-      ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
-      ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão ADM"],
-    ];
-
-    autoTable(doc, {
-      startY: y,
-      head: [["Descrição", "Valor", "Observação"]],
-      body: finData,
-      ...premiumTableStyles(palette),
-      columnStyles: {
-        1: { halign: "right", fontStyle: "bold" },
-        2: { textColor: [130, 130, 130] as [number, number, number], fontSize: 7 },
-      },
-      didParseCell: (data) => {
-        if (data.row.index === 5) {
-          data.cell.styles.fillColor = palette.accent;
-          data.cell.styles.textColor = palette.textOnPrimary;
-          data.cell.styles.fontStyle = "bold";
-        }
-      },
-    });
-
-    y = (doc as any).lastAutoTable.finalY + 10;
-
-    // ── Despesas Extras
-    if (despesasFiltradas.length > 0) {
-      if (y > 220) { doc.addPage(); y = 20; }
-
-      y = drawSectionTitle(doc, "Despesas Extras", y, palette, pageW);
-
-      const despesasData = despesasFiltradas.map((d) => [
-        d.imovel?.nome_imovel ?? "—",
-        d.descricao,
-        tipoLabel(d.tipo),
-        new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR"),
-        fmt(d.valor),
-      ]);
-
-      autoTable(doc, {
-        startY: y,
-        head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor"]],
-        body: despesasData,
-        ...premiumTableStyles(palette),
-        columnStyles: { 4: { halign: "right", fontStyle: "bold" } },
-        foot: [["", "", "", "Total", fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0))]],
-        footStyles: { fillColor: palette.primary, textColor: palette.textOnPrimary, fontStyle: "bold", fontSize: 9 },
-      });
-    }
-
-    // Footer
-    drawFooterAllPages(doc, palette, companyName, pageW, pageH);
-
-    const fileName = `visao-geral_${mesNome.toLowerCase()}-${anoSelecionado}${filtroProprietario !== "todos" ? `_${(proprietarioSelecionado?.nome || "proprietario").replace(/\s+/g, "-").toLowerCase()}` : ""}.pdf`;
-    doc.save(fileName);
-    toast({ title: "Relatório gerado com sucesso!" });
-    } catch (err) {
-      console.error("Erro ao gerar PDF:", err);
-      toast({ title: "Erro ao gerar relatório", description: String(err), variant: "destructive" });
-    }
+      const mesNome = MESES[mesSelecionado];
+      const nomeProprietario = filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—";
+      const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
+      let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${mesNome} / ${anoSelecionado}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
+      y += 6;
+      y = drawSummaryCards(doc, [
+        { label: "Proprietários", value: String(stats.totalProprietarios) },
+        { label: "Imóveis", value: String(stats.totalImoveis) },
+        { label: "Reservas", value: String(stats.totalReservas) },
+        { label: "Repasse", value: fmt(stats.receitaMes), highlight: true },
+      ], { startY: y, pageW, palette });
+      y += 4;
+      y = drawSectionTitle(doc, "Detalhamento Financeiro", y, palette, pageW);
+      const finData = [
+        ["Receita Bruta", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
+        ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
+        ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma"],
+        ["= Receita Líquida", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
+        ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
+        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão ADM"],
+      ];
+      autoTable(doc, { startY: y, head: [["Descrição", "Valor", "Observação"]], body: finData, ...premiumTableStyles(palette), columnStyles: { 1: { halign: "right", fontStyle: "bold" }, 2: { textColor: [130, 130, 130], fontSize: 7 } } });
+      drawFooterAllPages(doc, palette, companyName, pageW, pageH);
+      doc.save(`relatorio_${mesNome}_${anoSelecionado}.pdf`);
+      toast({ title: "Relatório gerado!" });
+    } catch (err) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); }
   };
 
-  const proprietarioSelecionado = proprietarios.find((p) => p.id === filtroProprietario);
-
-  const imoveisDoProprietario =
-    filtroProprietario === "todos"
-      ? null
-      : imoveis
-          .filter(
-            (im) =>
-              im.proprietario_id === filtroProprietario ||
-              im.proprietario_id_2 === filtroProprietario
-          )
-          .map((im) => im.id);
-
-  const despesasFiltradas =
-    imoveisDoProprietario === null
-      ? despesas
-      : despesas.filter((d) => imoveisDoProprietario.includes(d.imovel_id));
+  const despesasFiltradas = filtroProprietario === "todos" ? despesas : despesas.filter(d => {
+    const im = imoveis.find(i => i.id === d.imovel_id);
+    return im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
+  });
 
   const cards = [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
@@ -601,459 +436,135 @@ const AdminDashboard: React.FC = () => {
     { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
   ];
 
-  const formatValue = (value: number, format: string) => {
-    if (format === "currency") return fmt(value);
-    return value.toString();
-  };
+  const formatValue = (value: number, format: string) => format === "currency" ? fmt(value) : value.toString();
 
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 w-full overflow-x-hidden">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
-              {isMesFuturo && (
-                <Badge variant="secondary" className="text-[10px]">Futuro</Badge>
-              )}
-            </div>
-            {filtroProprietario !== "todos" && proprietarioSelecionado && (
-              <p className="text-primary text-sm font-medium mt-1">
-                {proprietarioSelecionado.nome || proprietarioSelecionado.email}
-              </p>
-            )}
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
+            {isMesFuturo && <Badge variant="secondary" className="text-[10px]">Futuro</Badge>}
           </div>
-
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {/* Seletor de mês/ano */}
             <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-1.5 py-1 shadow-sm">
-              <button
-                onClick={() => navegarMes(-1)}
-                className="p-1.5 rounded-lg hover:bg-muted transition-colors duration-150 text-muted-foreground hover:text-foreground"
-                title="Mês anterior"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-
-              <Select
-                value={String(mesSelecionado)}
-                onValueChange={(v) => setMesSelecionado(Number(v))}
-              >
-                <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[108px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MESES.map((m, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        {m}
-                      </SelectItem>
-                  ))}
-                </SelectContent>
+              <button onClick={() => navegarMes(-1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
+              <Select value={String(mesSelecionado)} onValueChange={(v) => setMesSelecionado(Number(v))}>
+                <SelectTrigger className="border-0 bg-transparent h-8 w-[108px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{MESES.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}</SelectContent>
               </Select>
-
-              <Select
-                value={String(anoSelecionado)}
-                onValueChange={(v) => setAnoSelecionado(Number(v))}
-              >
-                <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[68px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ANOS.map((a) => (
-                    <SelectItem key={a} value={String(a)}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
+              <Select value={String(anoSelecionado)} onValueChange={(v) => setAnoSelecionado(Number(v))}>
+                <SelectTrigger className="border-0 bg-transparent h-8 w-[68px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{ANOS.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
               </Select>
-
-              <button
-                onClick={() => navegarMes(1)}
-                className="p-1.5 rounded-lg transition-colors duration-150 text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Próximo mês"
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
+              <button onClick={() => navegarMes(1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
             </div>
-
-            {/* Filtro por proprietário */}
             {proprietarios.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
-                  <SelectTrigger className="w-full sm:w-[190px] bg-background border-border text-sm h-9">
-                    <SelectValue placeholder="Filtrar proprietário…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os proprietários</SelectItem>
-                    {proprietarios.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nome || p.email || p.id.slice(0, 8)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={filtroProprietario} onValueChange={setFiltroProprietario}>
+                <SelectTrigger className="w-full sm:w-[190px] h-9"><SelectValue placeholder="Filtrar proprietário…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os proprietários</SelectItem>
+                  {proprietarios.map(p => <SelectItem key={p.id} value={p.id}>{p.nome || p.email}</SelectItem>)}
+                </SelectContent>
+              </Select>
             )}
-
-            {/* Botão exportar PDF */}
-            <Button
-              onClick={gerarPDF}
-              disabled={loading}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <FileDown className="h-4 w-4" />
-              Exportar PDF
-            </Button>
+            <Button onClick={gerarPDF} disabled={loading} variant="outline" size="sm" className="gap-2"><FileDown className="h-4 w-4" /> Exportar PDF</Button>
           </div>
         </div>
 
-        {/* Banner: reservas sem valores */}
         {reservasSemValores > 0 && (
-          <button
-            onClick={() => navigate("/admin/reservas")}
-            className="w-full text-left flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 hover:bg-warning/8 transition-colors duration-200 group"
-          >
-            <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-warning/15 text-warning">
-              <AlertTriangle className="h-4 w-4" />
-            </span>
+          <button onClick={() => navigate("/admin/reservas")} className="w-full text-left flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 group">
+            <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-warning/15 text-warning"><AlertTriangle className="h-4 w-4" /></span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">
-                {reservasSemValores} reserva{reservasSemValores !== 1 ? "s" : ""} sem valores financeiros
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Importada{reservasSemValores !== 1 ? "s" : ""} via iCal — clique para preencher os valores
-              </p>
+              <p className="text-sm font-semibold text-foreground">{reservasSemValores} reservas sem valores financeiros</p>
+              <p className="text-xs text-muted-foreground">Clique para preencher os valores</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-warning opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+            <ArrowRight className="h-4 w-4 text-warning opacity-60 group-hover:opacity-100 transition-all" />
           </button>
         )}
 
-        {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card, idx) => (
-            <Card
-              key={card.title}
-              className="spotlight-card group"
-              style={{ animationDelay: `${idx * 80}ms` }}
-            >
+            <Card key={card.title} className="spotlight-card group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {card.title}
-                </CardTitle>
-                <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/14 transition-all duration-300 group-hover:scale-105">
-                  <card.icon className="h-4 w-4 text-primary" />
-                </div>
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
+                <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><card.icon className="h-4 w-4 text-primary" /></div>
               </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" />
-                ) : (
-                  <p className="font-display text-2xl sm:text-3xl text-foreground font-semibold tabular-nums">
-                    {formatValue(card.value, card.format)}
-                  </p>
-                )}
-              </CardContent>
+              <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{formatValue(card.value, card.format)}</p>}</CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Previsão Futura */}
-        {futuro.totalReservas > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-4 w-4 text-primary" />
-              <h2 className="font-display text-lg sm:text-xl text-foreground">
-                Previsão Futura
-              </h2>
-              <Badge variant="secondary" className="text-[10px]">
-                {futuro.totalReservas} reserva{futuro.totalReservas !== 1 ? "s" : ""}
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <Card className="spotlight-card group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Receita Bruta Futura
-                  </CardTitle>
-                  <DollarSign className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
-                  ) : (
-                    <p className="font-display text-lg text-foreground">{fmt(futuro.valorBruto)}</p>
-                  )}
-                </CardContent>
-              </Card>
-              <Card className="spotlight-card group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Repasse Futuro
-                  </CardTitle>
-                  <UserCheck className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
-                  ) : (
-                    <p className="font-display text-lg text-foreground">{fmt(futuro.valorProprietario)}</p>
-                  )}
-                </CardContent>
-              </Card>
-              <Card className="spotlight-card group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Reservas Futuras
-                  </CardTitle>
-                  <CalendarDays className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
-                  ) : (
-                    <p className="font-display text-lg text-foreground">{futuro.totalReservas}</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Valores de reservas com checkout após {MESES[mesSelecionado]}/{anoSelecionado}
-            </p>
-          </div>
-        )}
-
-        <div>
-          <h2 className="font-display text-lg sm:text-xl text-foreground mb-4">
-            Detalhamento Financeiro
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-            {financeiroCards.map((card, idx) => (
-              <Card
-                key={card.title}
-                className="spotlight-card group"
-                style={{ animationDelay: `${idx * 40}ms` }}
-              >
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {card.title}
-                  </CardTitle>
-                  <card.icon className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" />
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="font-display text-lg text-foreground">
-                        {fmt(card.value)}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">{card.description}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {financeiroCards.map((card, idx) => (
+            <Card key={card.title} className="spotlight-card group">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
+                <card.icon className="h-3.5 w-3.5 text-primary opacity-60" />
+              </CardHeader>
+              <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(card.value)}</p><p className="text-[11px] text-muted-foreground">{card.description}</p></div>}</CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Taxa de Ocupação */}
-        <OccupancyComparison
-          mes={mesSelecionado}
-          ano={anoSelecionado}
-          imovelIds={filtroProprietario !== "todos" ? (imoveisDoProprietario ?? undefined) : undefined}
-        />
+        <OccupancyComparison mes={mesSelecionado} ano={anoSelecionado} imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : undefined} />
+        <FinancialYearComparison imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : undefined} imoveis={imoveis} />
 
-        {/* Comparativo Financeiro Anual */}
-        <FinancialYearComparison
-          imovelIds={filtroProprietario !== "todos" ? (imoveisDoProprietario ?? undefined) : undefined}
-          imoveis={imoveis}
-        />
-
-        {/* Despesas Extras */}
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <div>
-              <h2 className="font-display text-lg sm:text-xl text-foreground">Despesas Extras</h2>
-              <p className="text-muted-foreground text-sm mt-0.5">
-                Manutenções, amenities e outros custos vinculados aos imóveis
-              </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg text-foreground">Despesas Extras</h2>
+              <Button onClick={() => setDialogOpen(true)} size="sm" variant="outline" className="gap-2 h-8 text-xs"><Plus className="h-3.5 w-3.5" /> Nova Despesa</Button>
             </div>
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Nova Despesa
-            </Button>
-          </div>
-
-          <div className="border border-border rounded-xl overflow-hidden">
-            {despesasFiltradas.length === 0 ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-3 text-center">
-                <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center">
-                  <Receipt className="h-5 w-5 text-muted-foreground/50" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {filtroProprietario === "todos"
-                    ? "Nenhuma despesa extra registrada"
-                    : "Nenhuma despesa extra para este proprietário"}
-                </p>
-              </div>
-            ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-[600px]">
-                <TableHeader>
-                  <TableRow>
-                    {["Imóvel", "Descrição", "Tipo", "Data", "Valor", ""].map((h, i) => (
-                      <TableHead
-                        key={i}
-                        className={cn(
-                          i === 4 && "text-right",
-                          i === 5 && "w-10"
-                        )}
-                      >
-                        {h}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
+            <div className="border border-border rounded-xl overflow-hidden">
+              <Table>
+                <TableHeader><TableRow><TableHead>Imóvel</TableHead><TableHead>Descrição</TableHead><TableHead className="text-right">Valor</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
                 <TableBody>
-                  {despesasFiltradas.map((d) => (
+                  {despesasFiltradas.map(d => (
                     <TableRow key={d.id}>
-                      <TableCell className="text-foreground font-medium text-sm">
-                        {d.imovel?.nome_imovel ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {d.descricao}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="default" className="text-[10px]">
-                          {tipoLabel(d.tipo)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="text-foreground text-sm text-right font-semibold">
-                        {fmt(d.valor)}
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleDelete(d.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors duration-150 p-1.5 rounded-lg hover:bg-destructive/8"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </TableCell>
+                      <TableCell className="text-sm">{imoveis.find(i => i.id === d.imovel_id)?.nome_imovel || "—"}</TableCell>
+                      <TableCell className="text-sm">{d.descricao}</TableCell>
+                      <TableCell className="text-sm text-right font-semibold">{fmt(d.valor)}</TableCell>
+                      <TableCell><button onClick={() => handleDelete(d.id)} className="text-muted-foreground hover:text-destructive p-1.5"><Trash2 className="h-3.5 w-3.5" /></button></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-            )}
           </div>
-
-          {despesasFiltradas.length > 0 && (
-            <div className="mt-3 flex justify-end">
-              <p className="text-xs text-muted-foreground">
-                Total:{" "}
-                <span className="text-foreground font-semibold">
-                  {fmt(despesasFiltradas.reduce((acc, d) => acc + d.valor, 0))}
-                </span>
-              </p>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg text-foreground">Receitas Extras</h2>
+              <Button onClick={() => setGanhosDialogOpen(true)} size="sm" variant="outline" className="gap-2 h-8 text-xs text-primary hover:text-primary hover:bg-primary/5"><Sparkles className="h-3.5 w-3.5" /> Gerenciar Receitas</Button>
             </div>
-          )}
+            <div className="border border-border rounded-xl bg-card p-8 flex flex-col items-center justify-center gap-3 text-center h-[200px]">
+              <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><Sparkles className="h-5 w-5 text-primary" /></div>
+              <p className="text-sm font-medium">Gestão de Receitas Extras</p>
+              <Button variant="link" onClick={() => setGanhosDialogOpen(true)} className="text-primary text-xs">Abrir painel de gestão</Button>
+            </div>
+          </div>
         </div>
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="bg-card border-border sm:max-w-md">
+            <DialogHeader><DialogTitle>Nova Despesa Extra</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Imóvel</Label>
+                <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}><SelectTrigger><SelectValue placeholder="Selecionar imóvel…" /></SelectTrigger><SelectContent>{imoveis.map(im => <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>)}</SelectContent></Select>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Descrição</Label><Input value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Ex: Manutenção..." /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Tipo</Label><Select value={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TIPOS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Data</Label><Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} /></div>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Valor (R$)</Label><Input value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="0,00" /></div>
+            </div>
+            <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button><Button onClick={handleSave} disabled={saving}>Salvar</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <GanhosExtrasDialog open={ganhosDialogOpen} onOpenChange={setGanhosDialogOpen} imoveis={imoveis} onChanged={fetchStats} />
       </div>
-
-      {/* Dialog Nova Despesa */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-foreground tracking-wide">
-              Nova Despesa Extra
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Imóvel</Label>
-              <Select value={form.imovel_id} onValueChange={(v) => setForm((f) => ({ ...f, imovel_id: v }))}>
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder="Selecionar imóvel…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {imoveis.map((im) => (
-                    <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Descrição</Label>
-              <Input
-                value={form.descricao}
-                onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
-                placeholder="Ex: Troca de torneira, kit amenities…"
-                className="bg-background border-border"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Tipo</Label>
-                <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
-                  <SelectTrigger className="bg-background border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPOS.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Data</Label>
-                <Input
-                  type="date"
-                  value={form.data}
-                  onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
-                  className="bg-background border-border"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Valor (R$)</Label>
-              <Input
-                value={form.valor}
-                onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
-                placeholder="0,00"
-                className="bg-background border-border"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-border">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !form.imovel_id || !form.descricao || !form.valor}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {saving ? "Salvando…" : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </PageTransition>
   );
 };
