@@ -883,6 +883,12 @@ const Reservas: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GanhosExtrasDialog
+        open={ganhosOpen}
+        onOpenChange={setGanhosOpen}
+        imoveis={imoveis}
+      />
     </PageTransition>
   );
 };
