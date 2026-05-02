@@ -111,7 +111,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
       .from("ganhos_extras")
       .select(`
         *,
-        imoveis!ganhos_extras_imovel_id_fkey (
+        imovel:imoveis!ganhos_extras_imovel_id_fkey (
           nome_imovel
         )
       `);
