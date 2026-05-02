@@ -55,9 +55,9 @@ export const GANHO_TIPOS = [
 ];
 
 export const REGIME_COMISSAO_OPTIONS = [
-  { value: "com_comissao", label: "Com comissão para administração", description: "A porcentagem administrativa do imóvel é aplicada sobre o valor." },
-  { value: "sem_comissao", label: "Sem comissão para administração", description: "100% repassado ao proprietário." },
-  { value: "exclusivo_adm", label: "Exclusivo da administração", description: "100% para a gestora (não entra no repasse)." },
+  { value: "com_comissao", label: "Receita Comissionada", description: "A porcentagem administrativa do imóvel é aplicada sobre o valor." },
+  { value: "sem_comissao", label: "Repasse Integral ao Proprietário", description: "100% repassado ao proprietário." },
+  { value: "exclusivo_adm", label: "Taxa de Gestão", description: "100% para a gestora (não entra no repasse)." },
 ];
 
 export const ganhoTipoLabel = (v: string) =>
@@ -310,8 +310,8 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px]">
-                          {form.regime_comissao === "com_comissao" ? "ADM aplica" : 
-                           form.regime_comissao === "sem_comissao" ? "100% prop." : "100% ADM"}
+                          {g.regime_comissao === "com_comissao" ? "Comissionada" : 
+                           g.regime_comissao === "sem_comissao" ? "Repasse Integral" : "Taxa Gestão"}
                         </Badge>
                       </TableCell>
                       <TableCell>
