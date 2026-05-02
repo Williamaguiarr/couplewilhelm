@@ -836,10 +836,29 @@ const Reservas: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {filteredReservas.map((r) => {
+              {filteredReservas.map((r: any) => {
                   const rateForRow = getRateForImovel(r.imovel_id);
-                  const valorLiquido = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-                  const comissao = calcComissao(valorLiquido, rateForRow);
+                  const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+                  
+                  // Calcular valor dos ganhos extras vinculados
+                  const totalGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => acc + (g.valor || 0), 0);
+                  const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+                    const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+                    if (regime === "com_comissao") return acc + (g.valor * (1 - rateForRow));
+                    if (regime === "sem_comissao") return acc + g.valor;
+                    return acc; // exclusivo_adm = 0 repasse
+                  }, 0);
+
+                  const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+                    const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+                    if (regime === "com_comissao") return acc + (g.valor * rateForRow);
+                    if (regime === "exclusivo_adm") return acc + g.valor;
+                    return acc; // sem_comissao = 0 comissão
+                  }, 0);
+
+                  const comissaoTotal = calcComissao(valorLiquidoBase, rateForRow) + comissaoGanhosExtras;
+                  const repasseTotal = (r.valor_liquido_proprietario || 0) + repasseGanhosExtras;
+                  
                   const semValores = r.valor_bruto == null;
                   return (
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
