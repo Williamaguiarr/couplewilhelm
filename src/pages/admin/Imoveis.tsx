@@ -134,6 +134,7 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: "",
       ical_url_airbnb: "",
       ical_url_booking: "",
+      taxa_comissao: "",
     });
 
   const openEdit = (imovel: Imovel) => {
@@ -145,6 +146,7 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: imovel.proprietario_id_2 || "",
       ical_url_airbnb: imovel.ical_url_airbnb || "",
       ical_url_booking: imovel.ical_url_booking || "",
+      taxa_comissao: imovel.taxa_comissao?.toString() || "",
     });
     setOpen(true);
   };
