@@ -578,6 +578,7 @@ const Reservas: React.FC = () => {
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
       comissao_plataforma: r.comissao_plataforma != null ? String(r.comissao_plataforma) : "",
+      taxa_comissao_reserva: r.taxa_comissao_reserva != null ? String(r.taxa_comissao_reserva) : "",
       observacoes: r.observacoes || "",
       num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
     });
