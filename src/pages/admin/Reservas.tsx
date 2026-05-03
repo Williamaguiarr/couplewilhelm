@@ -590,7 +590,10 @@ const Reservas: React.FC = () => {
     if (!editingReserva) return;
     setEditSubmitting(true);
 
-    const rate = getRateForImovel(editForm.imovel_id);
+    const rateDefault = getRateForImovel(editForm.imovel_id);
+    const taxaComissaoReserva = editForm.taxa_comissao_reserva !== "" ? parseFloat(editForm.taxa_comissao_reserva) : null;
+    const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
+
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
@@ -608,6 +611,7 @@ const Reservas: React.FC = () => {
         valor_liquido_proprietario: valorProprietario,
         taxa_limpeza: taxaLimpeza,
         comissao_plataforma: comissaoPlataforma,
+        taxa_comissao_reserva: taxaComissaoReserva,
         observacoes: editForm.observacoes || null,
         num_hospedes: numHospedes,
       } as any)
