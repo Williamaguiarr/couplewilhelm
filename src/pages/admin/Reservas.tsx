@@ -62,6 +62,7 @@ interface Reserva {
   valor_liquido_proprietario: number | null;
   taxa_limpeza: number | null;
   comissao_plataforma: number | null;
+  taxa_comissao_reserva: number | null;
   observacoes: string | null;
   imovel_id: string;
   num_hospedes: number | null;
