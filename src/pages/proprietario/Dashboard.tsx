@@ -323,11 +323,14 @@ const ProprietarioDashboard: React.FC = () => {
         const fim = new Date(y, m - 1, d);
         return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
       })
-      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
+      .reduce((acc, r) => {
+        const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+        return acc + f.proprietario;
+      }, 0)
     + ganhosImovelSelecionado
       .filter((g) => {
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
-        if (!m) return true; // data inválida → entra no mês atual em vez de sumir
+        if (!m) return true;
         const [, y, mo, d] = m.map(Number) as unknown as number[];
         const data = new Date(y, mo - 1, d);
         return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
