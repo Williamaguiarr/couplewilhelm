@@ -522,7 +522,9 @@ const ProprietarioDashboard: React.FC = () => {
               g.descricao,
               g.tipo,
               (() => {
-                const [y, m, d] = g.data.split("-").map(Number);
+                const effectiveDate = g.reservas?.data_fim || g.data;
+                const [y, m, d] = (effectiveDate || "").split("-").map(Number);
+                if (isNaN(y)) return "—";
                 return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
               })(),
               fmtBRL(g.valor),
@@ -875,7 +877,10 @@ const ProprietarioDashboard: React.FC = () => {
                           <TableCell className="text-muted-foreground text-sm py-3">{g.descricao}</TableCell>
                           <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{g.tipo}</TableCell>
                           <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">
-                            {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                            {(() => {
+                              const effectiveDate = g.reservas?.data_fim || g.data;
+                              return new Date(effectiveDate + "T12:00:00").toLocaleDateString("pt-BR");
+                            })()}
                           </TableCell>
                           <TableCell className="text-foreground text-sm text-right py-3">{fmt(g.valor)}</TableCell>
                           <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(rep)}</TableCell>
