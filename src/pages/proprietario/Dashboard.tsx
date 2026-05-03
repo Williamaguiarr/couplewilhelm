@@ -306,20 +306,23 @@ const ProprietarioDashboard: React.FC = () => {
   const receitaMesAtual =
     reservasImovelSelecionado
       .filter((r) => {
-        const fim = new Date(r.data_fim + "T12:00:00");
+        const [y, m, d] = r.data_fim.split("-").map(Number);
+        const fim = new Date(y, m - 1, d);
         return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
       })
       .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
     + ganhosImovelSelecionado
       .filter((g) => {
-        const data = new Date(g.data + "T12:00:00");
+        const [y, m, d] = g.data.split("-").map(Number);
+        const data = new Date(y, m - 1, d);
         return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
       })
       .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
   const previsaoFutura = reservasImovelSelecionado
     .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
+      const [y, m, d] = r.data_fim.split("-").map(Number);
+      const fim = new Date(y, m - 1, d);
       return (
         fim > new Date() &&
         !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
