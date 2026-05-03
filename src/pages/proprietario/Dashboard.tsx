@@ -79,6 +79,7 @@ interface DespesaExtra {
 interface GanhoExtra {
   id: string;
   imovel_id: string;
+  reserva_id?: string | null;
   descricao: string;
   valor: number;
   data: string;
@@ -86,6 +87,7 @@ interface GanhoExtra {
   regime_comissao?: string;
   aplicar_comissao: boolean;
   imovel?: { nome_imovel: string };
+  reservas?: { data_fim: string } | null;
 }
 
 const fmt = (v: number | null) =>
@@ -224,13 +226,17 @@ const ProprietarioDashboard: React.FC = () => {
           .order("data", { ascending: false }),
         supabase
           .from("ganhos_extras" as any)
-          .select("*, imoveis(nome_imovel)")
+          .select("*, imoveis(nome_imovel), reservas(data_fim)")
           .order("data", { ascending: false }),
       ]);
 
       setReservas((resData || []).map((r: any) => ({ ...r, imovel: Array.isArray(r.imoveis) ? r.imoveis[0] : r.imoveis })));
       setDespesas((despData || []).map((d: any) => ({ ...d, imovel: Array.isArray(d.imoveis) ? d.imoveis[0] : d.imoveis })));
-      setGanhos((ganhosData || []).map((g: any) => ({ ...g, imovel: Array.isArray(g.imoveis) ? g.imoveis[0] : g.imoveis })));
+      setGanhos((ganhosData || []).map((g: any) => ({ 
+        ...g, 
+        imovel: Array.isArray(g.imoveis) ? g.imoveis[0] : g.imoveis,
+        reservas: Array.isArray(g.reservas) ? g.reservas[0] : g.reservas
+      })));
       setLoading(false);
     };
     fetchData();
@@ -281,13 +287,15 @@ const ProprietarioDashboard: React.FC = () => {
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
-  // Ganhos extras: pelo campo data (mês do ganho).
-  // Defensivo: se a data estiver inválida/vazia, o registro é mantido no período filtrado
-  // (em vez de ser silenciosamente descartado) para não sumir do painel/relatório.
+  // Ganhos extras: prioriza o mês de checkout da reserva vinculada, senão usa a data do lançamento.
   const ganhosFiltrados = ganhos.filter((g) => {
     if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
-    if (!m) return true; // data inválida → não esconder
+    
+    // Se vinculado a uma reserva, deve aparecer no mês de checkout dela
+    const effectiveDate = g.reservas?.data_fim || g.data;
+    
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate || "");
+    if (!m) return true; // data inválida → não esconder (estratégia defensiva)
     const [, y, mo, d] = m.map(Number) as unknown as number[];
     const data = new Date(y, mo - 1, d);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
@@ -329,7 +337,8 @@ const ProprietarioDashboard: React.FC = () => {
       }, 0)
     + ganhosImovelSelecionado
       .filter((g) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
+        const effectiveDate = g.reservas?.data_fim || g.data;
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate || "");
         if (!m) return true;
         const [, y, mo, d] = m.map(Number) as unknown as number[];
         const data = new Date(y, mo - 1, d);
@@ -513,7 +522,9 @@ const ProprietarioDashboard: React.FC = () => {
               g.descricao,
               g.tipo,
               (() => {
-                const [y, m, d] = g.data.split("-").map(Number);
+                const effectiveDate = g.reservas?.data_fim || g.data;
+                const [y, m, d] = (effectiveDate || "").split("-").map(Number);
+                if (isNaN(y)) return "—";
                 return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
               })(),
               fmtBRL(g.valor),
@@ -866,7 +877,10 @@ const ProprietarioDashboard: React.FC = () => {
                           <TableCell className="text-muted-foreground text-sm py-3">{g.descricao}</TableCell>
                           <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{g.tipo}</TableCell>
                           <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">
-                            {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                            {(() => {
+                              const effectiveDate = g.reservas?.data_fim || g.data;
+                              return new Date(effectiveDate + "T12:00:00").toLocaleDateString("pt-BR");
+                            })()}
                           </TableCell>
                           <TableCell className="text-foreground text-sm text-right py-3">{fmt(g.valor)}</TableCell>
                           <TableCell className="text-primary text-sm text-right font-semibold py-3">{fmt(rep)}</TableCell>

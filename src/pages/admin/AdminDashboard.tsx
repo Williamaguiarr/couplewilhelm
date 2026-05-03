@@ -303,13 +303,28 @@ const AdminDashboard: React.FC = () => {
       { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
     );
 
-    let ganhosQuery = supabase.from("ganhos_extras" as any).select("imovel_id, valor, regime_comissao, aplicar_comissao").gte("data", firstDay).lte("data", lastDay);
+    // Busca ganhos extras com info de reserva para priorizar data de checkout
+    let ganhosQuery = supabase
+      .from("ganhos_extras" as any)
+      .select("imovel_id, valor, regime_comissao, aplicar_comissao, data, reservas(data_fim)");
+      
     if (imovelIds) ganhosQuery = ganhosQuery.in("imovel_id", imovelIds);
-    const { data: ganhosMes } = await ganhosQuery;
+    
+    const { data: allGanhos } = await ganhosQuery;
 
-    const totaisGanhos = (ganhosMes || []).reduce(
+    // Filtra ganhos no JS para garantir que ganhos vinculados a reservas sigam o checkout
+    const ganhosMes = (allGanhos || []).filter((g: any) => {
+      const resData = Array.isArray(g.reservas) ? g.reservas[0] : g.reservas;
+      const effectiveDate = resData?.data_fim || g.data;
+      
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate || "");
+      if (!m) return false;
+      const [, y, mo] = m.map(Number);
+      return (mo - 1) === mesSelecionado && y === anoSelecionado;
+    });
+
+    const totaisGanhos = ganhosMes.reduce(
       (acc: any, g: any) => {
-        // Defensivo: valor nulo/NaN nunca contamina o agregado
         const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
         let com = 0; let prop = 0;
         const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
@@ -323,7 +338,7 @@ const AdminDashboard: React.FC = () => {
           com = valor;
         }
         return {
-          valorBruto: acc.valorBruto + valor,
+          valorBruto: acc.valorBruto + (regime === "exclusivo_adm" ? 0 : valor),
           comissaoCW: acc.comissaoCW + com,
           valorProprietario: acc.valorProprietario + prop,
         };
