@@ -276,8 +276,10 @@ const AdminDashboard: React.FC = () => {
         const taxaLimpeza = r.taxa_limpeza || 0;
         const comissaoPlataforma = (r as any).comissao_plataforma || 0;
         const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-        const comissaoRate = getOwnerRate((r as any).imovel_id);
-        const comissaoCW = valorLiquido * comissaoRate;
+        const rate = (r as any).taxa_comissao_reserva != null 
+          ? (r as any).taxa_comissao_reserva / 100 
+          : getOwnerRate((r as any).imovel_id);
+        const comissaoCW = valorLiquido * rate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {
           valorBruto: acc.valorBruto + valorBruto,
