@@ -95,8 +95,14 @@ const fmt = (v: number | null) =>
 // Checkout day is excluded: guest leaves in the morning (≤12h), so that day is free
 const getDaysBetween = (start: string, end: string): Date[] => {
   const days: Date[] = [];
-  const current = new Date(start + "T12:00:00");
-  const endDate = new Date(end + "T12:00:00");
+  const [y1, m1, d1] = start.split("-").map(Number);
+  const [y2, m2, d2] = end.split("-").map(Number);
+  
+  if (isNaN(y1) || isNaN(y2)) return [];
+
+  const current = new Date(y1, m1 - 1, d1, 12, 0, 0);
+  const endDate = new Date(y2, m2 - 1, d2, 12, 0, 0);
+
   // Exclude the checkout day (data_fim) — it's free since guest leaves in the morning
   while (current < endDate) {
     days.push(new Date(current));
