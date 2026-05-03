@@ -62,6 +62,7 @@ interface Reserva {
   valor_liquido_proprietario: number | null;
   taxa_limpeza: number | null;
   comissao_plataforma: number | null;
+  taxa_comissao_reserva: number | null;
   observacoes: string | null;
   imovel_id: string;
   num_hospedes: number | null;
@@ -108,6 +109,7 @@ const emptyForm = {
   valor_bruto: "",
   taxa_limpeza: "",
   comissao_plataforma: "",
+  taxa_comissao_reserva: "",
   observacoes: "",
   num_hospedes: "",
 };
@@ -134,11 +136,16 @@ const ReservaFormFields = ({
   imoveis: Imovel[];
   comissaoRate: number;
 }) => {
+  const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
+  const comissaoEffective = comissaoPersonalizadaStr !== "" 
+    ? parseFloat(comissaoPersonalizadaStr) / 100 
+    : comissaoRate;
+
   const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
   const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
-  const comissao = calcComissao(valorLiquido, comissaoRate);
-  const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
-  const pct = Math.round(comissaoRate * 100);
+  const comissao = calcComissao(valorLiquido, comissaoEffective);
+  const valorProprietario = calcValorProprietario(valorLiquido, comissaoEffective);
+  const pct = Math.round(comissaoEffective * 100);
 
   return (
     <>
@@ -251,16 +258,30 @@ const ReservaFormFields = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
+          <Label className="text-muted-foreground">Comissão ADM (%)</Label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            value={form.taxa_comissao_reserva}
+            onChange={(e) => setForm({ ...form, taxa_comissao_reserva: e.target.value })}
+            placeholder="Comissão padrão"
+            className="bg-background"
+          />
+        </div>
+        <div className="space-y-2">
           <Label className="text-muted-foreground">Valor Base Líquido</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(valorLiquido) : "—"}
           </div>
         </div>
-        <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão ADM ({pct}% sobre base)</Label>
-          <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
-            {valorLiquido != null ? fmt(comissao) : "—"}
-          </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Valor Comissão ADM ({pct}% sobre base)</Label>
+        <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm font-medium text-foreground">
+          {valorLiquido != null ? fmt(comissao) : "—"}
         </div>
       </div>
 
@@ -352,7 +373,7 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const rate = getRateForImovel(r.imovel_id);
+      const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
       const comissao = liquido * rate;
       totalBruto += bruto;
       totalLimpeza += limpeza;
@@ -379,7 +400,7 @@ const Reservas: React.FC = () => {
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
-      const rate = getRateForImovel(r.imovel_id);
+      const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
       const comissao = liquido * rate;
       const proprietario = liquido - comissao;
       return [
@@ -511,7 +532,10 @@ const Reservas: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
 
-    const rate = getRateForImovel(form.imovel_id);
+    const rateDefault = getRateForImovel(form.imovel_id);
+    const taxaComissaoReserva = form.taxa_comissao_reserva !== "" ? parseFloat(form.taxa_comissao_reserva) : null;
+    const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
+
     const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
     const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
     const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
@@ -528,6 +552,7 @@ const Reservas: React.FC = () => {
       valor_liquido_proprietario: valorProprietario,
       taxa_limpeza: taxaLimpeza,
       comissao_plataforma: comissaoPlataforma,
+      taxa_comissao_reserva: taxaComissaoReserva,
       observacoes: form.observacoes || null,
       num_hospedes: numHospedes,
     } as any);
@@ -553,6 +578,7 @@ const Reservas: React.FC = () => {
       valor_bruto: r.valor_bruto != null ? String(r.valor_bruto) : "",
       taxa_limpeza: r.taxa_limpeza != null ? String(r.taxa_limpeza) : "",
       comissao_plataforma: r.comissao_plataforma != null ? String(r.comissao_plataforma) : "",
+      taxa_comissao_reserva: r.taxa_comissao_reserva != null ? String(r.taxa_comissao_reserva) : "",
       observacoes: r.observacoes || "",
       num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
     });
@@ -564,7 +590,10 @@ const Reservas: React.FC = () => {
     if (!editingReserva) return;
     setEditSubmitting(true);
 
-    const rate = getRateForImovel(editForm.imovel_id);
+    const rateDefault = getRateForImovel(editForm.imovel_id);
+    const taxaComissaoReserva = editForm.taxa_comissao_reserva !== "" ? parseFloat(editForm.taxa_comissao_reserva) : null;
+    const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
+
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
     const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
@@ -582,6 +611,7 @@ const Reservas: React.FC = () => {
         valor_liquido_proprietario: valorProprietario,
         taxa_limpeza: taxaLimpeza,
         comissao_plataforma: comissaoPlataforma,
+        taxa_comissao_reserva: taxaComissaoReserva,
         observacoes: editForm.observacoes || null,
         num_hospedes: numHospedes,
       } as any)
@@ -837,7 +867,9 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
               {filteredReservas.map((r: any) => {
-                  const rateForRow = getRateForImovel(r.imovel_id);
+                  const rateDefault = getRateForImovel(r.imovel_id);
+                  const rateForRow = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+                  
                   const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
                   
                   // Calcular valor dos ganhos extras vinculados
