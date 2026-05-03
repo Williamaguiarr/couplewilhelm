@@ -258,16 +258,30 @@ const ReservaFormFields = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
+          <Label className="text-muted-foreground">Comissão ADM (%)</Label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            value={form.taxa_comissao_reserva}
+            onChange={(e) => setForm({ ...form, taxa_comissao_reserva: e.target.value })}
+            placeholder="Comissão padrão"
+            className="bg-background"
+          />
+        </div>
+        <div className="space-y-2">
           <Label className="text-muted-foreground">Valor Base Líquido</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
             {valorLiquido != null ? fmt(valorLiquido) : "—"}
           </div>
         </div>
-        <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão ADM ({pct}% sobre base)</Label>
-          <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
-            {valorLiquido != null ? fmt(comissao) : "—"}
-          </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-muted-foreground">Valor Comissão ADM ({pct}% sobre base)</Label>
+        <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm font-medium text-foreground">
+          {valorLiquido != null ? fmt(comissao) : "—"}
         </div>
       </div>
 
