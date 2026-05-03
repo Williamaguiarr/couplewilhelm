@@ -274,11 +274,15 @@ const ProprietarioDashboard: React.FC = () => {
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
-  // Ganhos extras: pelo campo data (mês do ganho)
+  // Ganhos extras: pelo campo data (mês do ganho).
+  // Defensivo: se a data estiver inválida/vazia, o registro é mantido no período filtrado
+  // (em vez de ser silenciosamente descartado) para não sumir do painel/relatório.
   const ganhosFiltrados = ganhos.filter((g) => {
     if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
-    const [y, m, d] = g.data.split("-").map(Number);
-    const data = new Date(y, m - 1, d);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
+    if (!m) return true; // data inválida → não esconder
+    const [, y, mo, d] = m.map(Number) as unknown as number[];
+    const data = new Date(y, mo - 1, d);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
@@ -291,14 +295,16 @@ const ProprietarioDashboard: React.FC = () => {
     ? ganhos
     : ganhos.filter(g => g.imovel_id === filterImovel);
 
-  // Receita líquida do proprietário a partir de um ganho extra
+  // Receita líquida do proprietário a partir de um ganho extra.
+  // Defensivo: valores nulos/NaN viram 0 — nunca propagam NaN para os totais.
   const ganhoProprietarioValor = (g: GanhoExtra): number => {
+    const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
     if (regime === "com_comissao") {
       const rate = getRateForImovel(g.imovel_id);
-      return g.valor * (1 - rate);
+      return valor * (1 - rate);
     }
-    if (regime === "sem_comissao") return g.valor;
+    if (regime === "sem_comissao") return valor;
     if (regime === "exclusivo_adm") return 0;
     return 0;
   };
@@ -313,8 +319,10 @@ const ProprietarioDashboard: React.FC = () => {
       .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
     + ganhosImovelSelecionado
       .filter((g) => {
-        const [y, m, d] = g.data.split("-").map(Number);
-        const data = new Date(y, m - 1, d);
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
+        if (!m) return true; // data inválida → entra no mês atual em vez de sumir
+        const [, y, mo, d] = m.map(Number) as unknown as number[];
+        const data = new Date(y, mo - 1, d);
         return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
       })
       .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
@@ -349,27 +357,28 @@ const ProprietarioDashboard: React.FC = () => {
     { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
   );
 
-  // Totais de ganhos extras
+  // Totais de ganhos extras (defensivo: valor inválido = 0, nunca NaN).
   const totaisGanhos = ganhosFiltrados.reduce(
     (acc, g) => {
+      const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
       const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
       let comissao = 0;
       let proprietario = 0;
 
       if (regime === "com_comissao") {
         const rate = getRateForImovel(g.imovel_id);
-        comissao = g.valor * rate;
-        proprietario = g.valor - comissao;
+        comissao = valor * rate;
+        proprietario = valor - comissao;
       } else if (regime === "sem_comissao") {
         comissao = 0;
-        proprietario = g.valor;
+        proprietario = valor;
       } else if (regime === "exclusivo_adm") {
-        comissao = g.valor;
+        comissao = valor;
         proprietario = 0;
       }
 
       return {
-        bruto: acc.bruto + (regime === "exclusivo_adm" ? 0 : g.valor), // Do not show exclusive ADM in owner gross total
+        bruto: acc.bruto + (regime === "exclusivo_adm" ? 0 : valor),
         comissao: acc.comissao + comissao,
         proprietario: acc.proprietario + proprietario,
       };

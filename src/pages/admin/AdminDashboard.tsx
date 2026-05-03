@@ -296,19 +296,21 @@ const AdminDashboard: React.FC = () => {
 
     const totaisGanhos = (ganhosMes || []).reduce(
       (acc: any, g: any) => {
+        // Defensivo: valor nulo/NaN nunca contamina o agregado
+        const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
         let com = 0; let prop = 0;
         const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
         if (regime === "com_comissao") {
           const rate = getOwnerRate(g.imovel_id);
-          com = g.valor * rate;
-          prop = g.valor - com;
+          com = valor * rate;
+          prop = valor - com;
         } else if (regime === "sem_comissao") {
-          prop = g.valor;
+          prop = valor;
         } else if (regime === "exclusivo_adm") {
-          com = g.valor;
+          com = valor;
         }
         return {
-          valorBruto: acc.valorBruto + g.valor,
+          valorBruto: acc.valorBruto + valor,
           comissaoCW: acc.comissaoCW + com,
           valorProprietario: acc.valorProprietario + prop,
         };
