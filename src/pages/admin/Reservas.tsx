@@ -109,6 +109,7 @@ const emptyForm = {
   valor_bruto: "",
   taxa_limpeza: "",
   comissao_plataforma: "",
+  taxa_comissao_reserva: "",
   observacoes: "",
   num_hospedes: "",
 };
