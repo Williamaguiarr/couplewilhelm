@@ -102,8 +102,10 @@ async function fetchMonthData(
   if (data && data.length > 0) {
     reservationCount = data.length;
     data.forEach((r) => {
-      const start = new Date(`${r.data_inicio}T12:00:00`);
-      const end = new Date(`${r.data_fim}T12:00:00`);
+      const [y1, m1, d1] = r.data_inicio.split("-").map(Number);
+      const [y2, m2, d2] = r.data_fim.split("-").map(Number);
+      const start = new Date(y1, m1 - 1, d1, 12, 0, 0);
+      const end = new Date(y2, m2 - 1, d2, 12, 0, 0);
 
       // Calculate occupied days that overlap this month
       const overlapStart = new Date(Math.max(start.getTime(), monthStart.getTime()));
