@@ -274,11 +274,15 @@ const ProprietarioDashboard: React.FC = () => {
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
-  // Ganhos extras: pelo campo data (mês do ganho)
+  // Ganhos extras: pelo campo data (mês do ganho).
+  // Defensivo: se a data estiver inválida/vazia, o registro é mantido no período filtrado
+  // (em vez de ser silenciosamente descartado) para não sumir do painel/relatório.
   const ganhosFiltrados = ganhos.filter((g) => {
     if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
-    const [y, m, d] = g.data.split("-").map(Number);
-    const data = new Date(y, m - 1, d);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
+    if (!m) return true; // data inválida → não esconder
+    const [, y, mo, d] = m.map(Number) as unknown as number[];
+    const data = new Date(y, mo - 1, d);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
