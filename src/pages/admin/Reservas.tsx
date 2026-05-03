@@ -919,8 +919,18 @@ const Reservas: React.FC = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const [y, m, d] = r.data_inicio.split("-").map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const [y, m, d] = r.data_fim.split("-").map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                        })()}
+                      </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{r.num_hospedes ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">
