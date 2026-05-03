@@ -771,7 +771,7 @@ const ProprietarioDashboard: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {reservasFiltradas.map((r) => {
-                            const f = calcFinanceiro(r, comissaoRate);
+                            const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
                             return (
                               <TableRow key={r.id} className="border-border hover:bg-muted/20">
                                 <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.nome_imovel ?? "—"}</TableCell>
