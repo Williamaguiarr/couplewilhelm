@@ -221,9 +221,9 @@ const ProprietarioDashboard: React.FC = () => {
           .order("data", { ascending: false }),
       ]);
 
-      setReservas((resData || []).map((r: any) => ({ ...r, imovel: r.imoveis })));
-      setDespesas((despData || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
-      setGanhos((ganhosData || []).map((g: any) => ({ ...g, imovel: g.imoveis })));
+      setReservas((resData || []).map((r: any) => ({ ...r, imovel: Array.isArray(r.imoveis) ? r.imoveis[0] : r.imoveis })));
+      setDespesas((despData || []).map((d: any) => ({ ...d, imovel: Array.isArray(d.imoveis) ? d.imoveis[0] : d.imoveis })));
+      setGanhos((ganhosData || []).map((g: any) => ({ ...g, imovel: Array.isArray(g.imoveis) ? g.imoveis[0] : g.imoveis })));
       setLoading(false);
     };
     fetchData();
@@ -482,7 +482,7 @@ const ProprietarioDashboard: React.FC = () => {
         startY: gY,
         head: [["Imóvel", "Descrição", "Tipo", "Data", "Valor", "Comissão ADM", "Repasse"]],
         body: ganhosFiltrados
-          .filter(g => g.regime_comissao !== "exclusivo_adm") // Hide exclusive ADM from owner report
+          .filter(g => g.regime_comissao !== "exclusivo_adm" || filterImovel === "todos") // Mostra tudo se for visão geral, senão filtra se solicitado
           .map((g) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
             const rate = getRateForImovel(g.imovel_id);
@@ -620,7 +620,7 @@ const ProprietarioDashboard: React.FC = () => {
           </BentoBox>
 
           {/* ── Líquido Final (full width highlight) ── */}
-          {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0) && (
+          {!loading && (reservasFiltradas.length > 0 || despesasFiltradas.length > 0 || ganhosFiltrados.length > 0) && (
             <BentoBox className="lg:col-span-4 bg-gradient-to-r from-primary/6 via-primary/3 to-transparent border-primary/20">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
@@ -825,8 +825,21 @@ const ProprietarioDashboard: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {ganhosFiltrados.map((g) => {
-                      const com = g.aplicar_comissao ? g.valor * comissaoRate : 0;
-                      const rep = g.valor - com;
+                      const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+                      const rate = getRateForImovel(g.imovel_id);
+                      let com = 0;
+                      let rep = 0;
+
+                      if (regime === "com_comissao") {
+                        com = g.valor * rate;
+                        rep = g.valor - com;
+                      } else if (regime === "sem_comissao") {
+                        com = 0;
+                        rep = g.valor;
+                      } else if (regime === "exclusivo_adm") {
+                        com = g.valor;
+                        rep = 0;
+                      }
                       return (
                         <TableRow key={g.id} className="border-border hover:bg-muted/20">
                           <TableCell className="text-foreground font-medium text-sm py-3">{g.imovel?.nome_imovel ?? "—"}</TableCell>
