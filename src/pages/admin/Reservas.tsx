@@ -944,8 +944,9 @@ const Reservas: React.FC = () => {
                     return acc; // sem_comissao = 0 comissão
                   }, 0);
 
-                  const comissaoTotal = calcComissao(valorLiquidoBase, rateForRow) + comissaoGanhosExtras;
-                  const repasseTotal = (r.valor_liquido_proprietario || 0) + repasseGanhosExtras;
+                  const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rateForRow : 0) + comissaoGanhosExtras;
+                  const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rateForRow) : 0;
+                  const repasseTotal = valorPropBase + repasseGanhosExtras;
                   
                   const semValores = r.valor_bruto == null;
                   return (
