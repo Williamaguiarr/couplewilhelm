@@ -226,7 +226,7 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let reservasMesQuery = supabase.from("reservas").select("valor_liquido_proprietario").gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
     let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
     let reservaCountQuery = supabase.from("reservas").select("*", { count: "exact", head: true }).gte("data_fim", firstDay).lte("data_fim", lastDay);
     let imovelCountQuery = supabase.from("imoveis").select("*", { count: "exact", head: true });
