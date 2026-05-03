@@ -444,8 +444,7 @@ const ProprietarioDashboard: React.FC = () => {
 
     // ── Tabela de reservas
     const tableData = reservasFiltradas.map((r) => {
-      const rate = getRateForImovel(r.imovel_id);
-      const f = calcFinanceiro(r, rate);
+      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
       return [
         r.imovel?.nome_imovel || "—",
         (() => {
