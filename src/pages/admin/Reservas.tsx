@@ -1038,7 +1038,15 @@ const Reservas: React.FC = () => {
                 <div className="space-y-1">
                   <div className="font-medium text-foreground">{alert.imoveis?.nome_imovel}</div>
                   <div className="text-xs text-muted-foreground">
-                    Hóspede: {alert.reservas?.nome_hospede || "—"} | {new Date(alert.reservas?.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")} a {new Date(alert.reservas?.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
+                    Hóspede: {alert.reservas?.nome_hospede || "—"} | {(() => {
+                      if (!alert.reservas?.data_inicio) return "—";
+                      const [y, m, d] = alert.reservas.data_inicio.split("-").map(Number);
+                      return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                    })()} a {(() => {
+                      if (!alert.reservas?.data_fim) return "—";
+                      const [y, m, d] = alert.reservas.data_fim.split("-").map(Number);
+                      return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                    })()}
                   </div>
                   <Badge variant="outline" className="text-[10px] uppercase">{alert.plataforma}</Badge>
                 </div>
