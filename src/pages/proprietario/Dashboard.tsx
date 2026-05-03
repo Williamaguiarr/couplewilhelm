@@ -893,6 +893,15 @@ const ProprietarioDashboard: React.FC = () => {
             />
           </div>
 
+          {/* ── KPIs / Ocupação (full width) ── */}
+          <div className="lg:col-span-4">
+            <OccupancyComparison
+              mes={filterMes}
+              ano={filterAno}
+              imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
+            />
+          </div>
+
           {/* ── Calendário de Ocupação (span 4) ── */}
           <BentoBox className="lg:col-span-4">
             <div className="mb-5">
