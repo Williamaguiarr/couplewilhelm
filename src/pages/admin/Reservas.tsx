@@ -67,6 +67,7 @@ interface Reserva {
   imovel_id: string;
   num_hospedes: number | null;
   imovel?: { nome_imovel: string };
+  ganhos_extras?: any[];
 }
 
 interface Imovel {
@@ -375,20 +376,41 @@ const Reservas: React.FC = () => {
     y += 6;
 
     // ── Totais
-    let totalBruto = 0, totalLimpeza = 0, totalPlataforma = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0;
+    let totalBruto = 0, totalLimpeza = 0, totalPlataforma = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0, totalGanhosExtras = 0;
     filteredReservas.forEach((r) => {
       const bruto = r.valor_bruto || 0;
       const limpeza = r.taxa_limpeza || 0;
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
       const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
+      
+      let comissaoGanhosExtras = 0;
+      let repasseGanhosExtras = 0;
+      let brutoGanhosExtras = 0;
+
+      (r.ganhos_extras || []).forEach(g => {
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+        if (regime === "com_comissao") {
+          const com = g.valor * rate;
+          comissaoGanhosExtras += com;
+          repasseGanhosExtras += (g.valor - com);
+          brutoGanhosExtras += g.valor;
+        } else if (regime === "sem_comissao") {
+          repasseGanhosExtras += g.valor;
+          brutoGanhosExtras += g.valor;
+        } else if (regime === "exclusivo_adm") {
+          comissaoGanhosExtras += g.valor;
+        }
+      });
+
       const comissao = liquido * rate;
-      totalBruto += bruto;
+      totalBruto += bruto + brutoGanhosExtras;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
-      totalLiquido += liquido;
-      totalComissao += comissao;
-      totalProprietario += liquido - comissao;
+      totalLiquido += liquido + brutoGanhosExtras;
+      totalComissao += comissao + comissaoGanhosExtras;
+      totalProprietario += (liquido - comissao) + repasseGanhosExtras;
+      totalGanhosExtras += brutoGanhosExtras;
     });
 
     // ── Summary cards
@@ -396,6 +418,7 @@ const Reservas: React.FC = () => {
       { label: "Valor Bruto Total", value: fmtBRL(totalBruto) },
       { label: "Tx. Limpeza", value: fmtBRL(totalLimpeza) },
       { label: "Comissão OTA", value: fmtBRL(totalPlataforma) },
+      { label: "Ganhos Extras", value: fmtBRL(totalGanhosExtras) },
       { label: "Comissão ADM", value: fmtBRL(totalComissao) },
       { label: "Repasse Proprietários", value: fmtBRL(totalProprietario), highlight: true },
     ], { startY: y, pageW, palette });
@@ -409,8 +432,27 @@ const Reservas: React.FC = () => {
       const plataforma = r.comissao_plataforma || 0;
       const liquido = bruto - limpeza - plataforma;
       const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
-      const comissao = liquido * rate;
-      const proprietario = liquido - comissao;
+      
+      let repasseGanhosExtras = 0;
+      let comissaoGanhosExtras = 0;
+      let brutoGanhosExtras = 0;
+      (r.ganhos_extras || []).forEach(g => {
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+        if (regime === "com_comissao") {
+          const com = g.valor * rate;
+          comissaoGanhosExtras += com;
+          repasseGanhosExtras += (g.valor - com);
+          brutoGanhosExtras += g.valor;
+        } else if (regime === "sem_comissao") {
+          repasseGanhosExtras += g.valor;
+          brutoGanhosExtras += g.valor;
+        } else if (regime === "exclusivo_adm") {
+          comissaoGanhosExtras += g.valor;
+        }
+      });
+
+      const comissao = (liquido * rate) + comissaoGanhosExtras;
+      const proprietario = (liquido - (liquido * rate)) + repasseGanhosExtras;
       return [
         r.imovel?.nome_imovel || "—",
         (() => {
