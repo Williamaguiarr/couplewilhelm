@@ -941,9 +941,10 @@ const ProprietarioDashboard: React.FC = () => {
                           month: "long",
                         })}
                       </p>
-                      {selectedReservas.map((r) => {
-                        const f = calcFinanceiro(r, comissaoRate);
-                        const pctLabel = `${Math.round(comissaoRate * 100)}%`;
+                        {selectedReservas.map((r) => {
+                          const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+                          const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
+                          const pctLabel = `${Math.round(rate * 100)}%`;
                         return (
                           <div key={r.id} className="border-t border-border pt-3 space-y-3">
                             <p className="text-foreground font-medium text-sm">
