@@ -62,6 +62,7 @@ interface Reserva {
   comissao_plataforma: number | null;
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
+  taxa_comissao_reserva: number | null;
   imovel?: { nome_imovel: string };
 }
 
@@ -111,12 +112,18 @@ const getDaysBetween = (start: string, end: string): Date[] => {
   return days;
 };
 
-const calcFinanceiro = (r: Reserva, comissaoRate: number) => {
+const calcFinanceiro = (r: Reserva, defaultRate: number, getRateForImovel: (id: string) => number) => {
   const bruto = r.valor_bruto ?? 0;
   const limpeza = r.taxa_limpeza ?? 0;
   const plataforma = r.comissao_plataforma ?? 0;
+  
+  // Use a taxa específica da reserva se existir, senão usa a do imóvel, senão a padrão
+  const rate = r.taxa_comissao_reserva != null 
+    ? r.taxa_comissao_reserva / 100 
+    : getRateForImovel(r.imovel_id);
+    
   const liquido = bruto - limpeza - plataforma;
-  const comissao = liquido * comissaoRate;
+  const comissao = liquido * rate;
   const proprietario = liquido - comissao;
   return { bruto, limpeza, plataforma, liquido, comissao, proprietario };
 };
@@ -316,11 +323,14 @@ const ProprietarioDashboard: React.FC = () => {
         const fim = new Date(y, m - 1, d);
         return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
       })
-      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
+      .reduce((acc, r) => {
+        const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+        return acc + f.proprietario;
+      }, 0)
     + ganhosImovelSelecionado
       .filter((g) => {
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.data || "");
-        if (!m) return true; // data inválida → entra no mês atual em vez de sumir
+        if (!m) return true;
         const [, y, mo, d] = m.map(Number) as unknown as number[];
         const data = new Date(y, mo - 1, d);
         return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
@@ -336,7 +346,10 @@ const ProprietarioDashboard: React.FC = () => {
         !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
       );
     })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+    .reduce((acc, r) => {
+      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+      return acc + f.proprietario;
+    }, 0);
 
   const occupiedDays = reservasImovelSelecionado.flatMap((r) =>
     getDaysBetween(r.data_inicio, r.data_fim)
@@ -344,8 +357,7 @@ const ProprietarioDashboard: React.FC = () => {
 
   const totaisReservas = reservasFiltradas.reduce(
     (acc, r) => {
-      const rate = getRateForImovel(r.imovel_id);
-      const f = calcFinanceiro(r, rate);
+      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
       return {
         bruto: acc.bruto + f.bruto,
         limpeza: acc.limpeza + f.limpeza,
@@ -438,8 +450,7 @@ const ProprietarioDashboard: React.FC = () => {
 
     // ── Tabela de reservas
     const tableData = reservasFiltradas.map((r) => {
-      const rate = getRateForImovel(r.imovel_id);
-      const f = calcFinanceiro(r, rate);
+      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
       return [
         r.imovel?.nome_imovel || "—",
         (() => {
@@ -766,7 +777,7 @@ const ProprietarioDashboard: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {reservasFiltradas.map((r) => {
-                            const f = calcFinanceiro(r, comissaoRate);
+                            const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
                             return (
                               <TableRow key={r.id} className="border-border hover:bg-muted/20">
                                 <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.nome_imovel ?? "—"}</TableCell>
@@ -936,9 +947,10 @@ const ProprietarioDashboard: React.FC = () => {
                           month: "long",
                         })}
                       </p>
-                      {selectedReservas.map((r) => {
-                        const f = calcFinanceiro(r, comissaoRate);
-                        const pctLabel = `${Math.round(comissaoRate * 100)}%`;
+                        {selectedReservas.map((r) => {
+                          const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+                          const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
+                          const pctLabel = `${Math.round(rate * 100)}%`;
                         return (
                           <div key={r.id} className="border-t border-border pt-3 space-y-3">
                             <p className="text-foreground font-medium text-sm">

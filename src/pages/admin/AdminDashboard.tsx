@@ -226,8 +226,8 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let reservasMesQuery = supabase.from("reservas").select("valor_liquido_proprietario").gte("data_fim", firstDay).lte("data_fim", lastDay);
-    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario").gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
     let reservaCountQuery = supabase.from("reservas").select("*", { count: "exact", head: true }).gte("data_fim", firstDay).lte("data_fim", lastDay);
     let imovelCountQuery = supabase.from("imoveis").select("*", { count: "exact", head: true });
 
@@ -246,7 +246,18 @@ const AdminDashboard: React.FC = () => {
       reservasDetalhadasQuery,
     ]);
 
-    const receitaMes = (reservasMes || []).reduce((acc, r) => acc + (r.valor_liquido_proprietario || 0), 0);
+    const receitaMes = (reservasMes || []).reduce((acc, r) => {
+      const valorBruto = r.valor_bruto || 0;
+      const taxaLimpeza = r.taxa_limpeza || 0;
+      const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+      const rate = (r as any).taxa_comissao_reserva != null 
+        ? (r as any).taxa_comissao_reserva / 100 
+        : getOwnerRate((r as any).imovel_id);
+      const comissaoCW = valorLiquido * rate;
+      const valorProprietario = valorLiquido - comissaoCW;
+      return acc + valorProprietario;
+    }, 0);
     const { data: adminConfig } = await supabase.from("admin_configs").select("comissao_cw").single();
     const adminRate = adminConfig?.comissao_cw ?? 0.25;
 
@@ -276,8 +287,10 @@ const AdminDashboard: React.FC = () => {
         const taxaLimpeza = r.taxa_limpeza || 0;
         const comissaoPlataforma = (r as any).comissao_plataforma || 0;
         const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-        const comissaoRate = getOwnerRate((r as any).imovel_id);
-        const comissaoCW = valorLiquido * comissaoRate;
+        const rate = (r as any).taxa_comissao_reserva != null 
+          ? (r as any).taxa_comissao_reserva / 100 
+          : getOwnerRate((r as any).imovel_id);
+        const comissaoCW = valorLiquido * rate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {
           valorBruto: acc.valorBruto + valorBruto,
@@ -327,7 +340,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
-    let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario").gte("data_fim", futureStart);
+    let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", futureStart);
     if (imovelIds) futureQuery = futureQuery.in("imovel_id", imovelIds);
     const { data: futureReservas } = await futureQuery;
 
@@ -337,8 +350,10 @@ const AdminDashboard: React.FC = () => {
         const taxaLimpeza = r.taxa_limpeza || 0;
         const comissaoPlataforma = (r as any).comissao_plataforma || 0;
         const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-        const comissaoRate = getOwnerRate((r as any).imovel_id);
-        const comissaoCW = valorLiquido * comissaoRate;
+        const rate = (r as any).taxa_comissao_reserva != null 
+          ? (r as any).taxa_comissao_reserva / 100 
+          : getOwnerRate((r as any).imovel_id);
+        const comissaoCW = valorLiquido * rate;
         const valorProprietario = valorLiquido - comissaoCW;
         return {
           totalReservas: acc.totalReservas + 1,

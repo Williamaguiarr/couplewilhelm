@@ -384,6 +384,9 @@ const Reservas: React.FC = () => {
       const liquido = bruto - limpeza - plataforma;
       const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
       
+      const valorPropBase = liquido * (1 - rate);
+      const comissaoBase = liquido * rate;
+      
       let comissaoGanhosExtras = 0;
       let repasseGanhosExtras = 0;
       let brutoGanhosExtras = 0;
@@ -403,13 +406,12 @@ const Reservas: React.FC = () => {
         }
       });
 
-      const comissao = liquido * rate;
       totalBruto += bruto + brutoGanhosExtras;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
       totalLiquido += liquido + brutoGanhosExtras;
-      totalComissao += comissao + comissaoGanhosExtras;
-      totalProprietario += (liquido - comissao) + repasseGanhosExtras;
+      totalComissao += comissaoBase + comissaoGanhosExtras;
+      totalProprietario += valorPropBase + repasseGanhosExtras;
       totalGanhosExtras += brutoGanhosExtras;
     });
 
@@ -451,8 +453,9 @@ const Reservas: React.FC = () => {
         }
       });
 
-      const comissao = (liquido * rate) + comissaoGanhosExtras;
-      const proprietario = (liquido - (liquido * rate)) + repasseGanhosExtras;
+      const valorPropBase = liquido * (1 - rate);
+      const comissaoTotal = (liquido * rate) + comissaoGanhosExtras;
+      const proprietarioTotal = valorPropBase + repasseGanhosExtras;
       return [
         r.imovel?.nome_imovel || "—",
         (() => {
@@ -467,8 +470,8 @@ const Reservas: React.FC = () => {
         fmtBRL(limpeza),
         plataforma > 0 ? fmtBRL(plataforma) : "—",
         fmtBRL(liquido),
-        fmtBRL(comissao),
-        fmtBRL(proprietario),
+        fmtBRL(comissaoTotal),
+        fmtBRL(proprietarioTotal),
         r.observacoes || "",
       ];
     });
@@ -944,8 +947,9 @@ const Reservas: React.FC = () => {
                     return acc; // sem_comissao = 0 comissão
                   }, 0);
 
-                  const comissaoTotal = calcComissao(valorLiquidoBase, rateForRow) + comissaoGanhosExtras;
-                  const repasseTotal = (r.valor_liquido_proprietario || 0) + repasseGanhosExtras;
+                  const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rateForRow : 0) + comissaoGanhosExtras;
+                  const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rateForRow) : 0;
+                  const repasseTotal = valorPropBase + repasseGanhosExtras;
                   
                   const semValores = r.valor_bruto == null;
                   return (
