@@ -261,21 +261,24 @@ const ProprietarioDashboard: React.FC = () => {
   // Filtrar reservas: pertence ao mês/ano pelo checkout (data_fim)
   const reservasFiltradas = reservas.filter((r) => {
     if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
-    const fim = new Date(r.data_fim + "T12:00:00");
+    const [y, m, d] = r.data_fim.split("-").map(Number);
+    const fim = new Date(y, m - 1, d);
     return fim.getMonth() === filterMes && fim.getFullYear() === filterAno;
   });
 
   // Despesas: pelo campo data (mês da despesa)
   const despesasFiltradas = despesas.filter((d) => {
     if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
-    const data = new Date(d.data + "T12:00:00");
+    const [y, m, day] = d.data.split("-").map(Number);
+    const data = new Date(y, m - 1, day);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
   // Ganhos extras: pelo campo data (mês do ganho)
   const ganhosFiltrados = ganhos.filter((g) => {
     if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
-    const data = new Date(g.data + "T12:00:00");
+    const [y, m, d] = g.data.split("-").map(Number);
+    const data = new Date(y, m - 1, d);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
