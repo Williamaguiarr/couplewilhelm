@@ -329,7 +329,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
-    let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario").gte("data_fim", futureStart);
+    let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", futureStart);
     if (imovelIds) futureQuery = futureQuery.in("imovel_id", imovelIds);
     const { data: futureReservas } = await futureQuery;
 
