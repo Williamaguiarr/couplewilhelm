@@ -355,27 +355,28 @@ const ProprietarioDashboard: React.FC = () => {
     { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
   );
 
-  // Totais de ganhos extras
+  // Totais de ganhos extras (defensivo: valor inválido = 0, nunca NaN).
   const totaisGanhos = ganhosFiltrados.reduce(
     (acc, g) => {
+      const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
       const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
       let comissao = 0;
       let proprietario = 0;
 
       if (regime === "com_comissao") {
         const rate = getRateForImovel(g.imovel_id);
-        comissao = g.valor * rate;
-        proprietario = g.valor - comissao;
+        comissao = valor * rate;
+        proprietario = valor - comissao;
       } else if (regime === "sem_comissao") {
         comissao = 0;
-        proprietario = g.valor;
+        proprietario = valor;
       } else if (regime === "exclusivo_adm") {
-        comissao = g.valor;
+        comissao = valor;
         proprietario = 0;
       }
 
       return {
-        bruto: acc.bruto + (regime === "exclusivo_adm" ? 0 : g.valor), // Do not show exclusive ADM in owner gross total
+        bruto: acc.bruto + (regime === "exclusivo_adm" ? 0 : valor),
         comissao: acc.comissao + comissao,
         proprietario: acc.proprietario + proprietario,
       };
