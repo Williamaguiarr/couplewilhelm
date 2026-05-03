@@ -136,11 +136,16 @@ const ReservaFormFields = ({
   imoveis: Imovel[];
   comissaoRate: number;
 }) => {
+  const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
+  const comissaoEffective = comissaoPersonalizadaStr !== "" 
+    ? parseFloat(comissaoPersonalizadaStr) / 100 
+    : comissaoRate;
+
   const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
   const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
-  const comissao = calcComissao(valorLiquido, comissaoRate);
-  const valorProprietario = calcValorProprietario(valorLiquido, comissaoRate);
-  const pct = Math.round(comissaoRate * 100);
+  const comissao = calcComissao(valorLiquido, comissaoEffective);
+  const valorProprietario = calcValorProprietario(valorLiquido, comissaoEffective);
+  const pct = Math.round(comissaoEffective * 100);
 
   return (
     <>
