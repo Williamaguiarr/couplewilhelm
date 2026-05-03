@@ -413,8 +413,14 @@ const Reservas: React.FC = () => {
       const proprietario = liquido - comissao;
       return [
         r.imovel?.nome_imovel || "—",
-        new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
-        new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
+        (() => {
+          const [y, m, d] = r.data_inicio.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
+        (() => {
+          const [y, m, d] = r.data_fim.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
         fmtBRL(bruto),
         fmtBRL(limpeza),
         plataforma > 0 ? fmtBRL(plataforma) : "—",
