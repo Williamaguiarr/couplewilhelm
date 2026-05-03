@@ -146,19 +146,52 @@ const GanhosExtrasDialog: React.FC<Props> = ({
   }, [open, reservaId, imovelId]);
 
   const handleSave = async () => {
-    if (!form.imovel_id || !form.descricao || !form.valor) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+    if (!form.imovel_id || !form.descricao.trim()) {
+      toast({ title: "Preencha imóvel e descrição", variant: "destructive" });
       return;
     }
+
+    // Validação rigorosa do valor — evita registros vazios que somem como NaN
+    const valorNum = parseFloat(String(form.valor).replace(",", "."));
+    if (!form.valor || isNaN(valorNum) || valorNum <= 0) {
+      toast({
+        title: "Valor inválido",
+        description: "Informe um valor maior que zero. Lançamentos vazios não podem ser salvos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação rigorosa da data (YYYY-MM-DD válido)
+    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(form.data || "");
+    if (!dateMatch) {
+      toast({
+        title: "Data inválida",
+        description: "Selecione uma data válida no formato dia/mês/ano.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const [, yy, mm, dd] = dateMatch;
+    const testDate = new Date(Number(yy), Number(mm) - 1, Number(dd));
+    if (
+      testDate.getFullYear() !== Number(yy) ||
+      testDate.getMonth() !== Number(mm) - 1 ||
+      testDate.getDate() !== Number(dd)
+    ) {
+      toast({ title: "Data inválida", description: "A data informada não existe.", variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
-    
+
     const payload = {
       imovel_id: form.imovel_id,
       reserva_id: reservaId || null,
       tipo: form.tipo,
-      descricao: form.descricao,
+      descricao: form.descricao.trim(),
       data: form.data,
-      valor: parseFloat(form.valor.toString().replace(",", ".")),
+      valor: valorNum,
       regime_comissao: form.regime_comissao,
       aplicar_comissao: form.regime_comissao === "com_comissao",
     };
