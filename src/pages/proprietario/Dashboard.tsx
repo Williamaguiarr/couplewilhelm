@@ -295,14 +295,16 @@ const ProprietarioDashboard: React.FC = () => {
     ? ganhos
     : ganhos.filter(g => g.imovel_id === filterImovel);
 
-  // Receita líquida do proprietário a partir de um ganho extra
+  // Receita líquida do proprietário a partir de um ganho extra.
+  // Defensivo: valores nulos/NaN viram 0 — nunca propagam NaN para os totais.
   const ganhoProprietarioValor = (g: GanhoExtra): number => {
+    const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
     if (regime === "com_comissao") {
       const rate = getRateForImovel(g.imovel_id);
-      return g.valor * (1 - rate);
+      return valor * (1 - rate);
     }
-    if (regime === "sem_comissao") return g.valor;
+    if (regime === "sem_comissao") return valor;
     if (regime === "exclusivo_adm") return 0;
     return 0;
   };
