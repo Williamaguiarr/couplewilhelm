@@ -111,12 +111,18 @@ const getDaysBetween = (start: string, end: string): Date[] => {
   return days;
 };
 
-const calcFinanceiro = (r: Reserva, comissaoRate: number) => {
+const calcFinanceiro = (r: Reserva, defaultRate: number, getRateForImovel: (id: string) => number) => {
   const bruto = r.valor_bruto ?? 0;
   const limpeza = r.taxa_limpeza ?? 0;
   const plataforma = r.comissao_plataforma ?? 0;
+  
+  // Use a taxa específica da reserva se existir, senão usa a do imóvel, senão a padrão
+  const rate = r.taxa_comissao_reserva != null 
+    ? r.taxa_comissao_reserva / 100 
+    : getRateForImovel(r.imovel_id);
+    
   const liquido = bruto - limpeza - plataforma;
-  const comissao = liquido * comissaoRate;
+  const comissao = liquido * rate;
   const proprietario = liquido - comissao;
   return { bruto, limpeza, plataforma, liquido, comissao, proprietario };
 };
