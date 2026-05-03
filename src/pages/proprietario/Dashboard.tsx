@@ -346,7 +346,10 @@ const ProprietarioDashboard: React.FC = () => {
         !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
       );
     })
-    .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+    .reduce((acc, r) => {
+      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+      return acc + f.proprietario;
+    }, 0);
 
   const occupiedDays = reservasImovelSelecionado.flatMap((r) =>
     getDaysBetween(r.data_inicio, r.data_fim)
