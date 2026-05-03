@@ -453,8 +453,9 @@ const Reservas: React.FC = () => {
         }
       });
 
-      const comissao = (liquido * rate) + comissaoGanhosExtras;
-      const proprietario = (liquido - (liquido * rate)) + repasseGanhosExtras;
+      const valorPropBase = liquido * (1 - rate);
+      const comissaoTotal = (liquido * rate) + comissaoGanhosExtras;
+      const proprietarioTotal = valorPropBase + repasseGanhosExtras;
       return [
         r.imovel?.nome_imovel || "—",
         (() => {
