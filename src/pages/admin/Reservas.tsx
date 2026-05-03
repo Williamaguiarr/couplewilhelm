@@ -116,8 +116,16 @@ const emptyForm = {
 
 const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null => {
   if (!dataInicio || !dataFim) return null;
-  const start = new Date(`${dataInicio}T12:00:00`);
-  const end = new Date(`${dataFim}T12:00:00`);
+  // Ensure we are parsing YYYY-MM-DD correctly by splitting and using Date(y, m-1, d)
+  // This avoids timezone shifts and "US format" interpretation issues
+  const [y1, m1, d1] = dataInicio.split("-").map(Number);
+  const [y2, m2, d2] = dataFim.split("-").map(Number);
+  
+  if (isNaN(y1) || isNaN(y2)) return null;
+
+  const start = new Date(y1, m1 - 1, d1, 12, 0, 0);
+  const end = new Date(y2, m2 - 1, d2, 12, 0, 0);
+  
   const diff = Math.round((end.getTime() - start.getTime()) / 86400000);
   return diff > 0 ? diff : null;
 };
