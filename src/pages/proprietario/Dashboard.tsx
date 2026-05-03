@@ -95,8 +95,14 @@ const fmt = (v: number | null) =>
 // Checkout day is excluded: guest leaves in the morning (≤12h), so that day is free
 const getDaysBetween = (start: string, end: string): Date[] => {
   const days: Date[] = [];
-  const current = new Date(start + "T12:00:00");
-  const endDate = new Date(end + "T12:00:00");
+  const [y1, m1, d1] = start.split("-").map(Number);
+  const [y2, m2, d2] = end.split("-").map(Number);
+  
+  if (isNaN(y1) || isNaN(y2)) return [];
+
+  const current = new Date(y1, m1 - 1, d1, 12, 0, 0);
+  const endDate = new Date(y2, m2 - 1, d2, 12, 0, 0);
+
   // Exclude the checkout day (data_fim) — it's free since guest leaves in the morning
   while (current < endDate) {
     days.push(new Date(current));
@@ -231,8 +237,10 @@ const ProprietarioDashboard: React.FC = () => {
   const getReservasForDay = useCallback(
     (day: Date) =>
       reservas.filter((r) => {
-        const inicio = new Date(r.data_inicio + "T12:00:00");
-        const fim = new Date(r.data_fim + "T12:00:00");
+        const [y1, m1, d1] = r.data_inicio.split("-").map(Number);
+        const [y2, m2, d2] = r.data_fim.split("-").map(Number);
+        const inicio = new Date(y1, m1 - 1, d1, 12, 0, 0);
+        const fim = new Date(y2, m2 - 1, d2, 12, 0, 0);
         const d = new Date(day);
         d.setHours(12, 0, 0, 0);
         // Checkout day is free (guest leaves in the morning)
@@ -253,21 +261,24 @@ const ProprietarioDashboard: React.FC = () => {
   // Filtrar reservas: pertence ao mês/ano pelo checkout (data_fim)
   const reservasFiltradas = reservas.filter((r) => {
     if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
-    const fim = new Date(r.data_fim + "T12:00:00");
+    const [y, m, d] = r.data_fim.split("-").map(Number);
+    const fim = new Date(y, m - 1, d);
     return fim.getMonth() === filterMes && fim.getFullYear() === filterAno;
   });
 
   // Despesas: pelo campo data (mês da despesa)
   const despesasFiltradas = despesas.filter((d) => {
     if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
-    const data = new Date(d.data + "T12:00:00");
+    const [y, m, day] = d.data.split("-").map(Number);
+    const data = new Date(y, m - 1, day);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
   // Ganhos extras: pelo campo data (mês do ganho)
   const ganhosFiltrados = ganhos.filter((g) => {
     if (filterImovel !== "todos" && g.imovel_id !== filterImovel) return false;
-    const data = new Date(g.data + "T12:00:00");
+    const [y, m, d] = g.data.split("-").map(Number);
+    const data = new Date(y, m - 1, d);
     return data.getMonth() === filterMes && data.getFullYear() === filterAno;
   });
 
@@ -295,20 +306,23 @@ const ProprietarioDashboard: React.FC = () => {
   const receitaMesAtual =
     reservasImovelSelecionado
       .filter((r) => {
-        const fim = new Date(r.data_fim + "T12:00:00");
+        const [y, m, d] = r.data_fim.split("-").map(Number);
+        const fim = new Date(y, m - 1, d);
         return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
       })
       .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0)
     + ganhosImovelSelecionado
       .filter((g) => {
-        const data = new Date(g.data + "T12:00:00");
+        const [y, m, d] = g.data.split("-").map(Number);
+        const data = new Date(y, m - 1, d);
         return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
       })
       .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
   const previsaoFutura = reservasImovelSelecionado
     .filter((r) => {
-      const fim = new Date(r.data_fim + "T12:00:00");
+      const [y, m, d] = r.data_fim.split("-").map(Number);
+      const fim = new Date(y, m - 1, d);
       return (
         fim > new Date() &&
         !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
@@ -419,8 +433,14 @@ const ProprietarioDashboard: React.FC = () => {
       const f = calcFinanceiro(r, rate);
       return [
         r.imovel?.nome_imovel || "—",
-        new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
-        new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
+        (() => {
+          const [y, m, d] = r.data_inicio.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
+        (() => {
+          const [y, m, d] = r.data_fim.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
         fmtBRL(f.bruto),
         fmtBRL(f.limpeza),
         f.plataforma > 0 ? fmtBRL(f.plataforma) : "—",
@@ -472,7 +492,10 @@ const ProprietarioDashboard: React.FC = () => {
               g.imovel?.nome_imovel || "—",
               g.descricao,
               g.tipo,
-              new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR"),
+              (() => {
+                const [y, m, d] = g.data.split("-").map(Number);
+                return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+              })(),
               fmtBRL(g.valor),
               com > 0 ? `- ${fmtBRL(com)}` : "—",
               fmtBRL(rep),

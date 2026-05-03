@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -390,9 +392,10 @@ const AdminDashboard: React.FC = () => {
   const gerarPDF = async () => {
     try {
       const mesNome = MESES[mesSelecionado];
+      const periodoLabel = `${mesNome} / ${anoSelecionado}`;
       const nomeProprietario = filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—";
       const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
-      let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${mesNome} / ${anoSelecionado}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
+      let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${periodoLabel}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
       y += 6;
       y = drawSummaryCards(doc, [
         { label: "Proprietários", value: String(stats.totalProprietarios) },

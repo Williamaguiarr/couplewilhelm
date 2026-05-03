@@ -375,7 +375,10 @@ const GanhosExtrasDialog: React.FC<Props> = ({
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR")}
+                          {(() => {
+                            const [y, m, d] = g.data.split("-").map(Number);
+                            return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                          })()}
                         </TableCell>
                         <TableCell className="text-sm text-right font-semibold text-primary">
                           {formatBRL(g.valor)}

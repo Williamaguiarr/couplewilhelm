@@ -116,8 +116,16 @@ const emptyForm = {
 
 const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null => {
   if (!dataInicio || !dataFim) return null;
-  const start = new Date(`${dataInicio}T12:00:00`);
-  const end = new Date(`${dataFim}T12:00:00`);
+  // Ensure we are parsing YYYY-MM-DD correctly by splitting and using Date(y, m-1, d)
+  // This avoids timezone shifts and "US format" interpretation issues
+  const [y1, m1, d1] = dataInicio.split("-").map(Number);
+  const [y2, m2, d2] = dataFim.split("-").map(Number);
+  
+  if (isNaN(y1) || isNaN(y2)) return null;
+
+  const start = new Date(y1, m1 - 1, d1, 12, 0, 0);
+  const end = new Date(y2, m2 - 1, d2, 12, 0, 0);
+  
   const diff = Math.round((end.getTime() - start.getTime()) / 86400000);
   return diff > 0 ? diff : null;
 };
@@ -405,8 +413,14 @@ const Reservas: React.FC = () => {
       const proprietario = liquido - comissao;
       return [
         r.imovel?.nome_imovel || "—",
-        new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
-        new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
+        (() => {
+          const [y, m, d] = r.data_inicio.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
+        (() => {
+          const [y, m, d] = r.data_fim.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
         fmtBRL(bruto),
         fmtBRL(limpeza),
         plataforma > 0 ? fmtBRL(plataforma) : "—",
@@ -905,8 +919,18 @@ const Reservas: React.FC = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const [y, m, d] = r.data_inicio.split("-").map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        {(() => {
+                          const [y, m, d] = r.data_fim.split("-").map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                        })()}
+                      </TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{calcDuracaoEstadia(r.data_inicio, r.data_fim) ?? "—"} {calcDuracaoEstadia(r.data_inicio, r.data_fim) === 1 ? "dia" : calcDuracaoEstadia(r.data_inicio, r.data_fim) ? "dias" : ""}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{r.num_hospedes ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">
@@ -1014,7 +1038,15 @@ const Reservas: React.FC = () => {
                 <div className="space-y-1">
                   <div className="font-medium text-foreground">{alert.imoveis?.nome_imovel}</div>
                   <div className="text-xs text-muted-foreground">
-                    Hóspede: {alert.reservas?.nome_hospede || "—"} | {new Date(alert.reservas?.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")} a {new Date(alert.reservas?.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}
+                    Hóspede: {alert.reservas?.nome_hospede || "—"} | {(() => {
+                      if (!alert.reservas?.data_inicio) return "—";
+                      const [y, m, d] = alert.reservas.data_inicio.split("-").map(Number);
+                      return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                    })()} a {(() => {
+                      if (!alert.reservas?.data_fim) return "—";
+                      const [y, m, d] = alert.reservas.data_fim.split("-").map(Number);
+                      return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+                    })()}
                   </div>
                   <Badge variant="outline" className="text-[10px] uppercase">{alert.plataforma}</Badge>
                 </div>
