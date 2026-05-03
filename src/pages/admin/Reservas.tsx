@@ -867,7 +867,9 @@ const Reservas: React.FC = () => {
               </TableHeader>
               <TableBody>
               {filteredReservas.map((r: any) => {
-                  const rateForRow = getRateForImovel(r.imovel_id);
+                  const rateDefault = getRateForImovel(r.imovel_id);
+                  const rateForRow = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+                  
                   const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
                   
                   // Calcular valor dos ganhos extras vinculados
