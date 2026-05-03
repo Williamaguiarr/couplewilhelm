@@ -470,8 +470,8 @@ const Reservas: React.FC = () => {
         fmtBRL(limpeza),
         plataforma > 0 ? fmtBRL(plataforma) : "—",
         fmtBRL(liquido),
-        fmtBRL(comissao),
-        fmtBRL(proprietario),
+        fmtBRL(comissaoTotal),
+        fmtBRL(proprietarioTotal),
         r.observacoes || "",
       ];
     });
