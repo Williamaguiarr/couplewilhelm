@@ -406,13 +406,12 @@ const Reservas: React.FC = () => {
         }
       });
 
-      const comissao = liquido * rate;
       totalBruto += bruto + brutoGanhosExtras;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
       totalLiquido += liquido + brutoGanhosExtras;
-      totalComissao += comissao + comissaoGanhosExtras;
-      totalProprietario += (liquido - comissao) + repasseGanhosExtras;
+      totalComissao += comissaoBase + comissaoGanhosExtras;
+      totalProprietario += valorPropBase + repasseGanhosExtras;
       totalGanhosExtras += brutoGanhosExtras;
     });
 
