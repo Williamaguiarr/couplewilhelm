@@ -492,7 +492,10 @@ const ProprietarioDashboard: React.FC = () => {
               g.imovel?.nome_imovel || "—",
               g.descricao,
               g.tipo,
-              new Date(g.data + "T12:00:00").toLocaleDateString("pt-BR"),
+              (() => {
+                const [y, m, d] = g.data.split("-").map(Number);
+                return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+              })(),
               fmtBRL(g.valor),
               com > 0 ? `- ${fmtBRL(com)}` : "—",
               fmtBRL(rep),
