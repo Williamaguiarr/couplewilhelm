@@ -237,8 +237,10 @@ const ProprietarioDashboard: React.FC = () => {
   const getReservasForDay = useCallback(
     (day: Date) =>
       reservas.filter((r) => {
-        const inicio = new Date(r.data_inicio + "T12:00:00");
-        const fim = new Date(r.data_fim + "T12:00:00");
+        const [y1, m1, d1] = r.data_inicio.split("-").map(Number);
+        const [y2, m2, d2] = r.data_fim.split("-").map(Number);
+        const inicio = new Date(y1, m1 - 1, d1, 12, 0, 0);
+        const fim = new Date(y2, m2 - 1, d2, 12, 0, 0);
         const d = new Date(day);
         d.setHours(12, 0, 0, 0);
         // Checkout day is free (guest leaves in the morning)
