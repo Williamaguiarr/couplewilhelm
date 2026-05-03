@@ -433,8 +433,14 @@ const ProprietarioDashboard: React.FC = () => {
       const f = calcFinanceiro(r, rate);
       return [
         r.imovel?.nome_imovel || "—",
-        new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR"),
-        new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR"),
+        (() => {
+          const [y, m, d] = r.data_inicio.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
+        (() => {
+          const [y, m, d] = r.data_fim.split("-").map(Number);
+          return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
+        })(),
         fmtBRL(f.bruto),
         fmtBRL(f.limpeza),
         f.plataforma > 0 ? fmtBRL(f.plataforma) : "—",
