@@ -83,7 +83,7 @@ async function fetchMonthData(
 
   let query = supabase
     .from("reservas")
-    .select("data_inicio, data_fim, valor_bruto, taxa_limpeza")
+    .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
     .lte("data_inicio", lastDay)
     .gt("data_fim", firstDay);
 
@@ -93,6 +93,20 @@ async function fetchMonthData(
 
   const { data } = await query;
 
+  // Buscar ganhos extras não vinculados a reservas que caem no mês de checkout
+  let ganhosAvulsosQuery = supabase
+    .from("ganhos_extras")
+    .select("valor, regime_comissao, aplicar_comissao")
+    .is("reserva_id", null)
+    .gte("data", firstDay)
+    .lte("data", lastDay);
+  
+  if (imovelIds && imovelIds.length > 0) {
+    ganhosAvulsosQuery = ganhosAvulsosQuery.in("imovel_id", imovelIds);
+  }
+  
+  const { data: ganhosAvulsosData } = await ganhosAvulsosQuery;
+
   let receita = 0;
   let reservationCount = 0;
   const occupiedSet = new Set<string>();
@@ -101,13 +115,12 @@ async function fetchMonthData(
 
   if (data && data.length > 0) {
     reservationCount = data.length;
-    data.forEach((r) => {
+    data.forEach((r: any) => {
       const [y1, m1, d1] = r.data_inicio.split("-").map(Number);
       const [y2, m2, d2] = r.data_fim.split("-").map(Number);
       const start = new Date(y1, m1 - 1, d1, 12, 0, 0);
       const end = new Date(y2, m2 - 1, d2, 12, 0, 0);
 
-      // Calculate occupied days that overlap this month
       const overlapStart = new Date(Math.max(start.getTime(), monthStart.getTime()));
       const overlapEnd = new Date(Math.min(end.getTime(), nextMonthStart.getTime()));
       const nightsInMonth = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS));
@@ -117,15 +130,28 @@ async function fetchMonthData(
         occupiedSet.add(occupiedDate.toISOString().split("T")[0]);
       }
 
-      // Revenue is recognized in the checkout month (cash-based)
       const checkoutDate = end;
-      const checkoutMonth = checkoutDate.getMonth();
-      const checkoutYear = checkoutDate.getFullYear();
-      if (checkoutMonth === month && checkoutYear === year) {
+      if (checkoutDate.getMonth() === month && checkoutDate.getFullYear() === year) {
         receita += Number(r.valor_bruto) || 0;
+        
+        // Incluir ganhos extras vinculados no cálculo da receita bruta se não forem exclusivos da ADM
+        (r.ganhos_extras || []).forEach((g: any) => {
+          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+          if (regime !== "exclusivo_adm") {
+            receita += Number(g.valor) || 0;
+          }
+        });
       }
     });
   }
+
+  // Somar ganhos avulsos
+  (ganhosAvulsosData || []).forEach((g: any) => {
+    const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+    if (regime !== "exclusivo_adm") {
+      receita += Number(g.valor) || 0;
+    }
+  });
 
   const occupiedDays = Math.min(occupiedSet.size, total);
   const occupancyRate = total > 0 ? (occupiedDays / total) * 100 : 0;
