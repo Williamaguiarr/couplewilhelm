@@ -670,15 +670,6 @@ const ProprietarioDashboard: React.FC = () => {
             </BentoBox>
           )}
 
-          {/* ── KPIs / Ocupação (full width) ── */}
-          <div className="lg:col-span-4">
-            <OccupancyComparison
-              mes={filterMes}
-              ano={filterAno}
-              imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
-            />
-          </div>
-
           {/* ── Extrato Financeiro (full width) ── */}
           <BentoBox className="lg:col-span-4 !p-0 overflow-hidden" hover={false}>
             <button
@@ -899,6 +890,15 @@ const ProprietarioDashboard: React.FC = () => {
               repasseMensal={totais.proprietario - totalDespesas}
               filterImovel={filterImovel}
               onTotalChange={setTotalCustosFixos}
+            />
+          </div>
+
+          {/* ── KPIs / Ocupação (full width) ── */}
+          <div className="lg:col-span-4">
+            <OccupancyComparison
+              mes={filterMes}
+              ano={filterAno}
+              imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
             />
           </div>
 
