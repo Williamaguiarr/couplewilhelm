@@ -647,7 +647,7 @@ const ProprietarioDashboard: React.FC = () => {
                 ) : (
                   <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
                 )}
-                <p className="text-xs text-muted-foreground/70">Checkouts neste mês</p>
+                <p className="text-xs text-muted-foreground/70">Checkouts {filterMes === -1 ? "em todos os meses" : "neste período"}</p>
               </div>
               <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-primary" />
