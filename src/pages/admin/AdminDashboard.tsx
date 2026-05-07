@@ -385,7 +385,9 @@ const AdminDashboard: React.FC = () => {
       valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
     };
 
-    const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
+    const futureStart = (isAcumuladoMes || isAcumuladoAno) 
+      ? new Date().toISOString().split("T")[0]
+      : new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
     let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", futureStart);
     if (imovelIds) futureQuery = futureQuery.in("imovel_id", imovelIds);
     const { data: futureReservas } = await futureQuery;
