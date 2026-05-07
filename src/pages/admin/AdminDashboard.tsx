@@ -229,9 +229,25 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
-    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
-    let reservaCountQuery = supabase.from("reservas").select("*", { count: "exact", head: true }).gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim");
+    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim");
+    let reservaCountQuery = supabase.from("reservas").select("id, data_fim");
+
+    if (!isAcumuladoMes || !isAcumuladoAno) {
+      if (!isAcumuladoMes && !isAcumuladoAno) {
+        reservasMesQuery = reservasMesQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
+        reservasDetalhadasQuery = reservasDetalhadasQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
+        reservaCountQuery = reservaCountQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
+      } else if (!isAcumuladoAno) {
+        // Ano fixo, Mes acumulado
+        const start = `${anoSelecionado}-01-01`;
+        const end = `${anoSelecionado}-12-31`;
+        reservasMesQuery = reservasMesQuery.gte("data_fim", start).lte("data_fim", end);
+        reservasDetalhadasQuery = reservasDetalhadasQuery.gte("data_fim", start).lte("data_fim", end);
+        reservaCountQuery = reservaCountQuery.gte("data_fim", start).lte("data_fim", end);
+      }
+      // Se Ano é acumulado e Mês é fixo, filtramos no JS abaixo
+    }
     let imovelCountQuery = supabase.from("imoveis").select("*", { count: "exact", head: true });
 
     if (imovelIds) {
