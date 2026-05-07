@@ -342,7 +342,9 @@ const ProprietarioDashboard: React.FC = () => {
       .filter((r) => {
         const [y, m, d] = r.data_fim.split("-").map(Number);
         const fim = new Date(y, m - 1, d);
-        return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
+        const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
+        const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
+        return matchAno && matchMes;
       })
       .reduce((acc, r) => {
         const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
@@ -355,7 +357,9 @@ const ProprietarioDashboard: React.FC = () => {
         if (!m) return true;
         const [, y, mo, d] = m.map(Number) as unknown as number[];
         const data = new Date(y, mo - 1, d);
-        return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
+        const matchAno = filterAno === -1 || data.getFullYear() === filterAno;
+        const matchMes = filterMes === -1 || data.getMonth() === filterMes;
+        return matchAno && matchMes;
       })
       .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
