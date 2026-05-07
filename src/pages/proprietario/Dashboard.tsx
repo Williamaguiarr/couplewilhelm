@@ -745,6 +745,7 @@ const ProprietarioDashboard: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
+                        <SelectItem value="-1" className="text-xs font-semibold">Acumulado</SelectItem>
                         {anos.map((ano) => (
                           <SelectItem key={ano} value={String(ano)} className="text-xs">
                             {ano}
