@@ -433,6 +433,7 @@ const ProprietarioDashboard: React.FC = () => {
   const totalLiquido = totais.proprietario - totalDespesas;
 
   const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
+  const isAcumulado = filterMes === -1 || filterAno === -1;
 
   const gerarPDF = async () => {
     try {
