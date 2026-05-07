@@ -523,7 +523,13 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-1.5 py-1 shadow-sm">
-              <button onClick={() => navegarMes(-1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
+              <button 
+                onClick={() => navegarMes(-1)} 
+                disabled={mesSelecionado === -1}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
               <Select value={String(mesSelecionado)} onValueChange={(v) => setMesSelecionado(Number(v))}>
                 <SelectTrigger className="border-0 bg-transparent h-8 w-[108px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -538,7 +544,13 @@ const AdminDashboard: React.FC = () => {
                   {ANOS.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <button onClick={() => navegarMes(1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
+              <button 
+                onClick={() => navegarMes(1)} 
+                disabled={mesSelecionado === -1}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {proprietarios.length > 0 && (
