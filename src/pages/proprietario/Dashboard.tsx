@@ -449,7 +449,7 @@ const ProprietarioDashboard: React.FC = () => {
       subtitle: companyName,
       lines: [
         `Imóvel: ${imovelNome}`,
-        `Período: ${MESES[filterMes]} de ${filterAno}`,
+        `Período: ${filterMes === -1 ? "Todos os meses" : MESES[filterMes]} de ${filterAno === -1 ? "Todos os anos" : filterAno}`,
         genTimestamp(),
       ],
       palette, logoData, companyName, pageW,
