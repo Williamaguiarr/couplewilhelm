@@ -442,8 +442,8 @@ const AdminDashboard: React.FC = () => {
 
   const gerarPDF = async () => {
     try {
-      const mesNome = MESES[mesSelecionado];
-      const periodoLabel = `${mesNome} / ${anoSelecionado}`;
+      const mesNome = mesSelecionado === -1 ? "Acumulado" : MESES[mesSelecionado];
+      const periodoLabel = `${mesNome} / ${anoSelecionado === -1 ? "Todos os Anos" : anoSelecionado}`;
       const nomeProprietario = filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—";
       const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
       let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${periodoLabel}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
