@@ -367,10 +367,13 @@ const ProprietarioDashboard: React.FC = () => {
     .filter((r) => {
       const [y, m, d] = r.data_fim.split("-").map(Number);
       const fim = new Date(y, m - 1, d);
-      return (
-        fim > new Date() &&
-        !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
-      );
+      
+      const isFuture = fim > new Date();
+      if (!isFuture) return false;
+      
+      const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
+      const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
+      return matchAno && matchMes;
     })
     .reduce((acc, r) => {
       const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
