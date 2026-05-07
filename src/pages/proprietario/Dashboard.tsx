@@ -277,7 +277,11 @@ const ProprietarioDashboard: React.FC = () => {
     if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
     const [y, m, d] = r.data_fim.split("-").map(Number);
     const fim = new Date(y, m - 1, d);
-    return fim.getMonth() === filterMes && fim.getFullYear() === filterAno;
+    
+    const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
+    const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
+    
+    return matchAno && matchMes;
   });
 
   // Despesas: pelo campo data (mês da despesa)
@@ -285,7 +289,11 @@ const ProprietarioDashboard: React.FC = () => {
     if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
     const [y, m, day] = d.data.split("-").map(Number);
     const data = new Date(y, m - 1, day);
-    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
+    
+    const matchAno = filterAno === -1 || data.getFullYear() === filterAno;
+    const matchMes = filterMes === -1 || data.getMonth() === filterMes;
+    
+    return matchAno && matchMes;
   });
 
   // Ganhos extras: prioriza o mês de checkout da reserva vinculada, senão usa a data do lançamento.
@@ -299,7 +307,11 @@ const ProprietarioDashboard: React.FC = () => {
     if (!m) return true; // data inválida → não esconder (estratégia defensiva)
     const [, y, mo, d] = m.map(Number) as unknown as number[];
     const data = new Date(y, mo - 1, d);
-    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
+    
+    const matchAno = filterAno === -1 || data.getFullYear() === filterAno;
+    const matchMes = filterMes === -1 || data.getMonth() === filterMes;
+    
+    return matchAno && matchMes;
   });
 
   // Calcular métricas apenas para o imóvel selecionado
