@@ -628,7 +628,7 @@ const ProprietarioDashboard: React.FC = () => {
             className="gap-2 text-xs"
           >
             <FileText className="h-3.5 w-3.5" />
-            Gerar PDF — {MESES[filterMes]} {filterAno}
+            Gerar PDF — {filterMes === -1 ? "Acumulado" : MESES[filterMes]} {filterAno === -1 ? "Total" : filterAno}
           </Button>
         </div>
 
