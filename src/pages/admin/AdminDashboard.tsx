@@ -257,7 +257,7 @@ const AdminDashboard: React.FC = () => {
       imovelCountQuery = imovelCountQuery.in("id", imovelIds);
     }
 
-    const [{ count: propCount }, { count: imovelCount }, { count: reservaCount }, { data: reservasMes }, { data: reservasDetalhadas }] = await Promise.all([
+    const [propCountRes, imovelCountRes, reservaCountRes, reservasMesRes, reservasDetalhadasRes] = await Promise.all([
       supabase.from("admin_proprietarios").select("*", { count: "exact", head: true }),
       imovelCountQuery,
       reservaCountQuery,
@@ -265,18 +265,21 @@ const AdminDashboard: React.FC = () => {
       reservasDetalhadasQuery,
     ]);
 
-    const receitaMes = (reservasMes || []).reduce((acc, r) => {
-      const valorBruto = r.valor_bruto || 0;
-      const taxaLimpeza = r.taxa_limpeza || 0;
-      const comissaoPlataforma = (r as any).comissao_plataforma || 0;
-      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-      const rate = (r as any).taxa_comissao_reserva != null 
-        ? (r as any).taxa_comissao_reserva / 100 
-        : getOwnerRate((r as any).imovel_id);
-      const comissaoCW = valorLiquido * rate;
-      const valorProprietario = valorLiquido - comissaoCW;
-      return acc + valorProprietario;
-    }, 0);
+    const propCount = propCountRes.count;
+    const imovelCount = imovelCountRes.count;
+
+    const filterByDate = (dateStr: string) => {
+      if (!dateStr) return false;
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const matchAno = isAcumuladoAno || y === anoSelecionado;
+      const matchMes = isAcumuladoMes || (m - 1) === mesSelecionado;
+      return matchAno && matchMes;
+    };
+
+    const filteredReservasMes = (reservasMesRes.data || []).filter(r => filterByDate(r.data_fim));
+    const filteredReservasDetalhadas = (reservasDetalhadasRes.data || []).filter(r => filterByDate(r.data_fim));
+    const reservaCount = isAcumuladoMes || isAcumuladoAno ? filteredReservasDetalhadas.length : (reservaCountRes.count || 0);
+
     const { data: adminConfig } = await supabase.from("admin_configs").select("comissao_cw").single();
     const adminRate = adminConfig?.comissao_cw ?? 0.25;
 
