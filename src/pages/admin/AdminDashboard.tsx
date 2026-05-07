@@ -351,11 +351,7 @@ const AdminDashboard: React.FC = () => {
     const ganhosMes = (allGanhos || []).filter((g: any) => {
       const resData = Array.isArray(g.reservas) ? g.reservas[0] : g.reservas;
       const effectiveDate = resData?.data_fim || g.data;
-      
-      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate || "");
-      if (!m) return false;
-      const [, y, mo] = m.map(Number);
-      return (mo - 1) === mesSelecionado && y === anoSelecionado;
+      return filterByDate(effectiveDate);
     });
 
     const totaisGanhos = ganhosMes.reduce(
