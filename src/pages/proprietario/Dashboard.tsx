@@ -679,7 +679,7 @@ const ProprietarioDashboard: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-1">
-                    Líquido Final — {MESES[filterMes]} {filterAno}
+                    Líquido Final — {filterMes === -1 ? "Acumulado" : MESES[filterMes]} {filterAno === -1 ? "Total" : filterAno}
                   </p>
                   <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
                 </div>
