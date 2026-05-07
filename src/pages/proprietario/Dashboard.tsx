@@ -161,8 +161,9 @@ const ProprietarioDashboard: React.FC = () => {
   const now = new Date();
 
   // Filtros: mês e ano (baseado em data_fim - checkout)
-  const [filterMes, setFilterMes] = useState<number>(now.getMonth()); // 0-indexed
-  const [filterAno, setFilterAno] = useState<number>(now.getFullYear());
+  // -1 representa "Acumulado"
+  const [filterMes, setFilterMes] = useState<number>(now.getMonth()); // -1 to 11
+  const [filterAno, setFilterAno] = useState<number>(now.getFullYear()); // -1 for Acumulado
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
@@ -276,7 +277,11 @@ const ProprietarioDashboard: React.FC = () => {
     if (filterImovel !== "todos" && r.imovel_id !== filterImovel) return false;
     const [y, m, d] = r.data_fim.split("-").map(Number);
     const fim = new Date(y, m - 1, d);
-    return fim.getMonth() === filterMes && fim.getFullYear() === filterAno;
+    
+    const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
+    const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
+    
+    return matchAno && matchMes;
   });
 
   // Despesas: pelo campo data (mês da despesa)
@@ -284,7 +289,11 @@ const ProprietarioDashboard: React.FC = () => {
     if (filterImovel !== "todos" && d.imovel_id !== filterImovel) return false;
     const [y, m, day] = d.data.split("-").map(Number);
     const data = new Date(y, m - 1, day);
-    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
+    
+    const matchAno = filterAno === -1 || data.getFullYear() === filterAno;
+    const matchMes = filterMes === -1 || data.getMonth() === filterMes;
+    
+    return matchAno && matchMes;
   });
 
   // Ganhos extras: prioriza o mês de checkout da reserva vinculada, senão usa a data do lançamento.
@@ -298,7 +307,11 @@ const ProprietarioDashboard: React.FC = () => {
     if (!m) return true; // data inválida → não esconder (estratégia defensiva)
     const [, y, mo, d] = m.map(Number) as unknown as number[];
     const data = new Date(y, mo - 1, d);
-    return data.getMonth() === filterMes && data.getFullYear() === filterAno;
+    
+    const matchAno = filterAno === -1 || data.getFullYear() === filterAno;
+    const matchMes = filterMes === -1 || data.getMonth() === filterMes;
+    
+    return matchAno && matchMes;
   });
 
   // Calcular métricas apenas para o imóvel selecionado
@@ -329,7 +342,9 @@ const ProprietarioDashboard: React.FC = () => {
       .filter((r) => {
         const [y, m, d] = r.data_fim.split("-").map(Number);
         const fim = new Date(y, m - 1, d);
-        return fim.getMonth() === currentMonth && fim.getFullYear() === currentYear;
+        const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
+        const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
+        return matchAno && matchMes;
       })
       .reduce((acc, r) => {
         const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
@@ -342,7 +357,9 @@ const ProprietarioDashboard: React.FC = () => {
         if (!m) return true;
         const [, y, mo, d] = m.map(Number) as unknown as number[];
         const data = new Date(y, mo - 1, d);
-        return data.getMonth() === currentMonth && data.getFullYear() === currentYear;
+        const matchAno = filterAno === -1 || data.getFullYear() === filterAno;
+        const matchMes = filterMes === -1 || data.getMonth() === filterMes;
+        return matchAno && matchMes;
       })
       .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
@@ -350,10 +367,13 @@ const ProprietarioDashboard: React.FC = () => {
     .filter((r) => {
       const [y, m, d] = r.data_fim.split("-").map(Number);
       const fim = new Date(y, m - 1, d);
-      return (
-        fim > new Date() &&
-        !(fim.getMonth() === currentMonth && fim.getFullYear() === currentYear)
-      );
+      
+      const isFuture = fim > new Date();
+      if (!isFuture) return false;
+      
+      const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
+      const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
+      return matchAno && matchMes;
     })
     .reduce((acc, r) => {
       const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
@@ -420,6 +440,7 @@ const ProprietarioDashboard: React.FC = () => {
   const totalLiquido = totais.proprietario - totalDespesas;
 
   const isPeriodoAtual = filterMes === currentMonth && filterAno === currentYear;
+  const isAcumulado = filterMes === -1 || filterAno === -1;
 
   const gerarPDF = async () => {
     try {
@@ -435,7 +456,7 @@ const ProprietarioDashboard: React.FC = () => {
       subtitle: companyName,
       lines: [
         `Imóvel: ${imovelNome}`,
-        `Período: ${MESES[filterMes]} de ${filterAno}`,
+        `Período: ${filterMes === -1 ? "Todos os meses" : MESES[filterMes]} de ${filterAno === -1 ? "Todos os anos" : filterAno}`,
         genTimestamp(),
       ],
       palette, logoData, companyName, pageW,
@@ -607,7 +628,7 @@ const ProprietarioDashboard: React.FC = () => {
             className="gap-2 text-xs"
           >
             <FileText className="h-3.5 w-3.5" />
-            Gerar PDF — {MESES[filterMes]} {filterAno}
+            Gerar PDF — {filterMes === -1 ? "Acumulado" : MESES[filterMes]} {filterAno === -1 ? "Total" : filterAno}
           </Button>
         </div>
 
@@ -618,13 +639,15 @@ const ProprietarioDashboard: React.FC = () => {
           <BentoBox className="lg:col-span-2">
             <div className="flex items-start justify-between">
               <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Receita do Mês</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                  {filterMes === -1 && filterAno === -1 ? "Receita Total" : "Receita do Período"}
+                </p>
                 {loading ? (
                   <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
                 ) : (
                   <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(receitaMesAtual)}</p>
                 )}
-                <p className="text-xs text-muted-foreground/70">Checkouts neste mês</p>
+                <p className="text-xs text-muted-foreground/70">Checkouts {filterMes === -1 ? "em todos os meses" : "neste período"}</p>
               </div>
               <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -656,7 +679,7 @@ const ProprietarioDashboard: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-1">
-                    Líquido Final — {MESES[filterMes]} {filterAno}
+                    Líquido Final — {filterMes === -1 ? "Acumulado" : MESES[filterMes]} {filterAno === -1 ? "Total" : filterAno}
                   </p>
                   <p className="text-xs text-muted-foreground">Repasse − Despesas Extras − Custos Fixos</p>
                 </div>
@@ -714,6 +737,7 @@ const ProprietarioDashboard: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
+                        <SelectItem value="-1" className="text-xs font-semibold">Acumulado</SelectItem>
                         {MESES.map((nome, idx) => (
                           <SelectItem key={idx} value={String(idx)} className="text-xs">
                             {nome}
@@ -730,6 +754,7 @@ const ProprietarioDashboard: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
+                        <SelectItem value="-1" className="text-xs font-semibold">Acumulado</SelectItem>
                         {anos.map((ano) => (
                           <SelectItem key={ano} value={String(ano)} className="text-xs">
                             {ano}
@@ -762,7 +787,9 @@ const ProprietarioDashboard: React.FC = () => {
                   </div>
                 ) : reservasFiltradas.length === 0 ? (
                   <div className="p-10 text-center">
-                    <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
+                    <p className="text-muted-foreground text-sm">
+                      Nenhuma reserva com checkout em {filterMes === -1 ? "todos os meses" : MESES[filterMes]} de {filterAno === -1 ? "todos os anos" : filterAno}
+                    </p>
                   </div>
                 ) : (
                   <>

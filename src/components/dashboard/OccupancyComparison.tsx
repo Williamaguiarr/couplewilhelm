@@ -227,8 +227,8 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     const load = async () => {
       setLoading(true);
 
-      // Fetch current year, prior year, and next year to support all filters
-      const years = [ano - 1, ano, ano + 1];
+      const baseYear = ano === -1 ? currentYear : ano;
+      const years = [baseYear - 1, baseYear, baseYear + 1];
       const allPromises: Promise<MonthData>[] = [];
       for (const y of years) {
         for (let m = 0; m < 12; m++) {
@@ -364,8 +364,8 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
 
   const periodLabels: Record<PeriodFilter, string> = {
-    ytd: `${ano} até hoje`,
-    last_year: `${ano - 1} completo`,
+    ytd: ano === -1 ? "Este ano até hoje" : `${ano} até hoje`,
+    last_year: ano === -1 ? "Ano passado completo" : `${ano - 1} completo`,
     last3_next9: "Últimos 3 e próximos 9 meses",
     last12: "Últimos 12 meses",
     next12: "Próximos 12 meses",

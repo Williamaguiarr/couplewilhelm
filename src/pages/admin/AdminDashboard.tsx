@@ -209,8 +209,11 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
-    const firstDay = new Date(anoSelecionado, mesSelecionado, 1).toISOString().split("T")[0];
-    const lastDay = new Date(anoSelecionado, mesSelecionado + 1, 0).toISOString().split("T")[0];
+    const isAcumuladoMes = mesSelecionado === -1;
+    const isAcumuladoAno = anoSelecionado === -1;
+
+    const firstDay = isAcumuladoMes ? (isAcumuladoAno ? "1970-01-01" : `${anoSelecionado}-01-01`) : (isAcumuladoAno ? "1970-01-01" : new Date(anoSelecionado, mesSelecionado, 1).toISOString().split("T")[0]);
+    const lastDay = isAcumuladoMes ? (isAcumuladoAno ? "2099-12-31" : `${anoSelecionado}-12-31`) : (isAcumuladoAno ? "2099-12-31" : new Date(anoSelecionado, mesSelecionado + 1, 0).toISOString().split("T")[0]);
 
     let imovelIds: string[] | null = null;
     if (filtroProprietario !== "todos" && imoveis.length > 0) {
@@ -226,9 +229,25 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
-    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", firstDay).lte("data_fim", lastDay);
-    let reservaCountQuery = supabase.from("reservas").select("*", { count: "exact", head: true }).gte("data_fim", firstDay).lte("data_fim", lastDay);
+    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim");
+    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim");
+    let reservaCountQuery = supabase.from("reservas").select("id, data_fim");
+
+    if (!isAcumuladoMes || !isAcumuladoAno) {
+      if (!isAcumuladoMes && !isAcumuladoAno) {
+        reservasMesQuery = reservasMesQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
+        reservasDetalhadasQuery = reservasDetalhadasQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
+        reservaCountQuery = reservaCountQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
+      } else if (!isAcumuladoAno) {
+        // Ano fixo, Mes acumulado
+        const start = `${anoSelecionado}-01-01`;
+        const end = `${anoSelecionado}-12-31`;
+        reservasMesQuery = reservasMesQuery.gte("data_fim", start).lte("data_fim", end);
+        reservasDetalhadasQuery = reservasDetalhadasQuery.gte("data_fim", start).lte("data_fim", end);
+        reservaCountQuery = reservaCountQuery.gte("data_fim", start).lte("data_fim", end);
+      }
+      // Se Ano é acumulado e Mês é fixo, filtramos no JS abaixo
+    }
     let imovelCountQuery = supabase.from("imoveis").select("*", { count: "exact", head: true });
 
     if (imovelIds) {
@@ -238,7 +257,7 @@ const AdminDashboard: React.FC = () => {
       imovelCountQuery = imovelCountQuery.in("id", imovelIds);
     }
 
-    const [{ count: propCount }, { count: imovelCount }, { count: reservaCount }, { data: reservasMes }, { data: reservasDetalhadas }] = await Promise.all([
+    const [propCountRes, imovelCountRes, reservaCountRes, reservasMesRes, reservasDetalhadasRes] = await Promise.all([
       supabase.from("admin_proprietarios").select("*", { count: "exact", head: true }),
       imovelCountQuery,
       reservaCountQuery,
@@ -246,18 +265,21 @@ const AdminDashboard: React.FC = () => {
       reservasDetalhadasQuery,
     ]);
 
-    const receitaMes = (reservasMes || []).reduce((acc, r) => {
-      const valorBruto = r.valor_bruto || 0;
-      const taxaLimpeza = r.taxa_limpeza || 0;
-      const comissaoPlataforma = (r as any).comissao_plataforma || 0;
-      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-      const rate = (r as any).taxa_comissao_reserva != null 
-        ? (r as any).taxa_comissao_reserva / 100 
-        : getOwnerRate((r as any).imovel_id);
-      const comissaoCW = valorLiquido * rate;
-      const valorProprietario = valorLiquido - comissaoCW;
-      return acc + valorProprietario;
-    }, 0);
+    const propCount = propCountRes.count;
+    const imovelCount = imovelCountRes.count;
+
+    const filterByDate = (dateStr: string) => {
+      if (!dateStr) return false;
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const matchAno = isAcumuladoAno || y === anoSelecionado;
+      const matchMes = isAcumuladoMes || (m - 1) === mesSelecionado;
+      return matchAno && matchMes;
+    };
+
+    const filteredReservasMes = (reservasMesRes.data || []).filter(r => filterByDate(r.data_fim));
+    const filteredReservasDetalhadas = (reservasDetalhadasRes.data || []).filter(r => filterByDate(r.data_fim));
+    const reservaCount = isAcumuladoMes || isAcumuladoAno ? filteredReservasDetalhadas.length : (reservaCountRes.count || 0);
+
     const { data: adminConfig } = await supabase.from("admin_configs").select("comissao_cw").single();
     const adminRate = adminConfig?.comissao_cw ?? 0.25;
 
@@ -281,7 +303,20 @@ const AdminDashboard: React.FC = () => {
       return adminRate;
     };
 
-    const totaisReservas = (reservasDetalhadas || []).reduce(
+    const receitaMes = filteredReservasMes.reduce((acc, r) => {
+      const valorBruto = r.valor_bruto || 0;
+      const taxaLimpeza = r.taxa_limpeza || 0;
+      const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+      const rate = (r as any).taxa_comissao_reserva != null 
+        ? (r as any).taxa_comissao_reserva / 100 
+        : getOwnerRate((r as any).imovel_id);
+      const comissaoCW = valorLiquido * rate;
+      const valorProprietario = valorLiquido - comissaoCW;
+      return acc + valorProprietario;
+    }, 0);
+
+    const totaisReservas = (filteredReservasDetalhadas || []).reduce(
       (acc, r) => {
         const valorBruto = r.valor_bruto || 0;
         const taxaLimpeza = r.taxa_limpeza || 0;
@@ -316,11 +351,7 @@ const AdminDashboard: React.FC = () => {
     const ganhosMes = (allGanhos || []).filter((g: any) => {
       const resData = Array.isArray(g.reservas) ? g.reservas[0] : g.reservas;
       const effectiveDate = resData?.data_fim || g.data;
-      
-      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate || "");
-      if (!m) return false;
-      const [, y, mo] = m.map(Number);
-      return (mo - 1) === mesSelecionado && y === anoSelecionado;
+      return filterByDate(effectiveDate);
     });
 
     const totaisGanhos = ganhosMes.reduce(
@@ -354,7 +385,9 @@ const AdminDashboard: React.FC = () => {
       valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
     };
 
-    const futureStart = new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
+    const futureStart = (isAcumuladoMes || isAcumuladoAno) 
+      ? new Date().toISOString().split("T")[0]
+      : new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
     let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", futureStart);
     if (imovelIds) futureQuery = futureQuery.in("imovel_id", imovelIds);
     const { data: futureReservas } = await futureQuery;
@@ -423,8 +456,8 @@ const AdminDashboard: React.FC = () => {
 
   const gerarPDF = async () => {
     try {
-      const mesNome = MESES[mesSelecionado];
-      const periodoLabel = `${mesNome} / ${anoSelecionado}`;
+      const mesNome = mesSelecionado === -1 ? "Acumulado" : MESES[mesSelecionado];
+      const periodoLabel = `${mesNome} / ${anoSelecionado === -1 ? "Todos os Anos" : anoSelecionado}`;
       const nomeProprietario = filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—";
       const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
       let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${periodoLabel}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
@@ -447,14 +480,20 @@ const AdminDashboard: React.FC = () => {
       ];
       autoTable(doc, { startY: y, head: [["Descrição", "Valor", "Observação"]], body: finData, ...premiumTableStyles(palette), columnStyles: { 1: { halign: "right", fontStyle: "bold" }, 2: { textColor: [130, 130, 130], fontSize: 7 } } });
       drawFooterAllPages(doc, palette, companyName, pageW, pageH);
-      doc.save(`relatorio_${mesNome}_${anoSelecionado}.pdf`);
+      doc.save(`relatorio_${mesNome}_${anoSelecionado === -1 ? "TodosAnos" : anoSelecionado}.pdf`);
       toast({ title: "Relatório gerado!" });
     } catch (err) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); }
   };
 
-  const despesasFiltradas = filtroProprietario === "todos" ? despesas : despesas.filter(d => {
+  const despesasFiltradas = despesas.filter(d => {
     const im = imoveis.find(i => i.id === d.imovel_id);
-    return im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
+    const matchProp = filtroProprietario === "todos" || im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
+    if (!matchProp) return false;
+    
+    const [y, m] = d.data.split("-").map(Number);
+    const matchAno = anoSelecionado === -1 || y === anoSelecionado;
+    const matchMes = mesSelecionado === -1 || (m - 1) === mesSelecionado;
+    return matchAno && matchMes;
   });
 
   const cards = [
@@ -484,16 +523,34 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-1.5 py-1 shadow-sm">
-              <button onClick={() => navegarMes(-1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
+              <button 
+                onClick={() => navegarMes(-1)} 
+                disabled={mesSelecionado === -1}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
               <Select value={String(mesSelecionado)} onValueChange={(v) => setMesSelecionado(Number(v))}>
                 <SelectTrigger className="border-0 bg-transparent h-8 w-[108px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{MESES.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  <SelectItem value="-1" className="font-semibold">Acumulado</SelectItem>
+                  {MESES.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+                </SelectContent>
               </Select>
               <Select value={String(anoSelecionado)} onValueChange={(v) => setAnoSelecionado(Number(v))}>
                 <SelectTrigger className="border-0 bg-transparent h-8 w-[68px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{ANOS.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  <SelectItem value="-1" className="font-semibold">Acumulado</SelectItem>
+                  {ANOS.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                </SelectContent>
               </Select>
-              <button onClick={() => navegarMes(1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
+              <button 
+                onClick={() => navegarMes(1)} 
+                disabled={mesSelecionado === -1}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {proprietarios.length > 0 && (
