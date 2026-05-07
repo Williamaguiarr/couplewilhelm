@@ -778,7 +778,9 @@ const ProprietarioDashboard: React.FC = () => {
                   </div>
                 ) : reservasFiltradas.length === 0 ? (
                   <div className="p-10 text-center">
-                    <p className="text-muted-foreground text-sm">Nenhuma reserva com checkout em {MESES[filterMes]} de {filterAno}</p>
+                    <p className="text-muted-foreground text-sm">
+                      Nenhuma reserva com checkout em {filterMes === -1 ? "todos os meses" : MESES[filterMes]} de {filterAno === -1 ? "todos os anos" : filterAno}
+                    </p>
                   </div>
                 ) : (
                   <>
