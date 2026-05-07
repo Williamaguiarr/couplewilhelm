@@ -212,9 +212,6 @@ const AdminDashboard: React.FC = () => {
     const isAcumuladoMes = mesSelecionado === -1;
     const isAcumuladoAno = anoSelecionado === -1;
 
-    const isAcumuladoMes = mesSelecionado === -1;
-    const isAcumuladoAno = anoSelecionado === -1;
-
     const firstDay = isAcumuladoMes ? (isAcumuladoAno ? "1970-01-01" : `${anoSelecionado}-01-01`) : (isAcumuladoAno ? "1970-01-01" : new Date(anoSelecionado, mesSelecionado, 1).toISOString().split("T")[0]);
     const lastDay = isAcumuladoMes ? (isAcumuladoAno ? "2099-12-31" : `${anoSelecionado}-12-31`) : (isAcumuladoAno ? "2099-12-31" : new Date(anoSelecionado, mesSelecionado + 1, 0).toISOString().split("T")[0]);
 
