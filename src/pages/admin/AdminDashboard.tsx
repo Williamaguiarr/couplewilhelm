@@ -466,7 +466,7 @@ const AdminDashboard: React.FC = () => {
       ];
       autoTable(doc, { startY: y, head: [["Descrição", "Valor", "Observação"]], body: finData, ...premiumTableStyles(palette), columnStyles: { 1: { halign: "right", fontStyle: "bold" }, 2: { textColor: [130, 130, 130], fontSize: 7 } } });
       drawFooterAllPages(doc, palette, companyName, pageW, pageH);
-      doc.save(`relatorio_${mesNome}_${anoSelecionado}.pdf`);
+      doc.save(`relatorio_${mesNome}_${anoSelecionado === -1 ? "TodosAnos" : anoSelecionado}.pdf`);
       toast({ title: "Relatório gerado!" });
     } catch (err) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); }
   };
