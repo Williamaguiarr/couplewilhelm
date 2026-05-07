@@ -161,8 +161,9 @@ const ProprietarioDashboard: React.FC = () => {
   const now = new Date();
 
   // Filtros: mês e ano (baseado em data_fim - checkout)
-  const [filterMes, setFilterMes] = useState<number>(now.getMonth()); // 0-indexed
-  const [filterAno, setFilterAno] = useState<number>(now.getFullYear());
+  // -1 representa "Acumulado"
+  const [filterMes, setFilterMes] = useState<number>(now.getMonth()); // -1 to 11
+  const [filterAno, setFilterAno] = useState<number>(now.getFullYear()); // -1 for Acumulado
   const [filterImovel, setFilterImovel] = useState<string>("todos");
   const [extratoAberto, setExtratoAberto] = useState(true);
   const [totalCustosFixos, setTotalCustosFixos] = useState(0);
