@@ -506,11 +506,17 @@ const AdminDashboard: React.FC = () => {
               <button onClick={() => navegarMes(-1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronLeft className="h-3.5 w-3.5" /></button>
               <Select value={String(mesSelecionado)} onValueChange={(v) => setMesSelecionado(Number(v))}>
                 <SelectTrigger className="border-0 bg-transparent h-8 w-[108px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{MESES.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  <SelectItem value="-1" className="font-semibold">Acumulado</SelectItem>
+                  {MESES.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+                </SelectContent>
               </Select>
               <Select value={String(anoSelecionado)} onValueChange={(v) => setAnoSelecionado(Number(v))}>
                 <SelectTrigger className="border-0 bg-transparent h-8 w-[68px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{ANOS.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  <SelectItem value="-1" className="font-semibold">Acumulado</SelectItem>
+                  {ANOS.map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                </SelectContent>
               </Select>
               <button onClick={() => navegarMes(1)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><ChevronRight className="h-3.5 w-3.5" /></button>
             </div>
