@@ -471,9 +471,15 @@ const AdminDashboard: React.FC = () => {
     } catch (err) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); }
   };
 
-  const despesasFiltradas = filtroProprietario === "todos" ? despesas : despesas.filter(d => {
+  const despesasFiltradas = despesas.filter(d => {
     const im = imoveis.find(i => i.id === d.imovel_id);
-    return im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
+    const matchProp = filtroProprietario === "todos" || im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
+    if (!matchProp) return false;
+    
+    const [y, m] = d.data.split("-").map(Number);
+    const matchAno = anoSelecionado === -1 || y === anoSelecionado;
+    const matchMes = mesSelecionado === -1 || (m - 1) === mesSelecionado;
+    return matchAno && matchMes;
   });
 
   const cards = [
