@@ -639,7 +639,9 @@ const ProprietarioDashboard: React.FC = () => {
           <BentoBox className="lg:col-span-2">
             <div className="flex items-start justify-between">
               <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Receita do Mês</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                  {filterMes === -1 && filterAno === -1 ? "Receita Total" : "Receita do Período"}
+                </p>
                 {loading ? (
                   <div className="h-9 w-36 bg-muted animate-pulse rounded-lg" />
                 ) : (
