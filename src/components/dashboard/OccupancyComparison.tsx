@@ -227,8 +227,8 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     const load = async () => {
       setLoading(true);
 
-      // Fetch current year, prior year, and next year to support all filters
-      const years = [ano - 1, ano, ano + 1];
+      const baseYear = ano === -1 ? currentYear : ano;
+      const years = [baseYear - 1, baseYear, baseYear + 1];
       const allPromises: Promise<MonthData>[] = [];
       for (const y of years) {
         for (let m = 0; m < 12; m++) {
