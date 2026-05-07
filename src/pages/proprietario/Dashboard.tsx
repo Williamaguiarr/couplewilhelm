@@ -728,6 +728,7 @@ const ProprietarioDashboard: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
+                        <SelectItem value="-1" className="text-xs font-semibold">Acumulado</SelectItem>
                         {MESES.map((nome, idx) => (
                           <SelectItem key={idx} value={String(idx)} className="text-xs">
                             {nome}
