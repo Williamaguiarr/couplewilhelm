@@ -328,12 +328,10 @@ const SimuladorDiaria: React.FC = () => {
                   <Label className="text-sm font-medium text-foreground">
                     Diária que você quer testar (R$)
                   </Label>
-                  <Input
-                    type="number"
+                  <CurrencyInput
                     value={diariaTeste}
-                    onChange={(e) => setDiariaTeste(Math.max(0, Number(e.target.value) || 0))}
+                    onChange={(v) => setDiariaTeste(Number(v))}
                     className="bg-background border-border"
-                    min={0}
                   />
                 </div>
 
