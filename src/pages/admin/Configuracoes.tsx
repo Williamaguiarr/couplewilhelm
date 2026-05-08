@@ -680,10 +680,10 @@ const Configuracoes: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Simulador */}
+                {/* Exemplo de Repasse */}
                 <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest">
-                    Simulação (base de R$ 1.000,00)
+                    Exemplo de Repasse (base de R$ 1.000,00)
                   </p>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
