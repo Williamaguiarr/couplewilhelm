@@ -10,7 +10,7 @@ import {
   Settings,
   ShieldCheck,
   CalendarRange,
-  Calculator,
+  
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,7 +42,7 @@ const adminItems = [
   { title: "Imóveis", url: "/admin/imoveis", icon: Building2 },
   { title: "Reservas", url: "/admin/reservas", icon: CalendarDays },
   { title: "Calendário", url: "/admin/calendario", icon: CalendarRange },
-  { title: "Simulador", url: "/admin/simulador", icon: Calculator },
+  
   { title: "Configurações", url: "/admin/configuracoes", icon: Settings },
 ];
 
