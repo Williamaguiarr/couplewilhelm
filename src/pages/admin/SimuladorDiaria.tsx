@@ -254,13 +254,10 @@ const SimuladorDiaria: React.FC = () => {
                 <Label className="text-sm font-medium text-foreground">
                   Lucro desejado no mês (R$) <span className="text-muted-foreground font-normal text-xs">opcional</span>
                 </Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={lucroDesejado}
-                  onChange={(e) => setLucroDesejado(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(v) => setLucroDesejado(Number(v))}
                   className="bg-background border-border"
-                  min={0}
-                  step={0.01}
                 />
               </div>
 
