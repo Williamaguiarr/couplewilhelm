@@ -23,7 +23,7 @@ const Login: React.FC = () => {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, forceLogin } = useAuth();
 
   React.useEffect(() => {
     // Check if we already have a session but role isn't loaded yet
