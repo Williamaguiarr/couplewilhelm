@@ -318,13 +318,9 @@ const GanhosExtrasDialog: React.FC<Props> = ({
             </div>
             <div className="space-y-1.5">
               <Label className="text-muted-foreground text-xs uppercase tracking-wide">Valor (R$) *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
+              <CurrencyInput
                 value={form.valor}
-                onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                placeholder="0,00"
+                onChange={(v) => setForm({ ...form, valor: v })}
                 className="bg-background"
               />
             </div>
