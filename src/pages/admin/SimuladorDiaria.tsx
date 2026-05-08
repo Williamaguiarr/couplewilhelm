@@ -215,13 +215,10 @@ const SimuladorDiaria: React.FC = () => {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={custosFixos}
-                  onChange={(e) => setCustosFixos(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(v) => setCustosFixos(Number(v))}
                   className="bg-background border-border"
-                  min={0}
-                  step={0.01}
                 />
               </div>
 
