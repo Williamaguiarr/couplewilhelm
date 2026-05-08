@@ -225,25 +225,17 @@ const ReservaFormFields = ({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
+          <CurrencyInput
             value={form.valor_bruto}
-            onChange={(e) => setForm({ ...form, valor_bruto: e.target.value })}
-            placeholder="0,00"
+            onChange={(v) => setForm({ ...form, valor_bruto: v })}
             className="bg-background"
           />
         </div>
         <div className="space-y-2">
           <Label className="text-muted-foreground">Taxa de Limpeza (R$)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
+          <CurrencyInput
             value={form.taxa_limpeza}
-            onChange={(e) => setForm({ ...form, taxa_limpeza: e.target.value })}
-            placeholder="0,00"
+            onChange={(v) => setForm({ ...form, taxa_limpeza: v })}
             className="bg-background"
           />
         </div>
