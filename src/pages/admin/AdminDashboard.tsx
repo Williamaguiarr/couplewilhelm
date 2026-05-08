@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -669,7 +670,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Tipo</Label><Select value={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TIPOS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
                 <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Data</Label><Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} /></div>
               </div>
-              <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Valor (R$)</Label><Input value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} placeholder="0,00" /></div>
+              <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Valor (R$)</Label><CurrencyInput value={form.valor} onChange={(v) => setForm({ ...form, valor: v })} placeholder="0,00" /></div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button><Button onClick={handleSave} disabled={saving}>Salvar</Button></DialogFooter>
           </DialogContent>

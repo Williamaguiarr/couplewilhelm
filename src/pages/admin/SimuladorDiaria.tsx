@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import {
   Select,
   SelectContent,
@@ -214,13 +215,10 @@ const SimuladorDiaria: React.FC = () => {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={custosFixos}
-                  onChange={(e) => setCustosFixos(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(v) => setCustosFixos(Number(v))}
                   className="bg-background border-border"
-                  min={0}
-                  step={0.01}
                 />
               </div>
 
@@ -229,12 +227,10 @@ const SimuladorDiaria: React.FC = () => {
                 <Label className="text-sm font-medium text-foreground">
                   Custo médio por reserva (limpeza + reposição)
                 </Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={custoReserva}
-                  onChange={(e) => setCustoReserva(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(v) => setCustoReserva(Number(v))}
                   className="bg-background border-border"
-                  min={0}
                 />
               </div>
 
@@ -258,13 +254,10 @@ const SimuladorDiaria: React.FC = () => {
                 <Label className="text-sm font-medium text-foreground">
                   Lucro desejado no mês (R$) <span className="text-muted-foreground font-normal text-xs">opcional</span>
                 </Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={lucroDesejado}
-                  onChange={(e) => setLucroDesejado(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(v) => setLucroDesejado(Number(v))}
                   className="bg-background border-border"
-                  min={0}
-                  step={0.01}
                 />
               </div>
 
@@ -335,12 +328,10 @@ const SimuladorDiaria: React.FC = () => {
                   <Label className="text-sm font-medium text-foreground">
                     Diária que você quer testar (R$)
                   </Label>
-                  <Input
-                    type="number"
+                  <CurrencyInput
                     value={diariaTeste}
-                    onChange={(e) => setDiariaTeste(Math.max(0, Number(e.target.value) || 0))}
+                    onChange={(v) => setDiariaTeste(Number(v))}
                     className="bg-background border-border"
-                    min={0}
                   />
                 </div>
 
