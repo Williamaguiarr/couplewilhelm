@@ -25,24 +25,10 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { role, forceLogin } = useAuth();
 
-  React.useEffect(() => {
-    // Check if we already have a session but role isn't loaded yet
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && !role) {
-        // Force navigate based on roles if context hasn't updated
-        const { data: rolesData } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id);
-        const roles = (rolesData || []).map(r => r.role);
-        if (roles.includes("master")) navigate("/master", { replace: true });
-        else if (roles.includes("admin")) navigate("/admin", { replace: true });
-        else if (roles.includes("proprietario")) navigate("/dashboard", { replace: true });
-      }
-    };
-
+  useEffect(() => {
     if (role === "master") navigate("/master", { replace: true });
     else if (role === "admin") navigate("/admin", { replace: true });
     else if (role === "proprietario") navigate("/dashboard", { replace: true });
-    else checkSession();
   }, [role, navigate]);
 
   // Spotlight tracking
