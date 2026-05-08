@@ -247,13 +247,9 @@ const ReservaFormFields = ({
           Comissão Plataforma OTA (R$)
           <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">ex: Booking.com — deduzida antes da CW</span>
         </Label>
-        <Input
-          type="number"
-          step="0.01"
-          min="0"
+        <CurrencyInput
           value={form.comissao_plataforma}
-          onChange={(e) => setForm({ ...form, comissao_plataforma: e.target.value })}
-          placeholder="0,00 (opcional)"
+          onChange={(v) => setForm({ ...form, comissao_plataforma: v })}
           className="bg-background"
         />
       </div>
