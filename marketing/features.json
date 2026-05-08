@@ -1,0 +1,46 @@
+{
+  "system_name": "Couple Wilhelm",
+  "tagline": "Transparência e eficiência na gestão de aluguéis por temporada",
+  "brand_colors": {
+    "primary": "#0A192F",
+    "secondary": "#C5A059"
+  },
+  "features": [
+    {
+      "title": "Dashboard de Performance",
+      "description": "Visualização clara de lucros, taxas e ocupação com gráficos interativos.",
+      "icon": "TrendingUp"
+    },
+    {
+      "title": "Filtros Acumulados",
+      "description": "Analise períodos completos (ex: ano todo) sem complicações.",
+      "icon": "Calendar"
+    },
+    {
+      "title": "Portal do Proprietário",
+      "description": "Acesso exclusivo para cada dono de imóvel acompanhar seus rendimentos.",
+      "icon": "UserCheck"
+    },
+    {
+      "title": "Relatórios em PDF",
+      "description": "Exportação profissional de extratos financeiros com branding personalizado.",
+      "icon": "FileText"
+    },
+    {
+      "title": "Gestão de White-Label",
+      "description": "Personalize o sistema com a sua própria logo para os seus clientes.",
+      "icon": "Palette"
+    },
+    {
+      "title": "Gestão Financeira",
+      "description": "Controle total de comissões, ganhos extras e despesas fixas/variáveis.",
+      "icon": "DollarSign"
+    }
+  ],
+  "technical_highlights": [
+    "PWA Ready (Instale como App)",
+    "Segurança de dados via Supabase RLS",
+    "Interface responsiva (Mobile & Desktop)",
+    "Otimizado para SEO e performance"
+  ]
+}
