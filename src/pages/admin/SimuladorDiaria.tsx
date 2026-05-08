@@ -227,12 +227,10 @@ const SimuladorDiaria: React.FC = () => {
                 <Label className="text-sm font-medium text-foreground">
                   Custo médio por reserva (limpeza + reposição)
                 </Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={custoReserva}
-                  onChange={(e) => setCustoReserva(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(v) => setCustoReserva(Number(v))}
                   className="bg-background border-border"
-                  min={0}
                 />
               </div>
 
