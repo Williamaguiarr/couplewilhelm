@@ -141,8 +141,11 @@ Deno.serve(async (req) => {
   // ── Auth check ────────────────────────────────────────────────────────
   const authHeader = req.headers.get("Authorization");
   const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
+  // Cron job calls this function with the anon key as Bearer (no user attached).
+  // We treat that as an automated/system call.
+  const isAnonAutomated = authHeader === `Bearer ${anonKey}`;
 
-  if (!isServiceRole) {
+  if (!isServiceRole && !isAnonAutomated) {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
