@@ -118,6 +118,8 @@ const emptyForm = {
   taxa_comissao_reserva: "",
   observacoes: "",
   num_hospedes: "",
+  hora_checkin_override: "",
+  hora_checkout_override: "",
 };
 
 const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null => {
