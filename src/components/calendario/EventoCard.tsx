@@ -36,6 +36,13 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
   const isOverride = isCheckin
     ? !!evento.reserva.hora_checkin_override
     : !!evento.reserva.hora_checkout_override;
+  const horaPadraoImovel = isCheckin
+    ? evento.imovel.hora_checkin?.slice(0, 5)
+    : evento.imovel.hora_checkout?.slice(0, 5);
+  const tipoLabel = isCheckin ? "Check-in" : "Check-out";
+  const tooltipHora = isOverride
+    ? `Override aplicado · ${tipoLabel} efetivo: ${evento.hora}${horaPadraoImovel ? ` (padrão do imóvel: ${horaPadraoImovel})` : ""}`
+    : `${tipoLabel} padrão do imóvel: ${evento.hora}`;
 
   return (
     <div
