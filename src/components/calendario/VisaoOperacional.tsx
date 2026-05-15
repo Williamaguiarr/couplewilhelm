@@ -277,7 +277,7 @@ export default function VisaoOperacional() {
             <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />
           ))}
         </div>
-      ) : eventosPorDia.length === 0 ? (
+      ) : semEventos ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-center border border-dashed border-border rounded-xl">
           <CalendarDays className="h-10 w-10 text-muted-foreground/30" />
           <p className="text-sm text-muted-foreground">
@@ -285,33 +285,25 @@ export default function VisaoOperacional() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {eventosPorDia.map(([dia, evs]) => {
-            const ci = evs.filter((e) => e.tipo === "checkin").length;
-            const co = evs.filter((e) => e.tipo === "checkout").length;
-            return (
-              <div key={dia} className="space-y-2">
-                <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-1 z-10">
-                  <h3 className="font-display text-sm sm:text-base text-foreground capitalize">
-                    {formatarDiaLabel(dia)}
-                  </h3>
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                      {ci} entrada{ci !== 1 ? "s" : ""}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
-                      {co} saída{co !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                  {evs.map((e) => (
-                    <EventoCard key={e.id} evento={e} onAbrirLimpeza={setEventoEdit} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          {/* Coluna Check-ins */}
+          <ColunaOperacional
+            titulo="Check-ins"
+            tone="checkin"
+            total={totalCheckins}
+            grupos={checkinsPorDia}
+            formatarDiaLabel={formatarDiaLabel}
+            onAbrirLimpeza={setEventoEdit}
+          />
+          {/* Coluna Check-outs */}
+          <ColunaOperacional
+            titulo="Check-outs"
+            tone="checkout"
+            total={totalCheckouts}
+            grupos={checkoutsPorDia}
+            formatarDiaLabel={formatarDiaLabel}
+            onAbrirLimpeza={setEventoEdit}
+          />
         </div>
       )}
 
@@ -320,6 +312,89 @@ export default function VisaoOperacional() {
         onClose={() => setEventoEdit(null)}
         onSaved={fetchData}
       />
+    </div>
+  );
+}
+
+function ColunaOperacional({
+  titulo,
+  tone,
+  total,
+  grupos,
+  formatarDiaLabel,
+  onAbrirLimpeza,
+}: {
+  titulo: string;
+  tone: "checkin" | "checkout";
+  total: number;
+  grupos: ReadonlyArray<readonly [string, EventoOperacional[]]>;
+  formatarDiaLabel: (iso: string) => string;
+  onAbrirLimpeza: (e: EventoOperacional) => void;
+}) {
+  const isIn = tone === "checkin";
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-xl border bg-card overflow-hidden",
+        isIn ? "border-emerald-500/30" : "border-rose-500/30"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-between px-4 py-3 border-b",
+          isIn
+            ? "bg-emerald-500/5 border-emerald-500/20"
+            : "bg-rose-500/5 border-rose-500/20"
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              isIn ? "bg-emerald-500" : "bg-rose-500"
+            )}
+          />
+          <h3 className="font-display text-sm sm:text-base text-foreground">
+            {titulo}
+          </h3>
+        </div>
+        <span
+          className={cn(
+            "text-xs font-semibold px-2.5 py-1 rounded-full tabular-nums",
+            isIn
+              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+              : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+          )}
+        >
+          {total} {total === 1 ? (isIn ? "entrada" : "saída") : isIn ? "entradas" : "saídas"}
+        </span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto max-h-[70vh] lg:max-h-[calc(100vh-360px)] p-3 space-y-4">
+        {total === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+            <CalendarDays className="h-8 w-8 text-muted-foreground/30" />
+            <p className="text-xs text-muted-foreground">
+              Sem {isIn ? "check-ins" : "check-outs"} no período.
+            </p>
+          </div>
+        ) : (
+          grupos.map(([dia, evs]) => (
+            <div key={dia} className="space-y-2">
+              <div className="sticky top-0 -mx-3 px-3 py-1 bg-card/95 backdrop-blur z-10">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground capitalize">
+                  {formatarDiaLabel(dia)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                {evs.map((e) => (
+                  <EventoCard key={e.id} evento={e} onAbrirLimpeza={onAbrirLimpeza} />
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
