@@ -67,6 +67,8 @@ interface Reserva {
   observacoes: string | null;
   imovel_id: string;
   num_hospedes: number | null;
+  hora_checkin_override: string | null;
+  hora_checkout_override: string | null;
   imovel?: { nome_imovel: string };
   ganhos_extras?: any[];
 }
@@ -77,6 +79,8 @@ interface Imovel {
   proprietario_id: string | null;
   proprietario_id_2: string | null;
   taxa_comissao?: number | null;
+  hora_checkin?: string | null;
+  hora_checkout?: string | null;
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
