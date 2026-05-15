@@ -659,6 +659,8 @@ const Reservas: React.FC = () => {
       taxa_comissao_reserva: taxaComissaoReserva,
       observacoes: form.observacoes || null,
       num_hospedes: numHospedes,
+      hora_checkin_override: form.hora_checkin_override || null,
+      hora_checkout_override: form.hora_checkout_override || null,
     } as any);
 
     if (error) {
