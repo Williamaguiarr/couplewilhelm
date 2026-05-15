@@ -36,6 +36,13 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
   const isOverride = isCheckin
     ? !!evento.reserva.hora_checkin_override
     : !!evento.reserva.hora_checkout_override;
+  const horaPadraoImovel = isCheckin
+    ? evento.imovel.hora_checkin?.slice(0, 5)
+    : evento.imovel.hora_checkout?.slice(0, 5);
+  const tipoLabel = isCheckin ? "Check-in" : "Check-out";
+  const tooltipHora = isOverride
+    ? `Override aplicado · ${tipoLabel} efetivo: ${evento.hora}${horaPadraoImovel ? ` (padrão do imóvel: ${horaPadraoImovel})` : ""}`
+    : `${tipoLabel} padrão do imóvel: ${evento.hora}`;
 
   return (
     <div
@@ -69,9 +76,15 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
                   ? "text-primary font-semibold bg-primary/10 ring-1 ring-primary/30"
                   : "text-muted-foreground"
               )}
-              title={isOverride ? "Horário personalizado para esta reserva" : undefined}
+              title={tooltipHora}
+              aria-label={tooltipHora}
             >
-              <Clock className="h-3 w-3" /> {evento.hora}{isOverride && " ✱"}
+              <Clock className="h-3 w-3" /> {evento.hora}
+              {isOverride && (
+                <span className="ml-0.5 text-[9px] uppercase tracking-wide font-bold">
+                  ✱ override
+                </span>
+              )}
             </span>
             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", PLAT_STYLE[plataforma])}>
               {PLATAFORMA_LABEL[plataforma]}
@@ -132,7 +145,11 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
                     : "border-border bg-muted/30 text-muted-foreground"
               )}
             >
-              <span className={cn("inline-flex items-center gap-1 tabular-nums", isOverride && "text-primary font-semibold")}> 
+              <span
+                className={cn("inline-flex items-center gap-1 tabular-nums", isOverride && "text-primary font-semibold")}
+                title={tooltipHora}
+                aria-label={tooltipHora}
+              >
                 <LogOut className="h-3 w-3" /> {evento.hora}{isOverride && " ✱"}
               </span>
               <ArrowRight className="h-3 w-3 opacity-50" />
