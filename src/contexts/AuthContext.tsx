@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -55,26 +55,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const lastFetchedUserId = useRef<string | null>(null);
+  const userId = user?.id ?? null;
 
-  // Carrega perfil + roles sempre que o usuário muda (e somente quando muda de id real).
+  // Carrega perfil + roles quando o id do usuário muda.
+  // Evita cache manual aqui: em StrictMode o primeiro efeito pode ser cancelado,
+  // e pular a segunda execução deixava rotas privadas presas em "Carregando...".
   useEffect(() => {
-    if (!user) {
-      lastFetchedUserId.current = null;
+    if (!userId) {
+      setProfile(null);
+      setRoles([]);
+      setLoading(false);
       return;
     }
-    if (lastFetchedUserId.current === user.id) return;
-    lastFetchedUserId.current = user.id;
 
     let cancelled = false;
     setLoading(true);
 
     (async () => {
       try {
-        log("Buscando profile + roles para", user.id);
+        log("Buscando profile + roles para", userId);
         const [profileRes, rolesRes] = await Promise.all([
-          supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-          supabase.from("user_roles").select("role").eq("user_id", user.id),
+          supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+          supabase.from("user_roles").select("role").eq("user_id", userId),
         ]);
 
         if (cancelled) return;
@@ -95,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     // 1) Subscribe ANTES de getSession para não perder eventos.
