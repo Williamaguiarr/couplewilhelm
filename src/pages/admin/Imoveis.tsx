@@ -340,7 +340,7 @@ const Imoveis: React.FC = () => {
                 <Plus className="h-4 w-4" /> Novo Imóvel
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border max-w-lg">
+            <DialogContent className="bg-card border-border max-w-xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">
                   {editId ? "Editar Imóvel" : "Cadastrar Imóvel"}
