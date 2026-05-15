@@ -17,6 +17,8 @@ import VisaoOperacional from "@/components/calendario/VisaoOperacional";
 interface Imovel {
   id: string;
   nome_imovel: string;
+  hora_checkin?: string | null;
+  hora_checkout?: string | null;
 }
 
 interface Reserva {
@@ -26,7 +28,13 @@ interface Reserva {
   data_fim: string;
   valor_bruto: number | null;
   observacoes: string | null;
+  hora_checkin_override?: string | null;
+  hora_checkout_override?: string | null;
 }
+
+const HORA_CHECKIN_PADRAO = "15:00";
+const HORA_CHECKOUT_PADRAO = "11:00";
+const normHora = (h?: string | null) => (h ? h.slice(0, 5) : null);
 
 const MESES = [
   "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
