@@ -80,14 +80,17 @@ export default function VisaoOperacional() {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: imv }, { data: res }] = await Promise.all([
-      supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel"),
+      supabase
+        .from("imoveis")
+        .select("id, nome_imovel, hora_checkin, hora_checkout, tempo_limpeza_min, max_hospedes, observacoes_operacionais")
+        .order("nome_imovel"),
       supabase
         .from("reservas")
-        .select("id, imovel_id, data_inicio, data_fim, nome_hospede, num_hospedes, plataforma_origem, observacoes, valor_bruto")
+        .select("id, imovel_id, data_inicio, data_fim, nome_hospede, num_hospedes, plataforma_origem, observacoes, valor_bruto, hora_checkin_override, hora_checkout_override")
         .or(`and(data_inicio.gte.${dataInicio},data_inicio.lte.${dataFim}),and(data_fim.gte.${dataInicio},data_fim.lte.${dataFim})`),
     ]);
 
-    setImoveis(imv || []);
+    setImoveis((imv || []) as ImovelLite[]);
     setReservas((res || []) as ReservaOp[]);
 
     const reservaIds = (res || []).map((r) => r.id);
@@ -105,34 +108,87 @@ export default function VisaoOperacional() {
 
   useEffect(() => { fetchData(); }, [dataInicio, dataFim]);
 
+  // Buscar próximo check-in de cada imóvel (para detectar conflitos com limpeza)
+  // Usa as reservas já carregadas no período, mas isso pode subestimar conflitos
+  // se o próximo check-in cair fora da janela. Para robustez, calculamos a partir
+  // das reservas em memória.
   const eventos = useMemo<EventoOperacional[]>(() => {
     const limpezaPorReserva = new Map(limpezas.map((l) => [l.reserva_id, l]));
     const imovelPorId = new Map(imoveis.map((i) => [i.id, i]));
+
+    // index: por imovel_id, lista de check-ins ordenados (data_inicio + hora_checkin)
+    const checkinsPorImovel = new Map<string, { data: string; hora: string; min: number }[]>();
+    for (const r of reservas) {
+      const im = imovelPorId.get(r.imovel_id);
+      if (!im) continue;
+      const hora = getHoraCheckin(r, im);
+      const arr = checkinsPorImovel.get(r.imovel_id) || [];
+      arr.push({ data: r.data_inicio, hora, min: horaParaMin(hora) });
+      checkinsPorImovel.set(r.imovel_id, arr);
+    }
+    for (const arr of checkinsPorImovel.values()) {
+      arr.sort((a, b) => a.data.localeCompare(b.data) || a.min - b.min);
+    }
+
     const out: EventoOperacional[] = [];
 
     for (const r of reservas) {
       const imovel = imovelPorId.get(r.imovel_id);
       if (!imovel) continue;
 
+      const horaCheckin = getHoraCheckin(r, imovel);
+      const horaCheckout = getHoraCheckout(r, imovel);
+
       if (r.data_inicio >= dataInicio && r.data_inicio <= dataFim) {
         out.push({
           id: `${r.id}-checkin`,
           tipo: "checkin",
           data: r.data_inicio,
-          hora: HORA_CHECKIN_PADRAO,
+          hora: horaCheckin,
           reserva: r,
           imovel,
         });
       }
       if (r.data_fim >= dataInicio && r.data_fim <= dataFim) {
+        // calcular janela operacional
+        const tempoLimp = getTempoLimpeza(imovel);
+        const checkoutMin = horaParaMin(horaCheckout);
+        const liberacaoMin = checkoutMin + tempoLimp;
+        const liberacaoPrevista = minParaHora(liberacaoMin);
+
+        // próximo check-in do MESMO imóvel no MESMO dia (ou após)
+        const proximos = checkinsPorImovel.get(r.imovel_id) || [];
+        const prox = proximos.find(
+          (c) => c.data > r.data_fim || (c.data === r.data_fim && c.min >= checkoutMin)
+        );
+
+        let janela: JanelaOperacional = { liberacaoPrevista };
+        if (prox && prox.data === r.data_fim) {
+          const intervalo = prox.min - liberacaoMin;
+          janela = {
+            liberacaoPrevista,
+            proximoCheckin: prox.hora,
+            proximoCheckinData: prox.data,
+            intervaloMin: intervalo,
+            conflito: intervalo < 0 ? "critico" : intervalo < 60 ? "apertado" : null,
+          };
+        } else if (prox) {
+          janela = {
+            liberacaoPrevista,
+            proximoCheckin: prox.hora,
+            proximoCheckinData: prox.data,
+          };
+        }
+
         out.push({
           id: `${r.id}-checkout`,
           tipo: "checkout",
           data: r.data_fim,
-          hora: HORA_CHECKOUT_PADRAO,
+          hora: horaCheckout,
           reserva: r,
           imovel,
           limpeza: limpezaPorReserva.get(r.id) || null,
+          janela,
         });
       }
     }
