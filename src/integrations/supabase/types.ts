@@ -272,40 +272,55 @@ export type Database = {
           admin_id: string | null
           created_at: string | null
           endereco: string | null
+          hora_checkin: string | null
+          hora_checkout: string | null
           ical_last_sync: string | null
           ical_url_airbnb: string | null
           ical_url_booking: string | null
           id: string
+          max_hospedes: number | null
           nome_imovel: string
+          observacoes_operacionais: string | null
           proprietario_id: string | null
           proprietario_id_2: string | null
           taxa_comissao: number | null
+          tempo_limpeza_min: number | null
         }
         Insert: {
           admin_id?: string | null
           created_at?: string | null
           endereco?: string | null
+          hora_checkin?: string | null
+          hora_checkout?: string | null
           ical_last_sync?: string | null
           ical_url_airbnb?: string | null
           ical_url_booking?: string | null
           id?: string
+          max_hospedes?: number | null
           nome_imovel: string
+          observacoes_operacionais?: string | null
           proprietario_id?: string | null
           proprietario_id_2?: string | null
           taxa_comissao?: number | null
+          tempo_limpeza_min?: number | null
         }
         Update: {
           admin_id?: string | null
           created_at?: string | null
           endereco?: string | null
+          hora_checkin?: string | null
+          hora_checkout?: string | null
           ical_last_sync?: string | null
           ical_url_airbnb?: string | null
           ical_url_booking?: string | null
           id?: string
+          max_hospedes?: number | null
           nome_imovel?: string
+          observacoes_operacionais?: string | null
           proprietario_id?: string | null
           proprietario_id_2?: string | null
           taxa_comissao?: number | null
+          tempo_limpeza_min?: number | null
         }
         Relationships: [
           {
@@ -393,6 +408,8 @@ export type Database = {
           created_at: string | null
           data_fim: string
           data_inicio: string
+          hora_checkin_override: string | null
+          hora_checkout_override: string | null
           ical_uid: string | null
           id: string
           imovel_id: string
@@ -410,6 +427,8 @@ export type Database = {
           created_at?: string | null
           data_fim: string
           data_inicio: string
+          hora_checkin_override?: string | null
+          hora_checkout_override?: string | null
           ical_uid?: string | null
           id?: string
           imovel_id: string
@@ -427,6 +446,8 @@ export type Database = {
           created_at?: string | null
           data_fim?: string
           data_inicio?: string
+          hora_checkin_override?: string | null
+          hora_checkout_override?: string | null
           ical_uid?: string | null
           id?: string
           imovel_id?: string
