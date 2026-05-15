@@ -687,6 +687,8 @@ const Reservas: React.FC = () => {
       taxa_comissao_reserva: r.taxa_comissao_reserva != null ? String(r.taxa_comissao_reserva) : "",
       observacoes: r.observacoes || "",
       num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
+      hora_checkin_override: r.hora_checkin_override ? r.hora_checkin_override.slice(0, 5) : "",
+      hora_checkout_override: r.hora_checkout_override ? r.hora_checkout_override.slice(0, 5) : "",
     });
     setEditOpen(true);
   };
