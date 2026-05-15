@@ -82,10 +82,10 @@ Deno.serve(async (req) => {
       if (password) authPayload.password = password;
 
       if (Object.keys(authPayload).length > 0) {
-        const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
-          ...authPayload,
-          email_confirm: Boolean(email),
-        });
+        const updatePayload: Record<string, unknown> = { ...authPayload };
+        if (email) updatePayload.email_confirm = true;
+
+        const { error: authError } = await adminClient.auth.admin.updateUserById(userId, updatePayload);
 
         if (authError) {
           const msg = authError.message || "Erro ao atualizar credenciais";
