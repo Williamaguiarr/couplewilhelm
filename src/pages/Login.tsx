@@ -23,7 +23,7 @@ const Login: React.FC = () => {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { role, forceLogin } = useAuth();
+  const { role } = useAuth();
 
   useEffect(() => {
     if (role === "master") navigate("/master", { replace: true });
@@ -45,20 +45,26 @@ const Login: React.FC = () => {
     setSubmitting(true);
     setError(null);
 
-    // Bypass for screenshot automation
-    if (password === "lovable-bypass") {
-      await forceLogin(email);
-      setSubmitting(false);
-      return;
-    }
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError("E-mail ou senha inválidos. Tente novamente.");
+      if (signInError) {
+        console.error("[Login] signIn error:", signInError);
+        const msg = signInError.message?.toLowerCase() ?? "";
+        if (msg.includes("email not confirmed")) {
+          setError("E-mail ainda não confirmado. Verifique sua caixa de entrada.");
+        } else {
+          setError("E-mail ou senha inválidos. Tente novamente.");
+        }
+        setSubmitting(false);
+      }
+      // Sucesso: AuthContext detecta SIGNED_IN e o useEffect redireciona via `role`.
+    } catch (err) {
+      console.error("[Login] Falha inesperada:", err);
+      setError("Erro inesperado ao entrar. Tente novamente.");
       setSubmitting(false);
     }
   };
