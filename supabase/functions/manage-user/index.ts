@@ -82,22 +82,13 @@ Deno.serve(async (req) => {
       if (password) authPayload.password = password;
 
       if (Object.keys(authPayload).length > 0) {
-        const gotrueRes = await fetch(
-          `${supabaseUrl}/auth/v1/admin/users/${userId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": serviceRoleKey,
-              "Authorization": `Bearer ${serviceRoleKey}`,
-            },
-            body: JSON.stringify(authPayload),
-          }
-        );
+        const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
+          ...authPayload,
+          email_confirm: Boolean(email),
+        });
 
-        if (!gotrueRes.ok) {
-          const errBody = await gotrueRes.json().catch(() => ({}));
-          const msg = errBody?.msg || errBody?.message || "Erro ao atualizar credenciais";
+        if (authError) {
+          const msg = authError.message || "Erro ao atualizar credenciais";
           return new Response(JSON.stringify({ error: msg }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
