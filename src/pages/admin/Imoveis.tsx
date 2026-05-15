@@ -37,7 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Building2, Pencil, Trash2, RefreshCw, Link, Copy, Check, ExternalLink } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, RefreshCw, Link, Copy, Check, ExternalLink, Clock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import { format } from "date-fns";
@@ -54,6 +55,11 @@ interface Imovel {
   ical_url_booking: string | null;
   ical_last_sync: string | null;
   taxa_comissao: number | null;
+  hora_checkin: string | null;
+  hora_checkout: string | null;
+  tempo_limpeza_min: number | null;
+  max_hospedes: number | null;
+  observacoes_operacionais: string | null;
   proprietario?: { nome: string | null; email: string | null };
   proprietario2?: { nome: string | null; email: string | null };
 }
@@ -82,6 +88,11 @@ const Imoveis: React.FC = () => {
     ical_url_airbnb: "",
     ical_url_booking: "",
     taxa_comissao: "",
+    hora_checkin: "15:00",
+    hora_checkout: "11:00",
+    tempo_limpeza_min: "180",
+    max_hospedes: "",
+    observacoes_operacionais: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
@@ -135,6 +146,11 @@ const Imoveis: React.FC = () => {
       ical_url_airbnb: "",
       ical_url_booking: "",
       taxa_comissao: "",
+      hora_checkin: "15:00",
+      hora_checkout: "11:00",
+      tempo_limpeza_min: "180",
+      max_hospedes: "",
+      observacoes_operacionais: "",
     });
 
   const openEdit = (imovel: Imovel) => {
@@ -147,6 +163,11 @@ const Imoveis: React.FC = () => {
       ical_url_airbnb: imovel.ical_url_airbnb || "",
       ical_url_booking: imovel.ical_url_booking || "",
       taxa_comissao: imovel.taxa_comissao?.toString() || "",
+      hora_checkin: imovel.hora_checkin?.slice(0, 5) || "15:00",
+      hora_checkout: imovel.hora_checkout?.slice(0, 5) || "11:00",
+      tempo_limpeza_min: imovel.tempo_limpeza_min?.toString() || "180",
+      max_hospedes: imovel.max_hospedes?.toString() || "",
+      observacoes_operacionais: imovel.observacoes_operacionais || "",
     });
     setOpen(true);
   };
@@ -177,6 +198,11 @@ const Imoveis: React.FC = () => {
       ical_url_airbnb: form.ical_url_airbnb || null,
       ical_url_booking: form.ical_url_booking || null,
       taxa_comissao: form.taxa_comissao ? parseFloat(form.taxa_comissao.replace(",", ".")) : null,
+      hora_checkin: form.hora_checkin || null,
+      hora_checkout: form.hora_checkout || null,
+      tempo_limpeza_min: form.tempo_limpeza_min ? parseInt(form.tempo_limpeza_min, 10) : null,
+      max_hospedes: form.max_hospedes ? parseInt(form.max_hospedes, 10) : null,
+      observacoes_operacionais: form.observacoes_operacionais || null,
     };
 
     if (editId) {
@@ -314,7 +340,7 @@ const Imoveis: React.FC = () => {
                 <Plus className="h-4 w-4" /> Novo Imóvel
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border max-w-lg">
+            <DialogContent className="bg-card border-border max-w-xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">
                   {editId ? "Editar Imóvel" : "Cadastrar Imóvel"}
@@ -403,6 +429,68 @@ const Imoveis: React.FC = () => {
                   </Select>
                 </div>
 
+                {/* Configurações operacionais */}
+                <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Operacional
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Check-in</Label>
+                      <Input
+                        type="time"
+                        value={form.hora_checkin}
+                        onChange={(e) => setForm({ ...form, hora_checkin: e.target.value })}
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Check-out</Label>
+                      <Input
+                        type="time"
+                        value={form.hora_checkout}
+                        onChange={(e) => setForm({ ...form, hora_checkout: e.target.value })}
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Tempo de limpeza (min)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="15"
+                        value={form.tempo_limpeza_min}
+                        onChange={(e) => setForm({ ...form, tempo_limpeza_min: e.target.value })}
+                        placeholder="180"
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Máx. hóspedes</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={form.max_hospedes}
+                        onChange={(e) => setForm({ ...form, max_hospedes: e.target.value })}
+                        placeholder="Ex: 4"
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Observações operacionais</Label>
+                    <Textarea
+                      value={form.observacoes_operacionais}
+                      onChange={(e) => setForm({ ...form, observacoes_operacionais: e.target.value })}
+                      placeholder="Ex: limpeza reforçada após pets, enxoval extra, check-in remoto…"
+                      rows={2}
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                </div>
                 {/* iCal Section */}
                 <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
                   <div className="flex items-center gap-2 mb-1">
