@@ -159,14 +159,28 @@ export default function VisaoOperacional() {
     });
   }, [eventos, imovelFiltro, tipoFiltro, limpezaFiltro, busca]);
 
-  const eventosPorDia = useMemo(() => {
+  const agruparPorDia = (lista: EventoOperacional[]) => {
     const map = new Map<string, EventoOperacional[]>();
-    for (const ev of eventosFiltrados) {
+    for (const ev of lista) {
       if (!map.has(ev.data)) map.set(ev.data, []);
       map.get(ev.data)!.push(ev);
     }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [eventosFiltrados]);
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dia, evs]) => [dia, evs.sort((a, b) => a.hora.localeCompare(b.hora))] as const);
+  };
+
+  const checkinsPorDia = useMemo(
+    () => agruparPorDia(eventosFiltrados.filter((e) => e.tipo === "checkin")),
+    [eventosFiltrados]
+  );
+  const checkoutsPorDia = useMemo(
+    () => agruparPorDia(eventosFiltrados.filter((e) => e.tipo === "checkout")),
+    [eventosFiltrados]
+  );
+  const totalCheckins = checkinsPorDia.reduce((acc, [, e]) => acc + e.length, 0);
+  const totalCheckouts = checkoutsPorDia.reduce((acc, [, e]) => acc + e.length, 0);
+  const semEventos = totalCheckins === 0 && totalCheckouts === 0;
 
   // Resumo (do dia selecionado quando hoje/amanha/data; do range quando 7dias)
   const resumo = useMemo(() => {
