@@ -400,6 +400,27 @@ const ReservaFormFields = ({
         );
       })()}
 
+      {conflitos.length > 0 && (
+        <div className="space-y-1.5">
+          {conflitos.map((c, idx) => (
+            <div
+              key={idx}
+              className={`rounded-md border px-3 py-2 text-xs ${
+                c.nivel === "critico"
+                  ? "border-destructive/50 bg-destructive/10 text-destructive"
+                  : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+              }`}
+            >
+              <span className="font-semibold mr-1">
+                {c.nivel === "critico" ? "Conflito:" : "Atenção:"}
+              </span>
+              {c.mensagem}
+            </div>
+          ))}
+        </div>
+      )}
+      })()}
+
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
