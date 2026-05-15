@@ -228,6 +228,56 @@ const ReservaFormFields = ({
         />
       </div>
 
+      {/* Horários personalizados (override) */}
+      {(() => {
+        const imovelSel = imoveis.find((i) => i.id === form.imovel_id);
+        const padraoIn = imovelSel?.hora_checkin?.slice(0, 5) || "15:00";
+        const padraoOut = imovelSel?.hora_checkout?.slice(0, 5) || "11:00";
+        return (
+          <div className="rounded-md border border-border bg-muted/10 p-3 space-y-3">
+            <div className="text-xs text-muted-foreground">
+              Horários personalizados (opcional) — sobrescrevem o padrão do imóvel apenas nesta reserva.
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">
+                  Check-in nesta reserva
+                  <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">padrão {padraoIn}</span>
+                </Label>
+                <Input
+                  type="time"
+                  value={form.hora_checkin_override}
+                  onChange={(e) => setForm({ ...form, hora_checkin_override: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">
+                  Check-out nesta reserva
+                  <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">padrão {padraoOut}</span>
+                </Label>
+                <Input
+                  type="time"
+                  value={form.hora_checkout_override}
+                  onChange={(e) => setForm({ ...form, hora_checkout_override: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
+            </div>
+            {(form.hora_checkin_override || form.hora_checkout_override) && (
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, hora_checkin_override: "", hora_checkout_override: "" })}
+                className="text-xs text-primary hover:underline"
+              >
+                Limpar horários personalizados
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="text-muted-foreground">Valor Bruto (R$)</Label>
