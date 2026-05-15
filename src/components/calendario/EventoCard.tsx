@@ -1,8 +1,14 @@
-import { LogIn, LogOut, Users, Clock, Sparkles, AlertTriangle } from "lucide-react";
+import { LogIn, LogOut, Users, Clock, Sparkles, AlertTriangle, ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { detectarPlataforma, PLATAFORMA_LABEL, type EventoOperacional } from "./types";
+import {
+  detectarPlataforma,
+  formatarDuracao,
+  getTempoLimpeza,
+  PLATAFORMA_LABEL,
+  type EventoOperacional,
+} from "./types";
 
 interface Props {
   evento: EventoOperacional;
@@ -20,8 +26,13 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
   const isCheckin = evento.tipo === "checkin";
   const plataforma = detectarPlataforma(evento.reserva);
   const numHospedes = evento.reserva.num_hospedes ?? 0;
-  const muitosHospedes = numHospedes >= 5;
+  const maxHosp = evento.imovel.max_hospedes ?? null;
+  const muitosHospedes = maxHosp ? numHospedes >= maxHosp : numHospedes >= 5;
   const limpezaConcluida = evento.limpeza?.status === "concluida";
+  const obsOp = evento.imovel.observacoes_operacionais?.trim();
+  const janela = evento.janela;
+  const tempoLimp = getTempoLimpeza(evento.imovel);
+  const conflito = janela?.conflito;
 
   return (
     <div
@@ -30,7 +41,8 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
         "hover:shadow-elevated hover:border-border/80",
         isCheckin
           ? "border-l-4 border-l-emerald-500"
-          : "border-l-4 border-l-rose-500"
+          : "border-l-4 border-l-rose-500",
+        conflito === "critico" && "ring-1 ring-destructive/40"
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -72,7 +84,7 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
               )}
             >
               <Users className="h-3 w-3" />
-              {numHospedes} {numHospedes === 1 ? "hóspede" : "hóspedes"}
+              {numHospedes}{maxHosp ? `/${maxHosp}` : ""} {numHospedes === 1 ? "hóspede" : "hóspedes"}
               {muitosHospedes && <AlertTriangle className="h-3 w-3 ml-0.5" />}
             </span>
 
@@ -96,6 +108,64 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
               </span>
             )}
           </div>
+
+          {/* Janela operacional do checkout */}
+          {!isCheckin && janela && (
+            <div
+              className={cn(
+                "mt-2.5 rounded-lg border px-2.5 py-2 text-[11px] flex flex-wrap items-center gap-x-2 gap-y-1",
+                conflito === "critico"
+                  ? "border-destructive/40 bg-destructive/5 text-destructive"
+                  : conflito === "apertado"
+                    ? "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+                    : "border-border bg-muted/30 text-muted-foreground"
+              )}
+            >
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <LogOut className="h-3 w-3" /> {evento.hora}
+              </span>
+              <ArrowRight className="h-3 w-3 opacity-50" />
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <Sparkles className="h-3 w-3" /> {formatarDuracao(tempoLimp)}
+              </span>
+              <ArrowRight className="h-3 w-3 opacity-50" />
+              <span className="tabular-nums font-medium">
+                Liberação {janela.liberacaoPrevista}
+              </span>
+              {janela.proximoCheckin && janela.proximoCheckinData === evento.data && (
+                <>
+                  <span className="opacity-50">·</span>
+                  <span className="inline-flex items-center gap-1 tabular-nums">
+                    <LogIn className="h-3 w-3" /> Próx. {janela.proximoCheckin}
+                  </span>
+                  {typeof janela.intervaloMin === "number" && (
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 px-1.5 rounded-full font-semibold",
+                        conflito === "critico"
+                          ? "bg-destructive/15"
+                          : conflito === "apertado"
+                            ? "bg-amber-500/15"
+                            : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                      )}
+                    >
+                      {conflito && <AlertTriangle className="h-3 w-3" />}
+                      {janela.intervaloMin < 0
+                        ? `Atraso ${formatarDuracao(-janela.intervaloMin)}`
+                        : `Folga ${formatarDuracao(janela.intervaloMin)}`}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {obsOp && (
+            <p className="mt-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2 py-1.5 flex items-start gap-1.5">
+              <Info className="h-3 w-3 mt-0.5 flex-shrink-0 opacity-70" />
+              <span className="line-clamp-2">{obsOp}</span>
+            </p>
+          )}
 
           {evento.limpeza?.observacoes && !isCheckin && (
             <p className="mt-2 text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2 py-1.5">
