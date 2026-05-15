@@ -429,6 +429,68 @@ const Imoveis: React.FC = () => {
                   </Select>
                 </div>
 
+                {/* Configurações operacionais */}
+                <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Operacional
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Check-in</Label>
+                      <Input
+                        type="time"
+                        value={form.hora_checkin}
+                        onChange={(e) => setForm({ ...form, hora_checkin: e.target.value })}
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Check-out</Label>
+                      <Input
+                        type="time"
+                        value={form.hora_checkout}
+                        onChange={(e) => setForm({ ...form, hora_checkout: e.target.value })}
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Tempo de limpeza (min)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="15"
+                        value={form.tempo_limpeza_min}
+                        onChange={(e) => setForm({ ...form, tempo_limpeza_min: e.target.value })}
+                        placeholder="180"
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Máx. hóspedes</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={form.max_hospedes}
+                        onChange={(e) => setForm({ ...form, max_hospedes: e.target.value })}
+                        placeholder="Ex: 4"
+                        className="bg-background text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Observações operacionais</Label>
+                    <Textarea
+                      value={form.observacoes_operacionais}
+                      onChange={(e) => setForm({ ...form, observacoes_operacionais: e.target.value })}
+                      placeholder="Ex: limpeza reforçada após pets, enxoval extra, check-in remoto…"
+                      rows={2}
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                </div>
                 {/* iCal Section */}
                 <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
                   <div className="flex items-center gap-2 mb-1">
