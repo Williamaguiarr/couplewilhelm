@@ -1222,7 +1222,7 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} />
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} reservas={reservas} editingId={editingReserva?.id ?? null} />
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar
