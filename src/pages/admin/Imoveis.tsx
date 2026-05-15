@@ -55,6 +55,11 @@ interface Imovel {
   ical_url_booking: string | null;
   ical_last_sync: string | null;
   taxa_comissao: number | null;
+  hora_checkin: string | null;
+  hora_checkout: string | null;
+  tempo_limpeza_min: number | null;
+  max_hospedes: number | null;
+  observacoes_operacionais: string | null;
   proprietario?: { nome: string | null; email: string | null };
   proprietario2?: { nome: string | null; email: string | null };
 }
