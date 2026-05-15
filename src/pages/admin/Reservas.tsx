@@ -67,6 +67,8 @@ interface Reserva {
   observacoes: string | null;
   imovel_id: string;
   num_hospedes: number | null;
+  hora_checkin_override: string | null;
+  hora_checkout_override: string | null;
   imovel?: { nome_imovel: string };
   ganhos_extras?: any[];
 }
@@ -77,6 +79,8 @@ interface Imovel {
   proprietario_id: string | null;
   proprietario_id_2: string | null;
   taxa_comissao?: number | null;
+  hora_checkin?: string | null;
+  hora_checkout?: string | null;
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
@@ -114,6 +118,8 @@ const emptyForm = {
   taxa_comissao_reserva: "",
   observacoes: "",
   num_hospedes: "",
+  hora_checkin_override: "",
+  hora_checkout_override: "",
 };
 
 const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null => {
@@ -221,6 +227,56 @@ const ReservaFormFields = ({
           className="bg-background"
         />
       </div>
+
+      {/* Horários personalizados (override) */}
+      {(() => {
+        const imovelSel = imoveis.find((i) => i.id === form.imovel_id);
+        const padraoIn = imovelSel?.hora_checkin?.slice(0, 5) || "15:00";
+        const padraoOut = imovelSel?.hora_checkout?.slice(0, 5) || "11:00";
+        return (
+          <div className="rounded-md border border-border bg-muted/10 p-3 space-y-3">
+            <div className="text-xs text-muted-foreground">
+              Horários personalizados (opcional) — sobrescrevem o padrão do imóvel apenas nesta reserva.
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">
+                  Check-in nesta reserva
+                  <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">padrão {padraoIn}</span>
+                </Label>
+                <Input
+                  type="time"
+                  value={form.hora_checkin_override}
+                  onChange={(e) => setForm({ ...form, hora_checkin_override: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">
+                  Check-out nesta reserva
+                  <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">padrão {padraoOut}</span>
+                </Label>
+                <Input
+                  type="time"
+                  value={form.hora_checkout_override}
+                  onChange={(e) => setForm({ ...form, hora_checkout_override: e.target.value })}
+                  className="bg-background"
+                />
+              </div>
+            </div>
+            {(form.hora_checkin_override || form.hora_checkout_override) && (
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, hora_checkin_override: "", hora_checkout_override: "" })}
+                className="text-xs text-primary hover:underline"
+              >
+                Limpar horários personalizados
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
@@ -504,7 +560,7 @@ const Reservas: React.FC = () => {
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
-      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao, hora_checkin, hora_checkout").order("nome_imovel"),
       supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending"),
       supabase.from("ganhos_extras" as any).select("reserva_id, valor, regime_comissao, aplicar_comissao")
     ]);
@@ -603,6 +659,8 @@ const Reservas: React.FC = () => {
       taxa_comissao_reserva: taxaComissaoReserva,
       observacoes: form.observacoes || null,
       num_hospedes: numHospedes,
+      hora_checkin_override: form.hora_checkin_override || null,
+      hora_checkout_override: form.hora_checkout_override || null,
     } as any);
 
     if (error) {
@@ -629,6 +687,8 @@ const Reservas: React.FC = () => {
       taxa_comissao_reserva: r.taxa_comissao_reserva != null ? String(r.taxa_comissao_reserva) : "",
       observacoes: r.observacoes || "",
       num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
+      hora_checkin_override: r.hora_checkin_override ? r.hora_checkin_override.slice(0, 5) : "",
+      hora_checkout_override: r.hora_checkout_override ? r.hora_checkout_override.slice(0, 5) : "",
     });
     setEditOpen(true);
   };
@@ -662,6 +722,8 @@ const Reservas: React.FC = () => {
         taxa_comissao_reserva: taxaComissaoReserva,
         observacoes: editForm.observacoes || null,
         num_hospedes: numHospedes,
+        hora_checkin_override: editForm.hora_checkin_override || null,
+        hora_checkout_override: editForm.hora_checkout_override || null,
       } as any)
       .eq("id", editingReserva.id);
 
