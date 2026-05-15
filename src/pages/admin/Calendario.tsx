@@ -213,64 +213,79 @@ const Calendario: React.FC = () => {
     <PageTransition>
       <div className="space-y-4 sm:space-y-6 w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
-              Calendário de Ocupação
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Visão consolidada de todos os imóveis
-            </p>
-          </div>
-
-          {/* Month/year nav */}
-          <div className="flex items-center gap-1 bg-card border border-border rounded-lg px-1 py-1">
-            <button
-              onClick={() => navegarMes(-1)}
-              className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
-              <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[110px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MESES.map((m, i) => (
-                  <SelectItem
-                    key={i}
-                    value={String(i)}
-                    disabled={ano === maxAno && i > maxMes}
-                  >
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
-              <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[70px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ANOS.map((a) => (
-                  <SelectItem key={a} value={String(a)}>{a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <button
-              onClick={() => navegarMes(1)}
-              disabled={isMesMaximo}
-              className={cn(
-                "p-1 rounded transition-colors",
-                isMesMaximo
-                  ? "text-muted-foreground/30 cursor-not-allowed"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
+            Calendário
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Visão estratégica de ocupação e operacional de check-ins/outs
+          </p>
         </div>
+
+        <Tabs defaultValue="ocupacao" className="w-full">
+          <TabsList className="grid grid-cols-2 w-full sm:w-auto sm:inline-grid">
+            <TabsTrigger value="ocupacao" className="gap-2">
+              <LayoutGrid className="h-4 w-4" /> Ocupação
+            </TabsTrigger>
+            <TabsTrigger value="operacional" className="gap-2">
+              <ClipboardList className="h-4 w-4" /> Operacional
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="operacional" className="mt-4">
+            <VisaoOperacional />
+          </TabsContent>
+
+          <TabsContent value="ocupacao" className="mt-4 space-y-4 sm:space-y-6">
+            {/* Month/year nav */}
+            <div className="flex justify-end">
+              <div className="flex items-center gap-1 bg-card border border-border rounded-lg px-1 py-1">
+                <button
+                  onClick={() => navegarMes(-1)}
+                  className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <Select value={String(mes)} onValueChange={(v) => setMes(Number(v))}>
+                  <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[110px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MESES.map((m, i) => (
+                      <SelectItem
+                        key={i}
+                        value={String(i)}
+                        disabled={ano === maxAno && i > maxMes}
+                      >
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={String(ano)} onValueChange={(v) => setAno(Number(v))}>
+                  <SelectTrigger className="border-0 bg-transparent shadow-none h-8 text-sm font-medium text-foreground focus:ring-0 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ANOS.map((a) => (
+                      <SelectItem key={a} value={String(a)}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <button
+                  onClick={() => navegarMes(1)}
+                  disabled={isMesMaximo}
+                  className={cn(
+                    "p-1 rounded transition-colors",
+                    isMesMaximo
+                      ? "text-muted-foreground/30 cursor-not-allowed"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
 
         {loading ? (
           <div className="space-y-2">
