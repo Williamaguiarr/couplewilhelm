@@ -17,6 +17,8 @@ import VisaoOperacional from "@/components/calendario/VisaoOperacional";
 interface Imovel {
   id: string;
   nome_imovel: string;
+  hora_checkin?: string | null;
+  hora_checkout?: string | null;
 }
 
 interface Reserva {
@@ -26,7 +28,13 @@ interface Reserva {
   data_fim: string;
   valor_bruto: number | null;
   observacoes: string | null;
+  hora_checkin_override?: string | null;
+  hora_checkout_override?: string | null;
 }
+
+const HORA_CHECKIN_PADRAO = "15:00";
+const HORA_CHECKOUT_PADRAO = "11:00";
+const normHora = (h?: string | null) => (h ? h.slice(0, 5) : null);
 
 const MESES = [
   "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
@@ -127,10 +135,10 @@ const Calendario: React.FC = () => {
     const lastDay = new Date(ano, mes + 1, 0).toISOString().split("T")[0];
 
     const [{ data: imoveisData }, { data: reservasData }] = await Promise.all([
-      supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, hora_checkin, hora_checkout").order("nome_imovel"),
       supabase
         .from("reservas")
-        .select("id, imovel_id, data_inicio, data_fim, valor_bruto, observacoes")
+        .select("id, imovel_id, data_inicio, data_fim, valor_bruto, observacoes, hora_checkin_override, hora_checkout_override")
         .lte("data_inicio", lastDay)
         .gte("data_fim", firstDay),
     ]);
@@ -537,18 +545,29 @@ const Calendario: React.FC = () => {
             })()}
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Check-in</span>
-                <span className="text-foreground font-medium">
-                  {parseDate(tooltip.reserva.data_inicio).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Check-out</span>
-                <span className="text-foreground font-medium">
-                  {parseDate(tooltip.reserva.data_fim).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
+              {(() => {
+                const im = imoveis.find((i) => i.id === tooltip.reserva.imovel_id);
+                const horaIn = normHora(tooltip.reserva.hora_checkin_override) || normHora(im?.hora_checkin) || HORA_CHECKIN_PADRAO;
+                const horaOut = normHora(tooltip.reserva.hora_checkout_override) || normHora(im?.hora_checkout) || HORA_CHECKOUT_PADRAO;
+                const isOverIn = !!normHora(tooltip.reserva.hora_checkin_override);
+                const isOverOut = !!normHora(tooltip.reserva.hora_checkout_override);
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Check-in</span>
+                      <span className="text-foreground font-medium">
+                        {parseDate(tooltip.reserva.data_inicio).toLocaleDateString("pt-BR")} · <span className={isOverIn ? "text-primary" : ""}>{horaIn}{isOverIn && " ✱"}</span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Check-out</span>
+                      <span className="text-foreground font-medium">
+                        {parseDate(tooltip.reserva.data_fim).toLocaleDateString("pt-BR")} · <span className={isOverOut ? "text-primary" : ""}>{horaOut}{isOverOut && " ✱"}</span>
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Duração</span>
                 <span className="text-foreground font-medium">
