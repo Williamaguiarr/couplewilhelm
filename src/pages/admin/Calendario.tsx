@@ -486,6 +486,8 @@ const Calendario: React.FC = () => {
             </div>
           </>
         )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Tooltip */}
