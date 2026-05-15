@@ -8,6 +8,24 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowLeft, CheckCircle, LogIn, Send } from "lucide-react";
 import logo from "@/assets/logo.png";
 
+const isRetryableAuthError = (error: unknown) => {
+  const authError = error as { message?: string; status?: number; name?: string };
+  const message = authError.message?.toLowerCase() ?? "";
+
+  return authError.status === 0 || message.includes("failed to fetch") || authError.name === "AuthRetryableFetchError";
+};
+
+const signInWithRetry = async (email: string, password: string) => {
+  const firstAttempt = await supabase.auth.signInWithPassword({ email, password });
+
+  if (!firstAttempt.error || !isRetryableAuthError(firstAttempt.error)) {
+    return firstAttempt;
+  }
+
+  await new Promise((resolve) => window.setTimeout(resolve, 700));
+  return supabase.auth.signInWithPassword({ email, password });
+};
+
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,15 +64,15 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      const normalizedEmail = email.trim().toLowerCase();
+      const { error: signInError } = await signInWithRetry(normalizedEmail, password);
 
       if (signInError) {
         console.error("[Login] signIn error:", signInError);
         const msg = signInError.message?.toLowerCase() ?? "";
-        if (msg.includes("email not confirmed")) {
+        if (isRetryableAuthError(signInError)) {
+          setError("Não foi possível conectar ao serviço de login. Verifique sua conexão e tente novamente.");
+        } else if (msg.includes("email not confirmed")) {
           setError("E-mail ainda não confirmado. Verifique sua caixa de entrada.");
         } else {
           setError("E-mail ou senha inválidos. Tente novamente.");
