@@ -545,18 +545,29 @@ const Calendario: React.FC = () => {
             })()}
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Check-in</span>
-                <span className="text-foreground font-medium">
-                  {parseDate(tooltip.reserva.data_inicio).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Check-out</span>
-                <span className="text-foreground font-medium">
-                  {parseDate(tooltip.reserva.data_fim).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
+              {(() => {
+                const im = imoveis.find((i) => i.id === tooltip.reserva.imovel_id);
+                const horaIn = normHora(tooltip.reserva.hora_checkin_override) || normHora(im?.hora_checkin) || HORA_CHECKIN_PADRAO;
+                const horaOut = normHora(tooltip.reserva.hora_checkout_override) || normHora(im?.hora_checkout) || HORA_CHECKOUT_PADRAO;
+                const isOverIn = !!normHora(tooltip.reserva.hora_checkin_override);
+                const isOverOut = !!normHora(tooltip.reserva.hora_checkout_override);
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Check-in</span>
+                      <span className="text-foreground font-medium">
+                        {parseDate(tooltip.reserva.data_inicio).toLocaleDateString("pt-BR")} · <span className={isOverIn ? "text-primary" : ""}>{horaIn}{isOverIn && " ✱"}</span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Check-out</span>
+                      <span className="text-foreground font-medium">
+                        {parseDate(tooltip.reserva.data_fim).toLocaleDateString("pt-BR")} · <span className={isOverOut ? "text-primary" : ""}>{horaOut}{isOverOut && " ✱"}</span>
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Duração</span>
                 <span className="text-foreground font-medium">
