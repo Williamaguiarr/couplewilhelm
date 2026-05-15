@@ -135,10 +135,10 @@ const Calendario: React.FC = () => {
     const lastDay = new Date(ano, mes + 1, 0).toISOString().split("T")[0];
 
     const [{ data: imoveisData }, { data: reservasData }] = await Promise.all([
-      supabase.from("imoveis").select("id, nome_imovel").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, hora_checkin, hora_checkout").order("nome_imovel"),
       supabase
         .from("reservas")
-        .select("id, imovel_id, data_inicio, data_fim, valor_bruto, observacoes")
+        .select("id, imovel_id, data_inicio, data_fim, valor_bruto, observacoes, hora_checkin_override, hora_checkout_override")
         .lte("data_inicio", lastDay)
         .gte("data_fim", firstDay),
     ]);
