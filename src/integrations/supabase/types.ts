@@ -324,6 +324,45 @@ export type Database = {
           },
         ]
       }
+      limpezas: {
+        Row: {
+          concluida_em: string | null
+          created_at: string
+          data_limpeza: string
+          id: string
+          imovel_id: string
+          observacoes: string | null
+          reserva_id: string
+          responsavel: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string
+          data_limpeza: string
+          id?: string
+          imovel_id: string
+          observacoes?: string | null
+          reserva_id: string
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string
+          data_limpeza?: string
+          id?: string
+          imovel_id?: string
+          observacoes?: string | null
+          reserva_id?: string
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           comissao_percentual: number | null
