@@ -81,6 +81,7 @@ interface Imovel {
   taxa_comissao?: number | null;
   hora_checkin?: string | null;
   hora_checkout?: string | null;
+  tempo_limpeza_min?: number | null;
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
