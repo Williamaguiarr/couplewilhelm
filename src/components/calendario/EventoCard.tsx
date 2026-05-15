@@ -33,6 +33,9 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
   const janela = evento.janela;
   const tempoLimp = getTempoLimpeza(evento.imovel);
   const conflito = janela?.conflito;
+  const isOverride = isCheckin
+    ? !!evento.reserva.hora_checkin_override
+    : !!evento.reserva.hora_checkout_override;
 
   return (
     <div
