@@ -957,7 +957,7 @@ const Reservas: React.FC = () => {
                 <DialogTitle className="font-display text-xl text-foreground">Cadastrar Reserva</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSave} className="space-y-4 mt-2">
-                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={getRateForImovel(form.imovel_id)} />
+                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={getRateForImovel(form.imovel_id)} reservas={reservas} editingId={null} />
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
                     Cancelar
