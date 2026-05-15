@@ -141,6 +141,122 @@ const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null 
 
 type FormState = typeof emptyForm;
 
+// ─── Conflito de horários ──────────────────────────────────────────────────
+const HORA_IN_PADRAO = "15:00";
+const HORA_OUT_PADRAO = "11:00";
+const TEMPO_LIMPEZA_PADRAO = 180;
+
+const _normHora = (h?: string | null) => (h ? h.slice(0, 5) : null);
+
+const dataHoraTs = (data: string, hora: string): number | null => {
+  if (!data) return null;
+  const [y, m, d] = data.split("-").map(Number);
+  const [hh, mm] = hora.split(":").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, hh || 0, mm || 0, 0).getTime();
+};
+
+interface ConflitoInfo {
+  nivel: "critico" | "apertado";
+  mensagem: string;
+}
+
+const detectarConflitosReserva = (
+  form: FormState,
+  imoveis: Imovel[],
+  reservas: Reserva[],
+  editingId?: string | null,
+): ConflitoInfo[] => {
+  const out: ConflitoInfo[] = [];
+  if (!form.imovel_id || !form.data_inicio || !form.data_fim) return out;
+
+  const imovel = imoveis.find((i) => i.id === form.imovel_id);
+  if (!imovel) return out;
+
+  const horaIn =
+    _normHora(form.hora_checkin_override) ||
+    _normHora(imovel.hora_checkin) ||
+    HORA_IN_PADRAO;
+  const horaOut =
+    _normHora(form.hora_checkout_override) ||
+    _normHora(imovel.hora_checkout) ||
+    HORA_OUT_PADRAO;
+  const limpezaMin = imovel.tempo_limpeza_min ?? TEMPO_LIMPEZA_PADRAO;
+
+  const inicio = dataHoraTs(form.data_inicio, horaIn);
+  const fim = dataHoraTs(form.data_fim, horaOut);
+  if (inicio == null || fim == null) return out;
+
+  if (fim <= inicio) {
+    out.push({ nivel: "critico", mensagem: "Check-out deve ser depois do check-in." });
+    return out;
+  }
+
+  const outras = reservas.filter(
+    (r) => r.imovel_id === form.imovel_id && r.id !== editingId,
+  );
+
+  for (const r of outras) {
+    const rIn =
+      _normHora(r.hora_checkin_override) ||
+      _normHora(imovel.hora_checkin) ||
+      HORA_IN_PADRAO;
+    const rOut =
+      _normHora(r.hora_checkout_override) ||
+      _normHora(imovel.hora_checkout) ||
+      HORA_OUT_PADRAO;
+    const rInicio = dataHoraTs(r.data_inicio, rIn);
+    const rFim = dataHoraTs(r.data_fim, rOut);
+    if (rInicio == null || rFim == null) continue;
+
+    // Sobreposição direta
+    if (inicio < rFim && fim > rInicio) {
+      const fmtData = (d: string) => {
+        const [y, m, dd] = d.split("-").map(Number);
+        return `${String(dd).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
+      };
+      out.push({
+        nivel: "critico",
+        mensagem: `Conflito com reserva ${fmtData(r.data_inicio)} → ${fmtData(r.data_fim)} (${r.nome_hospede || "sem nome"}).`,
+      });
+      continue;
+    }
+
+    // Janela de limpeza apertada
+    if (rFim <= inicio) {
+      const liberacao = rFim + limpezaMin * 60_000;
+      const gapMin = Math.round((inicio - liberacao) / 60_000);
+      if (gapMin < 0) {
+        out.push({
+          nivel: "critico",
+          mensagem: `Check-in antes do fim da limpeza da reserva anterior (${Math.abs(gapMin)}min de atraso).`,
+        });
+      } else if (gapMin < 60) {
+        out.push({
+          nivel: "apertado",
+          mensagem: `Apenas ${gapMin}min entre o fim da limpeza e este check-in.`,
+        });
+      }
+    } else if (fim <= rInicio) {
+      const liberacao = fim + limpezaMin * 60_000;
+      const gapMin = Math.round((rInicio - liberacao) / 60_000);
+      if (gapMin < 0) {
+        out.push({
+          nivel: "critico",
+          mensagem: `Limpeza desta reserva termina depois do próximo check-in (${Math.abs(gapMin)}min de atraso).`,
+        });
+      } else if (gapMin < 60) {
+        out.push({
+          nivel: "apertado",
+          mensagem: `Apenas ${gapMin}min entre a limpeza desta e o próximo check-in.`,
+        });
+      }
+    }
+  }
+
+  return out;
+};
+
 // ─── Reusable form fields ───────────────────────────────────────────────────
 const ReservaFormFields = ({
   form,
