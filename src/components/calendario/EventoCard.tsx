@@ -145,7 +145,11 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
                     : "border-border bg-muted/30 text-muted-foreground"
               )}
             >
-              <span className={cn("inline-flex items-center gap-1 tabular-nums", isOverride && "text-primary font-semibold")}> 
+              <span
+                className={cn("inline-flex items-center gap-1 tabular-nums", isOverride && "text-primary font-semibold")}
+                title={tooltipHora}
+                aria-label={tooltipHora}
+              >
                 <LogOut className="h-3 w-3" /> {evento.hora}{isOverride && " ✱"}
               </span>
               <ArrowRight className="h-3 w-3 opacity-50" />
