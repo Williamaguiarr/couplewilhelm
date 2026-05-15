@@ -264,12 +264,17 @@ const ReservaFormFields = ({
   setForm,
   imoveis,
   comissaoRate,
+  reservas,
+  editingId,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
   comissaoRate: number;
+  reservas: Reserva[];
+  editingId?: string | null;
 }) => {
+  const conflitos = detectarConflitosReserva(form, imoveis, reservas, editingId);
   const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
   const comissaoEffective = comissaoPersonalizadaStr !== "" 
     ? parseFloat(comissaoPersonalizadaStr) / 100 
