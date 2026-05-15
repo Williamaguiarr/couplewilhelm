@@ -722,6 +722,8 @@ const Reservas: React.FC = () => {
         taxa_comissao_reserva: taxaComissaoReserva,
         observacoes: editForm.observacoes || null,
         num_hospedes: numHospedes,
+        hora_checkin_override: editForm.hora_checkin_override || null,
+        hora_checkout_override: editForm.hora_checkout_override || null,
       } as any)
       .eq("id", editingReserva.id);
 
