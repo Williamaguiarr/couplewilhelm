@@ -777,6 +777,21 @@ const Reservas: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const conflitos = detectarConflitosReserva(form, imoveis, reservas, null);
+    const criticos = conflitos.filter((c) => c.nivel === "critico");
+    if (criticos.length > 0) {
+      toast({ title: "Conflito de horários", description: criticos[0].mensagem, variant: "destructive" });
+      return;
+    }
+    const apertados = conflitos.filter((c) => c.nivel === "apertado");
+    if (apertados.length > 0) {
+      const ok = window.confirm(
+        `Atenção: ${apertados[0].mensagem}\n\nDeseja salvar mesmo assim?`,
+      );
+      if (!ok) return;
+    }
+
     setSubmitting(true);
 
     const rateDefault = getRateForImovel(form.imovel_id);
