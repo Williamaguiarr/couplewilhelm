@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,12 +14,11 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
-  role: AppRole | null;       // role primário (para compatibilidade)
-  roles: AppRole[];            // todos os roles do usuário
+  role: AppRole | null;
+  roles: AppRole[];
   hasRole: (r: AppRole) => boolean;
   loading: boolean;
   signOut: () => Promise<void>;
-  forceLogin: (email: string) => Promise<void>; // Added for automation
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,7 +30,6 @@ const AuthContext = createContext<AuthContextType>({
   hasRole: () => false,
   loading: true,
   signOut: async () => {},
-  forceLogin: async () => {},
 });
 
 export const useAuth = () => {
@@ -40,12 +38,15 @@ export const useAuth = () => {
   return ctx;
 };
 
-// Prioridade de role primário: master > admin > proprietario
 const primaryRole = (roles: AppRole[]): AppRole | null => {
   if (roles.includes("master")) return "master";
   if (roles.includes("admin")) return "admin";
   if (roles.includes("proprietario")) return "proprietario";
   return null;
+};
+
+const log = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log("[Auth]", ...args);
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,71 +55,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const lastFetchedUserId = useRef<string | null>(null);
 
+  // Carrega perfil + roles sempre que o usuário muda (e somente quando muda de id real).
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      lastFetchedUserId.current = null;
+      return;
+    }
+    if (lastFetchedUserId.current === user.id) return;
+    lastFetchedUserId.current = user.id;
 
     let cancelled = false;
+    setLoading(true);
 
-    const fetch = async () => {
-      const [{ data: profileData }, { data: rolesData }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).single(),
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-      ]);
+    (async () => {
+      try {
+        log("Buscando profile + roles para", user.id);
+        const [profileRes, rolesRes] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+          supabase.from("user_roles").select("role").eq("user_id", user.id),
+        ]);
 
-      if (cancelled) return;
-      if (profileData) setProfile(profileData);
-      if (rolesData) setRoles(rolesData.map((r) => r.role as AppRole));
-      setLoading(false);
+        if (cancelled) return;
+
+        if (profileRes.error) console.error("[Auth] Erro ao carregar profile:", profileRes.error);
+        if (rolesRes.error) console.error("[Auth] Erro ao carregar roles:", rolesRes.error);
+
+        setProfile(profileRes.data ?? null);
+        setRoles((rolesRes.data ?? []).map((r) => r.role as AppRole));
+        log("Profile/roles carregados");
+      } catch (err) {
+        if (!cancelled) console.error("[Auth] Falha inesperada ao carregar dados do usuário:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-
-    fetch();
-
-    return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+    // 1) Subscribe ANTES de getSession para não perder eventos.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      log("onAuthStateChange:", event, currentSession?.user?.email ?? "(no user)");
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
 
-        if (!currentSession?.user) {
-          setProfile(null);
-          setRoles([]);
-          setLoading(false);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
-      if (!existing) {
+      if (!currentSession?.user) {
+        setProfile(null);
+        setRoles([]);
         setLoading(false);
       }
+    });
+
+    // 2) Hidrata sessão existente.
+    supabase.auth.getSession().then(({ data: { session: existing }, error }) => {
+      if (error) console.error("[Auth] getSession error:", error);
+      log("getSession:", existing?.user?.email ?? "(no session)");
+      setSession(existing);
+      setUser(existing?.user ?? null);
+      if (!existing) setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  const forceLogin = async (email: string) => {
-    // For build-time automation/demo purposes only
-    const { data: profileData } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle();
-    if (profileData) {
-      // Mock session for UI
-      setUser({ id: profileData.id, email } as any);
-      setLoading(false);
-    }
+    log("signOut");
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("[Auth] signOut error:", error);
   };
 
   const role = primaryRole(roles);
   const hasRole = (r: AppRole) => roles.includes(r);
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, role, roles, hasRole, loading, signOut, forceLogin }}>
+    <AuthContext.Provider value={{ session, user, profile, role, roles, hasRole, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
