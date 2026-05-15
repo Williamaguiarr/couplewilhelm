@@ -146,6 +146,11 @@ const Imoveis: React.FC = () => {
       ical_url_airbnb: "",
       ical_url_booking: "",
       taxa_comissao: "",
+      hora_checkin: "15:00",
+      hora_checkout: "11:00",
+      tempo_limpeza_min: "180",
+      max_hospedes: "",
+      observacoes_operacionais: "",
     });
 
   const openEdit = (imovel: Imovel) => {
@@ -158,6 +163,11 @@ const Imoveis: React.FC = () => {
       ical_url_airbnb: imovel.ical_url_airbnb || "",
       ical_url_booking: imovel.ical_url_booking || "",
       taxa_comissao: imovel.taxa_comissao?.toString() || "",
+      hora_checkin: imovel.hora_checkin?.slice(0, 5) || "15:00",
+      hora_checkout: imovel.hora_checkout?.slice(0, 5) || "11:00",
+      tempo_limpeza_min: imovel.tempo_limpeza_min?.toString() || "180",
+      max_hospedes: imovel.max_hospedes?.toString() || "",
+      observacoes_operacionais: imovel.observacoes_operacionais || "",
     });
     setOpen(true);
   };
@@ -188,6 +198,11 @@ const Imoveis: React.FC = () => {
       ical_url_airbnb: form.ical_url_airbnb || null,
       ical_url_booking: form.ical_url_booking || null,
       taxa_comissao: form.taxa_comissao ? parseFloat(form.taxa_comissao.replace(",", ".")) : null,
+      hora_checkin: form.hora_checkin || null,
+      hora_checkout: form.hora_checkout || null,
+      tempo_limpeza_min: form.tempo_limpeza_min ? parseInt(form.tempo_limpeza_min, 10) : null,
+      max_hospedes: form.max_hospedes ? parseInt(form.max_hospedes, 10) : null,
+      observacoes_operacionais: form.observacoes_operacionais || null,
     };
 
     if (editId) {
