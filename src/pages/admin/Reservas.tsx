@@ -854,6 +854,21 @@ const Reservas: React.FC = () => {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingReserva) return;
+
+    const conflitos = detectarConflitosReserva(editForm, imoveis, reservas, editingReserva.id);
+    const criticos = conflitos.filter((c) => c.nivel === "critico");
+    if (criticos.length > 0) {
+      toast({ title: "Conflito de horários", description: criticos[0].mensagem, variant: "destructive" });
+      return;
+    }
+    const apertados = conflitos.filter((c) => c.nivel === "apertado");
+    if (apertados.length > 0) {
+      const ok = window.confirm(
+        `Atenção: ${apertados[0].mensagem}\n\nDeseja salvar mesmo assim?`,
+      );
+      if (!ok) return;
+    }
+
     setEditSubmitting(true);
 
     const rateDefault = getRateForImovel(editForm.imovel_id);
