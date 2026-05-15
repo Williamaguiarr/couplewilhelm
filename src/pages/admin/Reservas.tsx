@@ -67,6 +67,7 @@ interface Reserva {
   observacoes: string | null;
   imovel_id: string;
   num_hospedes: number | null;
+  nome_hospede?: string | null;
   hora_checkin_override: string | null;
   hora_checkout_override: string | null;
   imovel?: { nome_imovel: string };
@@ -81,6 +82,7 @@ interface Imovel {
   taxa_comissao?: number | null;
   hora_checkin?: string | null;
   hora_checkout?: string | null;
+  tempo_limpeza_min?: number | null;
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
@@ -140,18 +142,139 @@ const calcDuracaoEstadia = (dataInicio: string, dataFim: string): number | null 
 
 type FormState = typeof emptyForm;
 
+// ─── Conflito de horários ──────────────────────────────────────────────────
+const HORA_IN_PADRAO = "15:00";
+const HORA_OUT_PADRAO = "11:00";
+const TEMPO_LIMPEZA_PADRAO = 180;
+
+const _normHora = (h?: string | null) => (h ? h.slice(0, 5) : null);
+
+const dataHoraTs = (data: string, hora: string): number | null => {
+  if (!data) return null;
+  const [y, m, d] = data.split("-").map(Number);
+  const [hh, mm] = hora.split(":").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, hh || 0, mm || 0, 0).getTime();
+};
+
+interface ConflitoInfo {
+  nivel: "critico" | "apertado";
+  mensagem: string;
+}
+
+const detectarConflitosReserva = (
+  form: FormState,
+  imoveis: Imovel[],
+  reservas: Reserva[],
+  editingId?: string | null,
+): ConflitoInfo[] => {
+  const out: ConflitoInfo[] = [];
+  if (!form.imovel_id || !form.data_inicio || !form.data_fim) return out;
+
+  const imovel = imoveis.find((i) => i.id === form.imovel_id);
+  if (!imovel) return out;
+
+  const horaIn =
+    _normHora(form.hora_checkin_override) ||
+    _normHora(imovel.hora_checkin) ||
+    HORA_IN_PADRAO;
+  const horaOut =
+    _normHora(form.hora_checkout_override) ||
+    _normHora(imovel.hora_checkout) ||
+    HORA_OUT_PADRAO;
+  const limpezaMin = imovel.tempo_limpeza_min ?? TEMPO_LIMPEZA_PADRAO;
+
+  const inicio = dataHoraTs(form.data_inicio, horaIn);
+  const fim = dataHoraTs(form.data_fim, horaOut);
+  if (inicio == null || fim == null) return out;
+
+  if (fim <= inicio) {
+    out.push({ nivel: "critico", mensagem: "Check-out deve ser depois do check-in." });
+    return out;
+  }
+
+  const outras = reservas.filter(
+    (r) => r.imovel_id === form.imovel_id && r.id !== editingId,
+  );
+
+  for (const r of outras) {
+    const rIn =
+      _normHora(r.hora_checkin_override) ||
+      _normHora(imovel.hora_checkin) ||
+      HORA_IN_PADRAO;
+    const rOut =
+      _normHora(r.hora_checkout_override) ||
+      _normHora(imovel.hora_checkout) ||
+      HORA_OUT_PADRAO;
+    const rInicio = dataHoraTs(r.data_inicio, rIn);
+    const rFim = dataHoraTs(r.data_fim, rOut);
+    if (rInicio == null || rFim == null) continue;
+
+    // Sobreposição direta
+    if (inicio < rFim && fim > rInicio) {
+      const fmtData = (d: string) => {
+        const [y, m, dd] = d.split("-").map(Number);
+        return `${String(dd).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
+      };
+      out.push({
+        nivel: "critico",
+        mensagem: `Conflito com reserva ${fmtData(r.data_inicio)} → ${fmtData(r.data_fim)} (${r.nome_hospede || "sem nome"}).`,
+      });
+      continue;
+    }
+
+    // Janela de limpeza apertada
+    if (rFim <= inicio) {
+      const liberacao = rFim + limpezaMin * 60_000;
+      const gapMin = Math.round((inicio - liberacao) / 60_000);
+      if (gapMin < 0) {
+        out.push({
+          nivel: "critico",
+          mensagem: `Check-in antes do fim da limpeza da reserva anterior (${Math.abs(gapMin)}min de atraso).`,
+        });
+      } else if (gapMin < 60) {
+        out.push({
+          nivel: "apertado",
+          mensagem: `Apenas ${gapMin}min entre o fim da limpeza e este check-in.`,
+        });
+      }
+    } else if (fim <= rInicio) {
+      const liberacao = fim + limpezaMin * 60_000;
+      const gapMin = Math.round((rInicio - liberacao) / 60_000);
+      if (gapMin < 0) {
+        out.push({
+          nivel: "critico",
+          mensagem: `Limpeza desta reserva termina depois do próximo check-in (${Math.abs(gapMin)}min de atraso).`,
+        });
+      } else if (gapMin < 60) {
+        out.push({
+          nivel: "apertado",
+          mensagem: `Apenas ${gapMin}min entre a limpeza desta e o próximo check-in.`,
+        });
+      }
+    }
+  }
+
+  return out;
+};
+
 // ─── Reusable form fields ───────────────────────────────────────────────────
 const ReservaFormFields = ({
   form,
   setForm,
   imoveis,
   comissaoRate,
+  reservas,
+  editingId,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
   imoveis: Imovel[];
   comissaoRate: number;
+  reservas: Reserva[];
+  editingId?: string | null;
 }) => {
+  const conflitos = detectarConflitosReserva(form, imoveis, reservas, editingId);
   const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
   const comissaoEffective = comissaoPersonalizadaStr !== "" 
     ? parseFloat(comissaoPersonalizadaStr) / 100 
@@ -276,6 +399,26 @@ const ReservaFormFields = ({
           </div>
         );
       })()}
+
+      {conflitos.length > 0 && (
+        <div className="space-y-1.5">
+          {conflitos.map((c, idx) => (
+            <div
+              key={idx}
+              className={`rounded-md border px-3 py-2 text-xs ${
+                c.nivel === "critico"
+                  ? "border-destructive/50 bg-destructive/10 text-destructive"
+                  : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+              }`}
+            >
+              <span className="font-semibold mr-1">
+                {c.nivel === "critico" ? "Conflito:" : "Atenção:"}
+              </span>
+              {c.mensagem}
+            </div>
+          ))}
+        </div>
+      )}
 
 
       <div className="grid grid-cols-2 gap-3">
@@ -560,7 +703,7 @@ const Reservas: React.FC = () => {
         .from("reservas")
         .select("*, imoveis(nome_imovel)")
         .order("data_inicio", { ascending: false }),
-      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao, hora_checkin, hora_checkout").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao, hora_checkin, hora_checkout, tempo_limpeza_min").order("nome_imovel"),
       supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending"),
       supabase.from("ganhos_extras" as any).select("reserva_id, valor, regime_comissao, aplicar_comissao")
     ]);
@@ -634,6 +777,21 @@ const Reservas: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const conflitos = detectarConflitosReserva(form, imoveis, reservas, null);
+    const criticos = conflitos.filter((c) => c.nivel === "critico");
+    if (criticos.length > 0) {
+      toast({ title: "Conflito de horários", description: criticos[0].mensagem, variant: "destructive" });
+      return;
+    }
+    const apertados = conflitos.filter((c) => c.nivel === "apertado");
+    if (apertados.length > 0) {
+      const ok = window.confirm(
+        `Atenção: ${apertados[0].mensagem}\n\nDeseja salvar mesmo assim?`,
+      );
+      if (!ok) return;
+    }
+
     setSubmitting(true);
 
     const rateDefault = getRateForImovel(form.imovel_id);
@@ -696,6 +854,21 @@ const Reservas: React.FC = () => {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingReserva) return;
+
+    const conflitos = detectarConflitosReserva(editForm, imoveis, reservas, editingReserva.id);
+    const criticos = conflitos.filter((c) => c.nivel === "critico");
+    if (criticos.length > 0) {
+      toast({ title: "Conflito de horários", description: criticos[0].mensagem, variant: "destructive" });
+      return;
+    }
+    const apertados = conflitos.filter((c) => c.nivel === "apertado");
+    if (apertados.length > 0) {
+      const ok = window.confirm(
+        `Atenção: ${apertados[0].mensagem}\n\nDeseja salvar mesmo assim?`,
+      );
+      if (!ok) return;
+    }
+
     setEditSubmitting(true);
 
     const rateDefault = getRateForImovel(editForm.imovel_id);
@@ -814,7 +987,7 @@ const Reservas: React.FC = () => {
                 <DialogTitle className="font-display text-xl text-foreground">Cadastrar Reserva</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSave} className="space-y-4 mt-2">
-                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={getRateForImovel(form.imovel_id)} />
+                <ReservaFormFields form={form} setForm={setForm} imoveis={imoveis} comissaoRate={getRateForImovel(form.imovel_id)} reservas={reservas} editingId={null} />
                 <div className="flex gap-3 pt-2">
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} className="flex-1">
                     Cancelar
@@ -1079,7 +1252,7 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} />
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} reservas={reservas} editingId={editingReserva?.id ?? null} />
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar
