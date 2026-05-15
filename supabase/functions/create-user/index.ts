@@ -166,6 +166,19 @@ Deno.serve(async (req) => {
 
       targetUserId = existingUser.id;
 
+      const { error: updateExistingError } = await adminClient.auth.admin.updateUserById(targetUserId, {
+        password,
+        email_confirm: true,
+        user_metadata: { nome },
+      });
+
+      if (updateExistingError) {
+        return new Response(JSON.stringify({ error: updateExistingError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: existingRoles } = await adminClient
         .from("user_roles")
         .select("role")
