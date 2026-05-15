@@ -33,6 +33,9 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
   const janela = evento.janela;
   const tempoLimp = getTempoLimpeza(evento.imovel);
   const conflito = janela?.conflito;
+  const isOverride = isCheckin
+    ? !!evento.reserva.hora_checkin_override
+    : !!evento.reserva.hora_checkout_override;
 
   return (
     <div
@@ -59,8 +62,16 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
               {isCheckin ? <LogIn className="h-3 w-3" /> : <LogOut className="h-3 w-3" />}
               {isCheckin ? "Check-in" : "Check-out"}
             </span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
-              <Clock className="h-3 w-3" /> {evento.hora}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] tabular-nums px-1.5 py-0.5 rounded",
+                isOverride
+                  ? "text-primary font-semibold bg-primary/10 ring-1 ring-primary/30"
+                  : "text-muted-foreground"
+              )}
+              title={isOverride ? "Horário personalizado para esta reserva" : undefined}
+            >
+              <Clock className="h-3 w-3" /> {evento.hora}{isOverride && " ✱"}
             </span>
             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", PLAT_STYLE[plataforma])}>
               {PLATAFORMA_LABEL[plataforma]}
@@ -121,8 +132,8 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
                     : "border-border bg-muted/30 text-muted-foreground"
               )}
             >
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <LogOut className="h-3 w-3" /> {evento.hora}
+              <span className={cn("inline-flex items-center gap-1 tabular-nums", isOverride && "text-primary font-semibold")}> 
+                <LogOut className="h-3 w-3" /> {evento.hora}{isOverride && " ✱"}
               </span>
               <ArrowRight className="h-3 w-3 opacity-50" />
               <span className="inline-flex items-center gap-1 tabular-nums">
