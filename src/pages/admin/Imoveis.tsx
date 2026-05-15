@@ -88,6 +88,11 @@ const Imoveis: React.FC = () => {
     ical_url_airbnb: "",
     ical_url_booking: "",
     taxa_comissao: "",
+    hora_checkin: "15:00",
+    hora_checkout: "11:00",
+    tempo_limpeza_min: "180",
+    max_hospedes: "",
+    observacoes_operacionais: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
