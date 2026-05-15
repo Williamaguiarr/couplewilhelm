@@ -76,9 +76,15 @@ export default function EventoCard({ evento, onAbrirLimpeza }: Props) {
                   ? "text-primary font-semibold bg-primary/10 ring-1 ring-primary/30"
                   : "text-muted-foreground"
               )}
-              title={isOverride ? "Horário personalizado para esta reserva" : undefined}
+              title={tooltipHora}
+              aria-label={tooltipHora}
             >
-              <Clock className="h-3 w-3" /> {evento.hora}{isOverride && " ✱"}
+              <Clock className="h-3 w-3" /> {evento.hora}
+              {isOverride && (
+                <span className="ml-0.5 text-[9px] uppercase tracking-wide font-bold">
+                  ✱ override
+                </span>
+              )}
             </span>
             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", PLAT_STYLE[plataforma])}>
               {PLATAFORMA_LABEL[plataforma]}
