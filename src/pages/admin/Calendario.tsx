@@ -260,13 +260,26 @@ const Calendario: React.FC = () => {
     <PageTransition>
       <div className="space-y-4 sm:space-y-6 w-full overflow-x-hidden">
         {/* Header */}
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
-            Calendário
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Visão estratégica de ocupação e operacional de check-ins/outs
-          </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
+              Calendário
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Visão estratégica de ocupação e operacional de check-ins/outs
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncAll}
+            disabled={syncing}
+            className="gap-2"
+            title="Sincroniza manualmente todos os iCals configurados (Airbnb e Booking)"
+          >
+            <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+            {syncing ? "Sincronizando..." : "Sincronizar iCal"}
+          </Button>
         </div>
 
         <Tabs defaultValue="ocupacao" className="w-full">
