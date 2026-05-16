@@ -9,10 +9,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, CalendarDays, X, LayoutGrid, ClipboardList } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, X, LayoutGrid, ClipboardList, RefreshCw } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
 import VisaoOperacional from "@/components/calendario/VisaoOperacional";
+import { useToast } from "@/hooks/use-toast";
 
 interface Imovel {
   id: string;
@@ -119,8 +120,46 @@ const Calendario: React.FC = () => {
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const handleSyncAll = async () => {
+    setSyncing(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/ical-sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao sincronizar");
+      const totalSynced = result.results?.reduce(
+        (acc: number, r: any) => acc + (r.synced ?? 0),
+        0
+      ) ?? 0;
+      toast({
+        title: "Sincronização concluída",
+        description: totalSynced > 0
+          ? `${totalSynced} nova(s) reserva(s) importada(s).`
+          : "Nenhuma reserva nova encontrada.",
+      });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Map imovel index → color
   const colorMap = useRef<Record<string, (typeof COLORS)[0]>>({});
@@ -221,13 +260,26 @@ const Calendario: React.FC = () => {
     <PageTransition>
       <div className="space-y-4 sm:space-y-6 w-full overflow-x-hidden">
         {/* Header */}
-        <div>
-          <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
-            Calendário
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Visão estratégica de ocupação e operacional de check-ins/outs
-          </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl text-foreground tracking-wide">
+              Calendário
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Visão estratégica de ocupação e operacional de check-ins/outs
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncAll}
+            disabled={syncing}
+            className="gap-2"
+            title="Sincroniza manualmente todos os iCals configurados (Airbnb e Booking)"
+          >
+            <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+            {syncing ? "Sincronizando..." : "Sincronizar iCal"}
+          </Button>
         </div>
 
         <Tabs defaultValue="ocupacao" className="w-full">
