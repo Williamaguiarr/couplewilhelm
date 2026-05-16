@@ -120,8 +120,46 @@ const Calendario: React.FC = () => {
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const handleSyncAll = async () => {
+    setSyncing(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/ical-sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao sincronizar");
+      const totalSynced = result.results?.reduce(
+        (acc: number, r: any) => acc + (r.synced ?? 0),
+        0
+      ) ?? 0;
+      toast({
+        title: "Sincronização concluída",
+        description: totalSynced > 0
+          ? `${totalSynced} nova(s) reserva(s) importada(s).`
+          : "Nenhuma reserva nova encontrada.",
+      });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Map imovel index → color
   const colorMap = useRef<Record<string, (typeof COLORS)[0]>>({});
