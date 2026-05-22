@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CalendarDays, TrendingUp, TrendingDown, Info, DollarSign, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { computeOccupancy } from "@/lib/occupancy";
 import {
   Tooltip,
   TooltipContent,
@@ -79,14 +80,15 @@ async function fetchMonthData(
 ): Promise<MonthData> {
   const firstDay = new Date(year, month, 1).toISOString().split("T")[0];
   const lastDay = new Date(year, month + 1, 0).toISOString().split("T")[0];
-  const total = daysInMonth(month, year);
 
+  // IMPORTANTE: para OCUPAÇÃO buscamos TODAS as reservas (validadas ou não)
+  // — alinhando com o que aparece bloqueado no Calendário. A validação
+  // financeira só filtra o cálculo de RECEITA/ADR mais abaixo.
   let query = supabase
     .from("reservas")
     .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
     .lte("data_inicio", lastDay)
-    .gt("data_fim", firstDay)
-    .eq("validada_financeiramente", true);
+    .gt("data_fim", firstDay);
 
   if (imovelIds && imovelIds.length > 0) {
     query = query.in("imovel_id", imovelIds);
@@ -101,61 +103,43 @@ async function fetchMonthData(
     .is("reserva_id", null)
     .gte("data", firstDay)
     .lte("data", lastDay);
-  
+
   if (imovelIds && imovelIds.length > 0) {
     ganhosAvulsosQuery = ganhosAvulsosQuery.in("imovel_id", imovelIds);
   }
-  
+
   const { data: ganhosAvulsosData } = await ganhosAvulsosQuery;
 
+  // ── OCUPAÇÃO via lógica compartilhada (mesma da aba Calendário) ──
+  const periodStart = atNoon(year, month, 1);
+  const periodEnd = atNoon(year, month + 1, 1);
+  const scopeIds = imovelIds && imovelIds.length > 0 ? imovelIds : [];
+  const occ = computeOccupancy(
+    (data || []).map((r: any) => ({
+      imovel_id: r.imovel_id,
+      data_inicio: r.data_inicio,
+      data_fim: r.data_fim,
+    })),
+    scopeIds,
+    periodStart,
+    periodEnd,
+  );
+
+  // ── RECEITA: somente reservas validadas, atribuídas ao mês de checkout ──
   let receita = 0;
   let reservationCount = 0;
-  // Nights are tracked per imóvel (deduplicado por imóvel) e somadas — assim
-  // dois imóveis ocupados no mesmo dia contam como 2 noites e a capacidade
-  // total é dias_do_mes × nº_imóveis, evitando que um único imóvel cheio
-  // apareça como 100% do portfólio.
-  const occupiedByImovel = new Map<string, Set<string>>();
-  const monthStart = atNoon(year, month, 1);
-  const nextMonthStart = atNoon(year, month + 1, 1);
-
-  if (data && data.length > 0) {
-    reservationCount = data.length;
-    data.forEach((r: any) => {
-      const [y1, m1, d1] = r.data_inicio.split("-").map(Number);
-      const [y2, m2, d2] = r.data_fim.split("-").map(Number);
-      const start = new Date(y1, m1 - 1, d1, 12, 0, 0);
-      const end = new Date(y2, m2 - 1, d2, 12, 0, 0);
-
-      const overlapStart = new Date(Math.max(start.getTime(), monthStart.getTime()));
-      const overlapEnd = new Date(Math.min(end.getTime(), nextMonthStart.getTime()));
-      const nightsInMonth = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS));
-
-      if (nightsInMonth > 0) {
-        let set = occupiedByImovel.get(r.imovel_id);
-        if (!set) {
-          set = new Set<string>();
-          occupiedByImovel.set(r.imovel_id, set);
-        }
-        for (let i = 0; i < nightsInMonth; i++) {
-          const occupiedDate = new Date(overlapStart.getTime() + i * DAY_MS);
-          set.add(occupiedDate.toISOString().split("T")[0]);
-        }
-      }
-
-      const checkoutDate = end;
-      if (checkoutDate.getMonth() === month && checkoutDate.getFullYear() === year) {
-        receita += Number(r.valor_bruto) || 0;
-        
-        // Incluir ganhos extras vinculados no cálculo da receita bruta se não forem exclusivos da ADM
-        (r.ganhos_extras || []).forEach((g: any) => {
-          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-          if (regime !== "exclusivo_adm") {
-            receita += Number(g.valor) || 0;
-          }
-        });
-      }
+  (data || []).forEach((r: any) => {
+    if (r.validada_financeiramente !== true) return;
+    const [y2, m2, d2] = r.data_fim.split("-").map(Number);
+    const checkoutDate = new Date(y2, m2 - 1, d2);
+    if (checkoutDate.getMonth() !== month || checkoutDate.getFullYear() !== year) return;
+    reservationCount += 1;
+    receita += Number(r.valor_bruto) || 0;
+    (r.ganhos_extras || []).forEach((g: any) => {
+      const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+      if (regime !== "exclusivo_adm") receita += Number(g.valor) || 0;
     });
-  }
+  });
 
   // Somar ganhos avulsos
   (ganhosAvulsosData || []).forEach((g: any) => {
@@ -165,17 +149,9 @@ async function fetchMonthData(
     }
   });
 
-  // Capacidade do portfólio = dias_do_mes × nº de imóveis filtrados (mínimo 1).
-  const propertyCount = imovelIds && imovelIds.length > 0 ? imovelIds.length : 1;
-  const capacity = total * propertyCount;
-  let occupiedDays = 0;
-  occupiedByImovel.forEach((set) => {
-    // Cap por imóvel para não exceder os dias do mês (proteção contra
-    // reservas sobrepostas — ex.: duplicadas via iCal Airbnb+Booking).
-    occupiedDays += Math.min(set.size, total);
-  });
-  occupiedDays = Math.min(occupiedDays, capacity);
-  const occupancyRate = capacity > 0 ? (occupiedDays / capacity) * 100 : 0;
+  const occupiedDays = occ.occupiedNights;
+  const capacity = occ.capacity;
+  const occupancyRate = occ.occupancyRate;
   const avgDailyRate = occupiedDays > 0 ? receita / occupiedDays : 0;
 
   return {

@@ -14,6 +14,7 @@ import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
 import VisaoOperacional from "@/components/calendario/VisaoOperacional";
 import { useToast } from "@/hooks/use-toast";
+import { getDaysOccupiedInMonth } from "@/lib/occupancy";
 
 interface Imovel {
   id: string;
@@ -90,21 +91,13 @@ const isSameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-// Returns day-of-month numbers occupied by a reservation in the given month/year
-const daysOccupied = (r: Reserva, year: number, month: number): number[] => {
-  const [y1, m1, d1] = r.data_inicio.split("-").map(Number);
-  const [y2, m2, d2] = r.data_fim.split("-").map(Number);
-  const start = new Date(y1, m1 - 1, d1, 12, 0, 0);
-  const end = new Date(y2, m2 - 1, d2, 12, 0, 0); 
-  
-  const days: number[] = [];
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month, d, 12, 0, 0);
-    if (date >= start && date < end) days.push(d);
-  }
-  return days;
-};
+// Wrapper sobre a lógica compartilhada — mantém assinatura antiga.
+const daysOccupied = (r: Reserva, year: number, month: number): number[] =>
+  getDaysOccupiedInMonth(
+    { imovel_id: r.imovel_id, data_inicio: r.data_inicio, data_fim: r.data_fim },
+    year,
+    month,
+  );
 
 interface TooltipData {
   reserva: Reserva;
