@@ -14,6 +14,7 @@ import PageTransition from "@/components/layout/PageTransition";
 import { cn } from "@/lib/utils";
 import VisaoOperacional from "@/components/calendario/VisaoOperacional";
 import { useToast } from "@/hooks/use-toast";
+import { getDaysOccupiedInMonth } from "@/lib/occupancy";
 
 interface Imovel {
   id: string;
