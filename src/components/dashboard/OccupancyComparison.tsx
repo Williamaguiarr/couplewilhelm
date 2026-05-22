@@ -92,48 +92,38 @@ function fmtCurrency(v: number): string {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function fetchMonthData(
+/**
+ * Calcula os dados de um mês específico com base em dados já buscados em lote.
+ */
+function processMonthData(
   month: number,
   year: number,
+  reservas: any[],
+  imoveisMap: Map<string, string>,
+  ganhosAvulsos: any[],
   imovelIds?: string[] | null,
-): Promise<MonthData> {
-  const firstDay = new Date(year, month, 1).toISOString().split("T")[0];
-  const lastDay = new Date(year, month + 1, 0).toISOString().split("T")[0];
+): MonthData {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const firstDayStr = firstDay.toISOString().split("T")[0];
+  const lastDayStr = lastDay.toISOString().split("T")[0];
 
-  const [{ data }, { data: imoveisData }] = await Promise.all([
-    supabase
-      .from("reservas")
-      .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
-      .lte("data_inicio", lastDay)
-      .gt("data_fim", firstDay),
-    supabase
-      .from("imoveis")
-      .select("id, nome_imovel")
-  ]);
+  // Filtrar reservas que se sobrepõem ao mês
+  const reservasNoMes = reservas.filter(r => 
+    r.data_inicio <= lastDayStr && r.data_fim > firstDayStr
+  );
 
-  const imoveisMap = new Map((imoveisData || []).map(i => [i.id, i.nome_imovel]));
+  // Ganhos avulsos do mês
+  const ganhosNoMes = ganhosAvulsos.filter(g => 
+    g.data >= firstDayStr && g.data <= lastDayStr
+  );
 
-  // Buscar ganhos extras não vinculados a reservas que caem no mês de checkout
-  let ganhosAvulsosQuery = supabase
-    .from("ganhos_extras")
-    .select("valor, regime_comissao, aplicar_comissao, imovel_id")
-    .is("reserva_id", null)
-    .gte("data", firstDay)
-    .lte("data", lastDay);
-
-  if (imovelIds && imovelIds.length > 0) {
-    ganhosAvulsosQuery = ganhosAvulsosQuery.in("imovel_id", imovelIds);
-  }
-
-  const { data: ganhosAvulsosData } = await ganhosAvulsosQuery;
-
-  // ── OCUPAÇÃO via lógica compartilhada (mesma da aba Calendário) ──
   const periodStart = atNoon(year, month, 1);
   const periodEnd = atNoon(year, month + 1, 1);
   const scopeIds = imovelIds && imovelIds.length > 0 ? imovelIds : Array.from(imoveisMap.keys());
   
   const occ = computeOccupancy(
-    (data || []).map((r: any) => ({
+    reservasNoMes.map((r: any) => ({
       imovel_id: r.imovel_id,
       data_inicio: r.data_inicio,
       data_fim: r.data_fim,
@@ -142,11 +132,10 @@ async function fetchMonthData(
     scopeIds,
     periodStart,
     periodEnd,
-    true // onlyValidated = true (Requisito da Visão Geral)
+    true // onlyValidated = true
   );
 
-  // ── BREAKDOWN: Detalhamento por imóvel (Audit tool) ──
-  const daysInMonth = Math.round((periodEnd.getTime() - periodStart.getTime()) / DAY_MS);
+  const daysInMonthCount = Math.round((periodEnd.getTime() - periodStart.getTime()) / DAY_MS);
   const breakdown: ImovelBreakdown[] = scopeIds.map(id => {
     const set = occ.occupiedByImovel.get(id);
     const nights = set?.size ?? 0;
@@ -154,15 +143,16 @@ async function fetchMonthData(
       id,
       nome: imoveisMap.get(id) || "Desconhecido",
       noites: nights,
-      totalDias: daysInMonth,
-      taxa: daysInMonth > 0 ? (nights / daysInMonth) * 100 : 0
+      totalDias: daysInMonthCount,
+      taxa: daysInMonthCount > 0 ? (nights / daysInMonthCount) * 100 : 0
     };
   }).sort((a, b) => b.taxa - a.taxa);
 
-  // ── RECEITA: somente reservas validadas, atribuídas ao mês de checkout ──
   let receita = 0;
   let reservationCount = 0;
-  (data || []).forEach((r: any) => {
+  
+  // Receita de reservas com checkout no mês
+  reservasNoMes.forEach((r: any) => {
     if (r.validada_financeiramente !== true) return;
     if (imovelIds && imovelIds.length > 0 && !imovelIds.includes(r.imovel_id)) return;
     
@@ -178,28 +168,20 @@ async function fetchMonthData(
     });
   });
 
-  // Somar ganhos avulsos
-  (ganhosAvulsosData || []).forEach((g: any) => {
+  ganhosNoMes.forEach((g: any) => {
     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-    if (regime !== "exclusivo_adm") {
-      receita += Number(g.valor) || 0;
-    }
+    if (regime !== "exclusivo_adm") receita += Number(g.valor) || 0;
   });
-
-  const occupiedDays = occ.occupiedNights;
-  const capacity = occ.capacity;
-  const occupancyRate = occ.occupancyRate;
-  const avgDailyRate = occupiedDays > 0 ? receita / occupiedDays : 0;
 
   return {
     month,
     year,
     label: `${MESES_CURTOS[month]} ${year}`,
     receita,
-    occupiedDays,
-    totalDays: capacity,
-    occupancyRate,
-    avgDailyRate,
+    occupiedDays: occ.occupiedNights,
+    totalDays: occ.capacity,
+    occupancyRate: occ.occupancyRate,
+    avgDailyRate: occ.occupiedNights > 0 ? receita / occ.occupiedNights : 0,
     reservationCount,
     breakdown
   };
@@ -317,41 +299,66 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       setLoading(true);
 
       const baseYear = ano === -1 ? currentYear : ano;
-      const years = [baseYear - 1, baseYear, baseYear + 1];
-      const allPromises: Promise<MonthData>[] = [];
+      const startYear = baseYear - 1;
+      const endYear = baseYear + 1;
+      
+      const firstDayTotal = `${startYear}-01-01`;
+      const lastDayTotal = `${endYear}-12-31`;
+
+      // 1. Fetch ALL data in BULK
+      const [
+        { data: allReservas },
+        { data: imoveisData },
+        { data: allGanhosAvulsos }
+      ] = await Promise.all([
+        supabase
+          .from("reservas")
+          .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
+          .lte("data_inicio", lastDayTotal)
+          .gt("data_fim", firstDayTotal),
+        supabase
+          .from("imoveis")
+          .select("id, nome_imovel"),
+        supabase
+          .from("ganhos_extras")
+          .select("valor, regime_comissao, aplicar_comissao, imovel_id, data")
+          .is("reserva_id", null)
+          .gte("data", firstDayTotal)
+          .lte("data", lastDayTotal)
+      ]);
+
+      const imoveisMap = new Map((imoveisData || []).map(i => [i.id, i.nome_imovel]));
+      const years = [startYear, baseYear, endYear];
+      
+      // 2. Process everything on client
+      const allResults: MonthData[] = [];
       for (const y of years) {
         for (let m = 0; m < 12; m++) {
-          allPromises.push(fetchMonthData(m, y, imovelIds));
+          allResults.push(processMonthData(m, y, allReservas || [], imoveisMap, allGanhosAvulsos || [], imovelIds));
         }
       }
 
-      const allResults = await Promise.all(allPromises);
-
-      // Group by year
       const priorYear = allResults.slice(0, 12);
       const currentYearData = allResults.slice(12, 24);
       const nextYearData = allResults.slice(24, 36);
 
-      // Enrich current year with prior for YoY comparison
       const enriched = currentYearData.map((m, i) => ({
         ...m,
         _prior: priorYear[i],
       }));
 
-      // Store all data for flexible filtering
-      const allEnriched = {
+      setAllData({
         prior: priorYear.map((m, i) => ({ ...m, _prior: priorYear[i] })),
         current: enriched,
         next: nextYearData.map((m, i) => ({ ...m, _prior: currentYearData[i] })),
-      };
-
-      setAllData(allEnriched as any);
+      } as any);
+      
       setMonthsData(enriched as any);
       setLoading(false);
     };
 
     load();
-  }, [ano, JSON.stringify(imovelIds)]);
+  }, [ano, imovelIds?.join(",")]);
 
   if (loading) {
     return (
@@ -373,56 +380,61 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     );
   }
 
-  // Filter months based on period
-  let filteredMonths: any[];
-  if (period === "current_month") {
-    const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
-    const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
-    filteredMonths = found ? [found] : [];
-  } else if (period === "ytd") {
-    filteredMonths = monthsData.filter((m) => {
-      if (ano === currentYear) return m.month <= currentMonth;
-      return true;
-    });
-  } else if (period === "last_year") {
-    filteredMonths = allData.prior;
-  } else if (period === "last3_next9") {
-    // Last 3 months + next 9 months from current month
-    const result: any[] = [];
-    for (let i = -3; i < 9; i++) {
-      let targetMonth = currentMonth + i;
-      let targetYear = currentYear;
-      if (targetMonth < 0) { targetMonth += 12; targetYear--; }
-      if (targetMonth > 11) { targetMonth -= 12; targetYear++; }
-      
-      let source: any[];
-      if (targetYear === ano - 1) source = allData.prior;
-      else if (targetYear === ano) source = monthsData;
-      else if (targetYear === ano + 1) source = allData.next;
-      else continue;
-      
-      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
-      if (found) result.push(found);
+
+  const filteredMonths = React.useMemo(() => {
+    if (loading) return [];
+    
+    if (period === "current_month") {
+      const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
+      const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
+      return found ? [found] : [];
     }
-    filteredMonths = result;
-  } else if (period === "last12") {
-    // Last 12 months from current month
-    const result: any[] = [];
-    for (let i = -11; i <= 0; i++) {
-      let targetMonth = currentMonth + i;
-      let targetYear = currentYear;
-      while (targetMonth < 0) { targetMonth += 12; targetYear--; }
-      
-      let source: any[];
-      if (targetYear === ano - 1) source = allData.prior;
-      else if (targetYear === ano) source = monthsData;
-      else continue;
-      
-      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
-      if (found) result.push(found);
+    
+    if (period === "ytd") {
+      return monthsData.filter((m) => {
+        if (ano === currentYear) return m.month <= currentMonth;
+        return true;
+      });
     }
-    filteredMonths = result;
-  } else {
+    
+    if (period === "last_year") return allData.prior;
+    
+    if (period === "last3_next9") {
+      const result: any[] = [];
+      for (let i = -3; i < 9; i++) {
+        let targetMonth = currentMonth + i;
+        let targetYear = currentYear;
+        if (targetMonth < 0) { targetMonth += 12; targetYear--; }
+        if (targetMonth > 11) { targetMonth -= 12; targetYear++; }
+        
+        let source: any[] = [];
+        if (targetYear === ano - 1) source = allData.prior;
+        else if (targetYear === ano) source = monthsData;
+        else if (targetYear === ano + 1) source = allData.next;
+        
+        const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+        if (found) result.push(found);
+      }
+      return result;
+    }
+    
+    if (period === "last12") {
+      const result: any[] = [];
+      for (let i = -11; i <= 0; i++) {
+        let targetMonth = currentMonth + i;
+        let targetYear = currentYear;
+        while (targetMonth < 0) { targetMonth += 12; targetYear--; }
+        
+        let source: any[] = [];
+        if (targetYear === ano - 1) source = allData.prior;
+        else if (targetYear === ano) source = monthsData;
+        
+        const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+        if (found) result.push(found);
+      }
+      return result;
+    }
+    
     // next12
     const result: any[] = [];
     for (let i = 1; i <= 12; i++) {
@@ -430,31 +442,47 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       let targetYear = currentYear;
       while (targetMonth > 11) { targetMonth -= 12; targetYear++; }
       
-      let source: any[];
+      let source: any[] = [];
       if (targetYear === ano) source = monthsData;
       else if (targetYear === ano + 1) source = allData.next;
-      else continue;
       
-      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
       if (found) result.push(found);
     }
-    filteredMonths = result;
-  }
+    return result;
+  }, [period, loading, monthsData, allData, ano, currentMonth, currentYear]);
 
-  // Calculate KPIs
-  const totalReceita = filteredMonths.reduce((s, m) => s + (Number(m.receita) || 0), 0);
-  const totalOccupiedDays = filteredMonths.reduce((s, m) => s + (Number(m.occupiedDays) || 0), 0);
-  const totalDays = filteredMonths.reduce((s, m) => s + (Number(m.totalDays) || 0), 0);
-  const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
-  const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
+  const kpis = React.useMemo(() => {
+    if (filteredMonths.length === 0) {
+      return { 
+        totalReceita: 0, totalOccupiedDays: 0, totalDays: 0, avgOccupancy: 0, avgDailyRate: 0,
+        priorReceita: 0, priorOccupiedDays: 0, priorTotalDays: 0, priorAvgOccupancy: 0, priorAvgDailyRate: 0
+      };
+    }
+    
+    const totalReceita = filteredMonths.reduce((s, m) => s + (Number(m.receita) || 0), 0);
+    const totalOccupiedDays = filteredMonths.reduce((s, m) => s + (Number(m.occupiedDays) || 0), 0);
+    const totalDays = filteredMonths.reduce((s, m) => s + (Number(m.totalDays) || 0), 0);
+    const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
+    const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
 
-  // Prior year KPIs for same period
-  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
-  const priorReceita = priorMonths.reduce((s, m) => s + (Number(m?.receita) || 0), 0);
-  const priorOccupiedDays = priorMonths.reduce((s, m) => s + (Number(m?.occupiedDays) || 0), 0);
-  const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
-  const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
-  const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
+    const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
+    const priorReceita = priorMonths.reduce((s, m) => s + (Number(m?.receita) || 0), 0);
+    const priorOccupiedDays = priorMonths.reduce((s, m) => s + (Number(m?.occupiedDays) || 0), 0);
+    const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
+    const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
+    const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
+
+    return {
+      totalReceita, totalOccupiedDays, totalDays, avgOccupancy, avgDailyRate,
+      priorReceita, priorOccupiedDays, priorTotalDays, priorAvgOccupancy, priorAvgDailyRate
+    };
+  }, [filteredMonths]);
+
+  const {
+    totalReceita, avgOccupancy, avgDailyRate,
+    priorReceita, priorAvgOccupancy, priorAvgDailyRate
+  } = kpis;
 
   const periodLabels: Record<PeriodFilter, string> = {
     current_month: `${MESES[currentMonth]} ${currentYear}`,
