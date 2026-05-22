@@ -220,26 +220,32 @@ const Calendario: React.FC = () => {
     });
   });
 
-  // Count total occupied days per imovel — deduplicar dias para que reservas
-  // sobrepostas (ex.: duplicadas via iCal Airbnb+Booking, bloqueios ou edições)
-  // nunca inflem a ocupação acima do total real de dias do mês.
-  const ocupacaoPorImovel: Record<string, { dias: number; reservas: number; _diasSet: Set<number> }> = {};
+  // Count total occupied days per imovel — using the unified logic
+  const periodStart = new Date(ano, mes, 1, 12, 0, 0, 0);
+  const periodEnd = new Date(ano, mes + 1, 1, 12, 0, 0, 0);
+  
+  const summary = computeOccupancy(
+    reservas.map(r => ({
+      imovel_id: r.imovel_id,
+      data_inicio: r.data_inicio,
+      data_fim: r.data_fim,
+    })),
+    imoveis.map(i => i.id),
+    periodStart,
+    periodEnd,
+    false // In calendar we show ALL (including unvalidated)
+  );
+
+  const ocupacaoPorImovel: Record<string, { dias: number; reservas: number }> = {};
   imoveis.forEach((im) => {
-    ocupacaoPorImovel[im.id] = { dias: 0, reservas: 0, _diasSet: new Set<number>() };
+    const set = summary.occupiedByImovel.get(im.id);
+    const numRes = reservas.filter(r => r.imovel_id === im.id).length;
+    ocupacaoPorImovel[im.id] = { 
+      dias: set?.size ?? 0, 
+      reservas: numRes 
+    };
   });
-  reservas.forEach((r) => {
-    const entry = ocupacaoPorImovel[r.imovel_id];
-    if (!entry) return;
-    const dias = daysOccupied(r, ano, mes);
-    if (dias.length > 0) {
-      dias.forEach((d) => entry._diasSet.add(d));
-      entry.reservas += 1;
-    }
-  });
-  // Materializar contagem deduplicada e garantir teto = dias do mês
-  Object.values(ocupacaoPorImovel).forEach((e) => {
-    e.dias = Math.min(e._diasSet.size, daysInMonth);
-  });
+
 
   const handleCellClick = (
     e: React.MouseEvent,
