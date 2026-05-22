@@ -541,9 +541,12 @@ const Imoveis: React.FC = () => {
                     <Input
                       value={form.ical_url_airbnb}
                       onChange={(e) => setForm({ ...form, ical_url_airbnb: e.target.value })}
-                      placeholder="https://www.airbnb.com/calendar/ical/..."
-                      className="bg-background text-sm"
+                      placeholder="https://www.airbnb.com/calendar/ical/....ics"
+                      className={`bg-background text-sm ${icalAirbnbError ? "border-destructive" : ""}`}
                     />
+                    {icalAirbnbError && (
+                      <p className="text-xs text-destructive">{icalAirbnbError}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground text-sm">URL iCal — Booking.com</Label>
@@ -551,8 +554,11 @@ const Imoveis: React.FC = () => {
                       value={form.ical_url_booking}
                       onChange={(e) => setForm({ ...form, ical_url_booking: e.target.value })}
                       placeholder="https://admin.booking.com/hotel/hoteladmin/ical.html?..."
-                      className="bg-background text-sm"
+                      className={`bg-background text-sm ${icalBookingError ? "border-destructive" : ""}`}
                     />
+                    {icalBookingError && (
+                      <p className="text-xs text-destructive">{icalBookingError}</p>
+                    )}
                   </div>
                 </div>
 
