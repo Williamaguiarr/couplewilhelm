@@ -392,6 +392,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="current_month">Mês atual</SelectItem>
                 <SelectItem value="ytd">Este ano</SelectItem>
                 <SelectItem value="last_year">Ano passado</SelectItem>
                 <SelectItem value="last3_next9">Últimos 3 e próximos 9 meses</SelectItem>
