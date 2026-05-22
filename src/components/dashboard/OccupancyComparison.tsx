@@ -83,9 +83,10 @@ async function fetchMonthData(
 
   let query = supabase
     .from("reservas")
-    .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
+    .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
     .lte("data_inicio", lastDay)
-    .gt("data_fim", firstDay);
+    .gt("data_fim", firstDay)
+    .eq("validada_financeiramente", true);
 
   if (imovelIds && imovelIds.length > 0) {
     query = query.in("imovel_id", imovelIds);
