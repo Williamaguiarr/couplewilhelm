@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarDays, TrendingUp, TrendingDown, Info, DollarSign, BarChart3 } from "lucide-react";
+import { CalendarDays, TrendingUp, TrendingDown, Info, DollarSign, BarChart3, ListFilter, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { computeOccupancy } from "@/lib/occupancy";
 import {
@@ -25,6 +25,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
 
 const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
