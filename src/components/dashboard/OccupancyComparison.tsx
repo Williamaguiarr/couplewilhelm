@@ -516,10 +516,17 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
               <p className="font-display text-2xl text-foreground font-semibold tabular-nums">
                 {avgOccupancy.toFixed(0)}%
               </p>
-              <div className="flex items-center gap-1.5">
-                <ChangeIndicator current={avgOccupancy} previous={priorAvgOccupancy} format="percent" />
-                <span className="text-[10px] text-muted-foreground/50 font-medium">vs ano anterior</span>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <ChangeIndicator current={avgOccupancy} previous={priorAvgOccupancy} format="percent" />
+                  <span className="text-[10px] text-muted-foreground/50 font-medium">vs ano anterior</span>
+                </div>
+                
+                {period === "current_month" && filteredMonths[0] && (
+                  <OccupancyAuditDialog monthData={filteredMonths[0]} />
+                )}
               </div>
+
             </div>
 
             {/* Preço médio da diária */}
