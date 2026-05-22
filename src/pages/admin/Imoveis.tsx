@@ -178,24 +178,26 @@ const Imoveis: React.FC = () => {
     if (!u) return null;
     try {
       const parsed = new URL(u);
+      const hostname = parsed.hostname.toLowerCase();
       const path = parsed.pathname.toLowerCase();
       
       // Check for Booking.com specific export URL format
-      const isBookingExport = plataforma === "booking" && u.startsWith("https://ical.booking.com/v1/export?t=");
+      const isBookingExport = plataforma === "booking" && 
+        (hostname === "ical.booking.com" && path.includes("/v1/export"));
       
       const isIcs =
-        path.endsWith(".ics") || path.includes("/ical/") || path.includes("ical.html") || isBookingExport;
+        path.endsWith(".ics") || 
+        path.includes("/ical/") || 
+        path.includes("ical.html") || 
+        isBookingExport;
         
       const isListingPage =
-        path.includes("/rooms/") ||
-        (path.includes("/hotel/") && !path.includes("ical") && !isBookingExport) ||
-        path === "/" ||
-        (path.endsWith(".html") && !path.includes("ical"));
+        (path.includes("/rooms/") || (path.includes("/hotel/") && !path.includes("ical"))) && !isBookingExport;
         
       if (!isIcs || isListingPage) {
         return plataforma === "airbnb"
           ? "URL inválida. Use o link exportado em Anúncio → Disponibilidade → Sincronizar calendários → Exportar calendário (deve terminar em .ics)."
-          : "URL inválida. Use o link exportado na Extranet Booking → Tarifas e Disponibilidade → Sincronização → Exportar Calendário (deve conter ical.html, .ics ou ser o link oficial de exportação).";
+          : "URL inválida. Use o link exportado na Extranet Booking → Tarifas e Disponibilidade → Sincronização → Exportar Calendário (deve conter ical.html, .ics ou ser o link oficial de exportação v1/export).";
       }
       return null;
     } catch {
