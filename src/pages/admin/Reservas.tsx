@@ -68,6 +68,7 @@ interface Reserva {
   imovel_id: string;
   num_hospedes: number | null;
   nome_hospede?: string | null;
+  plataforma_origem?: string | null;
   hora_checkin_override: string | null;
   hora_checkout_override: string | null;
   imovel?: { nome_imovel: string };
