@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CalendarDays, TrendingUp, TrendingDown, Info, DollarSign, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { computeOccupancy } from "@/lib/occupancy";
 import {
   Tooltip,
   TooltipContent,
