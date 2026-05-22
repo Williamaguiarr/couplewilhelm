@@ -100,25 +100,23 @@ async function fetchMonthData(
   const firstDay = new Date(year, month, 1).toISOString().split("T")[0];
   const lastDay = new Date(year, month + 1, 0).toISOString().split("T")[0];
 
-  // IMPORTANTE: para OCUPAÇÃO buscamos TODAS as reservas (validadas ou não)
-  // — alinhando com o que aparece bloqueado no Calendário. A validação
-  // financeira só filtra o cálculo de RECEITA/ADR mais abaixo.
-  let query = supabase
-    .from("reservas")
-    .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
-    .lte("data_inicio", lastDay)
-    .gt("data_fim", firstDay);
+  const [{ data }, { data: imoveisData }] = await Promise.all([
+    supabase
+      .from("reservas")
+      .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
+      .lte("data_inicio", lastDay)
+      .gt("data_fim", firstDay),
+    supabase
+      .from("imoveis")
+      .select("id, nome_imovel")
+  ]);
 
-  if (imovelIds && imovelIds.length > 0) {
-    query = query.in("imovel_id", imovelIds);
-  }
-
-  const { data } = await query;
+  const imoveisMap = new Map((imoveisData || []).map(i => [i.id, i.nome_imovel]));
 
   // Buscar ganhos extras não vinculados a reservas que caem no mês de checkout
   let ganhosAvulsosQuery = supabase
     .from("ganhos_extras")
-    .select("valor, regime_comissao, aplicar_comissao")
+    .select("valor, regime_comissao, aplicar_comissao, imovel_id")
     .is("reserva_id", null)
     .gte("data", firstDay)
     .lte("data", lastDay);
@@ -132,7 +130,8 @@ async function fetchMonthData(
   // ── OCUPAÇÃO via lógica compartilhada (mesma da aba Calendário) ──
   const periodStart = atNoon(year, month, 1);
   const periodEnd = atNoon(year, month + 1, 1);
-  const scopeIds = imovelIds && imovelIds.length > 0 ? imovelIds : [];
+  const scopeIds = imovelIds && imovelIds.length > 0 ? imovelIds : Array.from(imoveisMap.keys());
+  
   const occ = computeOccupancy(
     (data || []).map((r: any) => ({
       imovel_id: r.imovel_id,
@@ -146,15 +145,31 @@ async function fetchMonthData(
     true // onlyValidated = true (Requisito da Visão Geral)
   );
 
+  // ── BREAKDOWN: Detalhamento por imóvel (Audit tool) ──
+  const daysInMonth = Math.round((periodEnd.getTime() - periodStart.getTime()) / DAY_MS);
+  const breakdown: ImovelBreakdown[] = scopeIds.map(id => {
+    const set = occ.occupiedByImovel.get(id);
+    const nights = set?.size ?? 0;
+    return {
+      id,
+      nome: imoveisMap.get(id) || "Desconhecido",
+      noites: nights,
+      totalDias: daysInMonth,
+      taxa: daysInMonth > 0 ? (nights / daysInMonth) * 100 : 0
+    };
+  }).sort((a, b) => b.taxa - a.taxa);
 
   // ── RECEITA: somente reservas validadas, atribuídas ao mês de checkout ──
   let receita = 0;
   let reservationCount = 0;
   (data || []).forEach((r: any) => {
     if (r.validada_financeiramente !== true) return;
+    if (imovelIds && imovelIds.length > 0 && !imovelIds.includes(r.imovel_id)) return;
+    
     const [y2, m2, d2] = r.data_fim.split("-").map(Number);
     const checkoutDate = new Date(y2, m2 - 1, d2);
     if (checkoutDate.getMonth() !== month || checkoutDate.getFullYear() !== year) return;
+    
     reservationCount += 1;
     receita += Number(r.valor_bruto) || 0;
     (r.ganhos_extras || []).forEach((g: any) => {
@@ -186,8 +201,10 @@ async function fetchMonthData(
     occupancyRate,
     avgDailyRate,
     reservationCount,
+    breakdown
   };
 }
+
 
 const InfoIcon: React.FC<{ tooltip: string }> = ({ tooltip }) => (
   <Tooltip>
