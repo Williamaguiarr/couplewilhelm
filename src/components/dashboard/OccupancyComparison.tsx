@@ -606,14 +606,18 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-3">
-                          <span className="text-sm text-foreground tabular-nums">
-                            {(m.occupancyRate || 0).toFixed(0)}%
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm text-foreground tabular-nums">
+                              {(m.occupancyRate || 0).toFixed(0)}%
+                            </span>
+                            <OccupancyAuditDialog monthData={m} />
+                          </div>
                           <div className="w-16 text-right">
                             <ChangeIndicator current={m.occupancyRate || 0} previous={prior.occupancyRate || 0} format="percent" />
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-3">
                           <span className="text-sm text-foreground tabular-nums">
