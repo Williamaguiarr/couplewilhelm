@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -40,14 +38,11 @@ import {
   UserCheck,
   Plus,
   Trash2,
-  Receipt,
   AlertTriangle,
   ArrowRight,
-  Filter,
   ChevronLeft,
   ChevronRight,
   FileDown,
-  Clock,
   Sparkles,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
@@ -61,7 +56,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
-  drawFooterAllPages, premiumTableStyles, fmtBRL, genTimestamp,
+  drawFooterAllPages, premiumTableStyles, genTimestamp,
 } from "@/lib/pdf/builder";
 
 interface Imovel {
@@ -98,8 +93,6 @@ const TIPOS = [
   { value: "reparo", label: "Reparo" },
   { value: "outros", label: "Outros" },
 ];
-
-const tipoLabel = (v: string) => TIPOS.find((t) => t.value === v)?.label ?? v;
 
 const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -166,7 +159,9 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchStats();
+    if (imoveis.length > 0) {
+      fetchStats();
+    }
   }, [filtroProprietario, imoveis, mesSelecionado, anoSelecionado]);
 
   const navegarMes = (delta: number) => {
@@ -213,6 +208,7 @@ const AdminDashboard: React.FC = () => {
     const isAcumuladoMes = mesSelecionado === -1;
     const isAcumuladoAno = anoSelecionado === -1;
 
+    // Início e fim do período para busca no banco (se acumulado, busca tudo)
     const firstDay = isAcumuladoMes ? (isAcumuladoAno ? "1970-01-01" : `${anoSelecionado}-01-01`) : (isAcumuladoAno ? "1970-01-01" : new Date(anoSelecionado, mesSelecionado, 1).toISOString().split("T")[0]);
     const lastDay = isAcumuladoMes ? (isAcumuladoAno ? "2099-12-31" : `${anoSelecionado}-12-31`) : (isAcumuladoAno ? "2099-12-31" : new Date(anoSelecionado, mesSelecionado + 1, 0).toISOString().split("T")[0]);
 
@@ -230,44 +226,52 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let reservasMesQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim");
-    let reservasDetalhadasQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim");
-    let reservaCountQuery = supabase.from("reservas").select("id, data_fim");
-
-    if (!isAcumuladoMes || !isAcumuladoAno) {
-      if (!isAcumuladoMes && !isAcumuladoAno) {
-        reservasMesQuery = reservasMesQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
-        reservasDetalhadasQuery = reservasDetalhadasQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
-        reservaCountQuery = reservaCountQuery.gte("data_fim", firstDay).lte("data_fim", lastDay);
-      } else if (!isAcumuladoAno) {
-        // Ano fixo, Mes acumulado
-        const start = `${anoSelecionado}-01-01`;
-        const end = `${anoSelecionado}-12-31`;
-        reservasMesQuery = reservasMesQuery.gte("data_fim", start).lte("data_fim", end);
-        reservasDetalhadasQuery = reservasDetalhadasQuery.gte("data_fim", start).lte("data_fim", end);
-        reservaCountQuery = reservaCountQuery.gte("data_fim", start).lte("data_fim", end);
-      }
-      // Se Ano é acumulado e Mês é fixo, filtramos no JS abaixo
-    }
-    let imovelCountQuery = supabase.from("imoveis").select("*", { count: "exact", head: true });
-
-    if (imovelIds) {
-      reservasMesQuery = reservasMesQuery.in("imovel_id", imovelIds);
-      reservasDetalhadasQuery = reservasDetalhadasQuery.in("imovel_id", imovelIds);
-      reservaCountQuery = reservaCountQuery.in("imovel_id", imovelIds);
-      imovelCountQuery = imovelCountQuery.in("id", imovelIds);
-    }
-
-    const [propCountRes, imovelCountRes, reservaCountRes, reservasMesRes, reservasDetalhadasRes] = await Promise.all([
+    // 1. Batch metadata queries
+    const [propCountRes, adminConfigRes, imoveisCountRes] = await Promise.all([
       supabase.from("admin_proprietarios").select("*", { count: "exact", head: true }),
-      imovelCountQuery,
-      reservaCountQuery,
-      reservasMesQuery,
-      reservasDetalhadasQuery,
+      supabase.from("admin_configs").select("comissao_cw").single(),
+      supabase.from("imoveis").select("*", { count: "exact", head: true }).in("id", imovelIds || imoveis.map(i => i.id))
     ]);
 
-    const propCount = propCountRes.count;
-    const imovelCount = imovelCountRes.count;
+    const adminRate = adminConfigRes.data?.comissao_cw ?? 0.25;
+    
+    // 2. Data queries
+    const ownerIds = new Set<string>();
+    imoveis.forEach((im) => {
+      if (im.proprietario_id) ownerIds.add(im.proprietario_id);
+      if (im.proprietario_id_2) ownerIds.add(im.proprietario_id_2);
+    });
+
+    const futureStart = (isAcumuladoMes || isAcumuladoAno) 
+      ? new Date().toISOString().split("T")[0]
+      : new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
+
+    const reservationsQuery = supabase.from("reservas")
+      .select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva, data_fim")
+      .gte("data_fim", isAcumuladoMes && isAcumuladoAno ? "1970-01-01" : firstDay);
+
+    const ganhosQuery = supabase.from("ganhos_extras" as any)
+      .select("imovel_id, valor, regime_comissao, aplicar_comissao, data, reservas(data_fim)");
+
+    const [reservasRes, ganhosRes, profilesRes] = await Promise.all([
+      imovelIds ? reservationsQuery.in("imovel_id", imovelIds) : reservationsQuery,
+      imovelIds ? ganhosQuery.in("imovel_id", imovelIds) : ganhosQuery,
+      ownerIds.size > 0 
+        ? supabase.from("profiles").select("id, comissao_percentual").in("id", Array.from(ownerIds))
+        : Promise.resolve({ data: [] })
+    ]);
+
+    const ownerRatesMap: Record<string, number> = {};
+    (profilesRes.data || []).forEach((p: any) => {
+      ownerRatesMap[p.id] = (p.comissao_percentual ?? 25) / 100;
+    });
+
+    const getOwnerRate = (imovelId: string): number => {
+      const im = imoveis.find((i) => i.id === imovelId);
+      if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
+      if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) return ownerRatesMap[im.proprietario_id];
+      return adminRate;
+    };
 
     const filterByDate = (dateStr: string) => {
       if (!dateStr) return false;
@@ -277,34 +281,11 @@ const AdminDashboard: React.FC = () => {
       return matchAno && matchMes;
     };
 
-    const filteredReservasMes = (reservasMesRes.data || []).filter(r => filterByDate(r.data_fim));
-    const filteredReservasDetalhadas = (reservasDetalhadasRes.data || []).filter(r => filterByDate(r.data_fim));
-    const reservaCount = isAcumuladoMes || isAcumuladoAno ? filteredReservasDetalhadas.length : (reservaCountRes.count || 0);
+    // 3. Single-pass calculation
+    const currentReservas = (reservasRes.data || []).filter(r => filterByDate(r.data_fim));
+    const futureReservas = (reservasRes.data || []).filter(r => r.data_fim >= futureStart);
 
-    const { data: adminConfig } = await supabase.from("admin_configs").select("comissao_cw").single();
-    const adminRate = adminConfig?.comissao_cw ?? 0.25;
-
-    const ownerIds = new Set<string>();
-    imoveis.forEach((im) => {
-      if (im.proprietario_id) ownerIds.add(im.proprietario_id);
-      if (im.proprietario_id_2) ownerIds.add(im.proprietario_id_2);
-    });
-    let ownerRatesMap: Record<string, number> = {};
-    if (ownerIds.size > 0) {
-      const { data: profiles } = await supabase.from("profiles").select("id, comissao_percentual").in("id", Array.from(ownerIds));
-      (profiles || []).forEach((p: any) => {
-        ownerRatesMap[p.id] = (p.comissao_percentual ?? 25) / 100;
-      });
-    }
-
-    const getOwnerRate = (imovelId: string): number => {
-      const im = imoveis.find((i) => i.id === imovelId);
-      if (im?.taxa_comissao != null) return im.taxa_comissao / 100;
-      if (im?.proprietario_id && ownerRatesMap[im.proprietario_id] != null) return ownerRatesMap[im.proprietario_id];
-      return adminRate;
-    };
-
-    const receitaMes = filteredReservasMes.reduce((acc, r) => {
+    const totaisReservas = currentReservas.reduce((acc, r) => {
       const valorBruto = r.valor_bruto || 0;
       const taxaLimpeza = r.taxa_limpeza || 0;
       const comissaoPlataforma = (r as any).comissao_plataforma || 0;
@@ -314,113 +295,70 @@ const AdminDashboard: React.FC = () => {
         : getOwnerRate((r as any).imovel_id);
       const comissaoCW = valorLiquido * rate;
       const valorProprietario = valorLiquido - comissaoCW;
-      return acc + valorProprietario;
-    }, 0);
+      return {
+        valorBruto: acc.valorBruto + valorBruto,
+        taxaLimpeza: acc.taxaLimpeza + taxaLimpeza,
+        valorLiquido: acc.valorLiquido + valorLiquido,
+        comissaoCW: acc.comissaoCW + comissaoCW,
+        valorProprietario: acc.valorProprietario + valorProprietario,
+      };
+    }, { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 });
 
-    const totaisReservas = (filteredReservasDetalhadas || []).reduce(
-      (acc, r) => {
-        const valorBruto = r.valor_bruto || 0;
-        const taxaLimpeza = r.taxa_limpeza || 0;
-        const comissaoPlataforma = (r as any).comissao_plataforma || 0;
-        const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-        const rate = (r as any).taxa_comissao_reserva != null 
-          ? (r as any).taxa_comissao_reserva / 100 
-          : getOwnerRate((r as any).imovel_id);
-        const comissaoCW = valorLiquido * rate;
-        const valorProprietario = valorLiquido - comissaoCW;
-        return {
-          valorBruto: acc.valorBruto + valorBruto,
-          taxaLimpeza: acc.taxaLimpeza + taxaLimpeza,
-          valorLiquido: acc.valorLiquido + valorLiquido,
-          comissaoCW: acc.comissaoCW + comissaoCW,
-          valorProprietario: acc.valorProprietario + valorProprietario,
-        };
-      },
-      { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 }
-    );
-
-    // Busca ganhos extras com info de reserva para priorizar data de checkout
-    let ganhosQuery = supabase
-      .from("ganhos_extras" as any)
-      .select("imovel_id, valor, regime_comissao, aplicar_comissao, data, reservas(data_fim)");
-      
-    if (imovelIds) ganhosQuery = ganhosQuery.in("imovel_id", imovelIds);
-    
-    const { data: allGanhos } = await ganhosQuery;
-
-    // Filtra ganhos no JS para garantir que ganhos vinculados a reservas sigam o checkout
-    const ganhosMes = (allGanhos || []).filter((g: any) => {
+    const currentGanhos = (ganhosRes.data || []).filter((g: any) => {
       const resData = Array.isArray(g.reservas) ? g.reservas[0] : g.reservas;
       const effectiveDate = resData?.data_fim || g.data;
       return filterByDate(effectiveDate);
     });
 
-    const totaisGanhos = ganhosMes.reduce(
-      (acc: any, g: any) => {
-        const valor = Number.isFinite(Number(g.valor)) ? Number(g.valor) : 0;
-        let com = 0; let prop = 0;
-        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-        if (regime === "com_comissao") {
-          const rate = getOwnerRate(g.imovel_id);
-          com = valor * rate;
-          prop = valor - com;
-        } else if (regime === "sem_comissao") {
-          prop = valor;
-        } else if (regime === "exclusivo_adm") {
-          com = valor;
-        }
-        return {
-          valorBruto: acc.valorBruto + (regime === "exclusivo_adm" ? 0 : valor),
-          comissaoCW: acc.comissaoCW + com,
-          valorProprietario: acc.valorProprietario + prop,
-        };
-      },
-      { valorBruto: 0, comissaoCW: 0, valorProprietario: 0 }
-    );
+    const totaisGanhos = currentGanhos.reduce((acc: any, g: any) => {
+      const valor = Number(g.valor) || 0;
+      let com = 0; let prop = 0;
+      const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+      if (regime === "com_comissao") {
+        const rate = getOwnerRate(g.imovel_id);
+        com = valor * rate;
+        prop = valor - com;
+      } else if (regime === "sem_comissao") prop = valor;
+      else if (regime === "exclusivo_adm") com = valor;
+      
+      return {
+        valorBruto: acc.valorBruto + (regime === "exclusivo_adm" ? 0 : valor),
+        comissaoCW: acc.comissaoCW + com,
+        valorProprietario: acc.valorProprietario + prop,
+      };
+    }, { valorBruto: 0, comissaoCW: 0, valorProprietario: 0 });
 
-    const totais = {
+    const futuroTotais = futureReservas.reduce((acc, r) => {
+      const valorBruto = r.valor_bruto || 0;
+      const taxaLimpeza = r.taxa_limpeza || 0;
+      const comissaoPlataforma = (r as any).comissao_plataforma || 0;
+      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+      const rate = (r as any).taxa_comissao_reserva != null 
+        ? (r as any).taxa_comissao_reserva / 100 
+        : getOwnerRate((r as any).imovel_id);
+      const comissaoCW = valorLiquido * rate;
+      const valorProprietario = valorLiquido - comissaoCW;
+      return {
+        totalReservas: acc.totalReservas + 1,
+        valorBruto: acc.valorBruto + valorBruto,
+        valorProprietario: acc.valorProprietario + valorProprietario,
+      };
+    }, { totalReservas: 0, valorBruto: 0, valorProprietario: 0 });
+
+    setFuturo(futuroTotais);
+    setStats({
+      totalProprietarios: filtroProprietario === "todos" ? (propCountRes.count || 0) : 1,
+      totalImoveis: imoveisCountRes.count || 0,
+      totalReservas: currentReservas.length,
+      receitaMes: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
+    });
+    setFinanceiro({
       valorBruto: totaisReservas.valorBruto + totaisGanhos.valorBruto,
       taxaLimpeza: totaisReservas.taxaLimpeza,
       valorLiquido: totaisReservas.valorLiquido + totaisGanhos.valorBruto,
       comissaoCW: totaisReservas.comissaoCW + totaisGanhos.comissaoCW,
       valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
-    };
-
-    const futureStart = (isAcumuladoMes || isAcumuladoAno) 
-      ? new Date().toISOString().split("T")[0]
-      : new Date(anoSelecionado, mesSelecionado + 1, 1).toISOString().split("T")[0];
-    let futureQuery = supabase.from("reservas").select("imovel_id, valor_bruto, taxa_limpeza, comissao_plataforma, valor_liquido_proprietario, taxa_comissao_reserva").gte("data_fim", futureStart);
-    if (imovelIds) futureQuery = futureQuery.in("imovel_id", imovelIds);
-    const { data: futureReservas } = await futureQuery;
-
-    const futuroTotais = (futureReservas || []).reduce(
-      (acc, r) => {
-        const valorBruto = r.valor_bruto || 0;
-        const taxaLimpeza = r.taxa_limpeza || 0;
-        const comissaoPlataforma = (r as any).comissao_plataforma || 0;
-        const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
-        const rate = (r as any).taxa_comissao_reserva != null 
-          ? (r as any).taxa_comissao_reserva / 100 
-          : getOwnerRate((r as any).imovel_id);
-        const comissaoCW = valorLiquido * rate;
-        const valorProprietario = valorLiquido - comissaoCW;
-        return {
-          totalReservas: acc.totalReservas + 1,
-          valorBruto: acc.valorBruto + valorBruto,
-          valorProprietario: acc.valorProprietario + valorProprietario,
-        };
-      },
-      { totalReservas: 0, valorBruto: 0, valorProprietario: 0 }
-    );
-
-    setFuturo(futuroTotais);
-    setStats({
-      totalProprietarios: filtroProprietario === "todos" ? (propCount || 0) : 1,
-      totalImoveis: imovelCount || 0,
-      totalReservas: reservaCount || 0,
-      receitaMes: receitaMes + totaisGanhos.valorProprietario,
     });
-    setFinanceiro(totais);
     setLoading(false);
   };
 
@@ -486,16 +424,18 @@ const AdminDashboard: React.FC = () => {
     } catch (err) { toast({ title: "Erro ao gerar PDF", variant: "destructive" }); }
   };
 
-  const despesasFiltradas = despesas.filter(d => {
-    const im = imoveis.find(i => i.id === d.imovel_id);
-    const matchProp = filtroProprietario === "todos" || im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
-    if (!matchProp) return false;
-    
-    const [y, m] = d.data.split("-").map(Number);
-    const matchAno = anoSelecionado === -1 || y === anoSelecionado;
-    const matchMes = mesSelecionado === -1 || (m - 1) === mesSelecionado;
-    return matchAno && matchMes;
-  });
+  const despesasFiltradas = useMemo(() => {
+    return despesas.filter(d => {
+      const im = imoveis.find(i => i.id === d.imovel_id);
+      const matchProp = filtroProprietario === "todos" || im?.proprietario_id === filtroProprietario || im?.proprietario_id_2 === filtroProprietario;
+      if (!matchProp) return false;
+      
+      const [y, m] = d.data.split("-").map(Number);
+      const matchAno = anoSelecionado === -1 || y === anoSelecionado;
+      const matchMes = mesSelecionado === -1 || (m - 1) === mesSelecionado;
+      return matchAno && matchMes;
+    });
+  }, [despesas, imoveis, filtroProprietario, anoSelecionado, mesSelecionado]);
 
   const cards = [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
@@ -623,13 +563,13 @@ const AdminDashboard: React.FC = () => {
         <OccupancyComparison 
           mes={mesSelecionado} 
           ano={anoSelecionado} 
-          imovelIds={
-            filtroImovel !== "todos" 
-              ? [filtroImovel] 
-              : filtroProprietario !== "todos" 
-                ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) 
-                : imoveis.map(i => i.id)
-          } 
+          imovelIds={useMemo(() => {
+            if (filtroImovel !== "todos") return [filtroImovel];
+            if (filtroProprietario !== "todos") {
+              return imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id);
+            }
+            return imoveis.map(i => i.id);
+          }, [filtroImovel, filtroProprietario, imoveis])} 
         />
 
         <FinancialYearComparison imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : undefined} imoveis={imoveis} />
