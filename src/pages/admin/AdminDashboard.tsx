@@ -564,15 +564,18 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {financeiroCards.map((card, idx) => (
-            <Card key={card.title} className="spotlight-card group">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
-                <card.icon className="h-3.5 w-3.5 text-primary opacity-60" />
-              </CardHeader>
-              <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(card.value)}</p><p className="text-[11px] text-muted-foreground">{card.description}</p></div>}</CardContent>
-            </Card>
-          ))}
+          {financeiroCards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <Card key={card.title} className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
+                  <Icon className="h-3.5 w-3.5 text-primary opacity-60" />
+                </CardHeader>
+                <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(card.value)}</p><p className="text-[11px] text-muted-foreground">{card.description}</p></div>}</CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <OccupancyComparison 
