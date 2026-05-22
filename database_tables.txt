@@ -1,62 +1,15 @@
-         tablename          |     schemaname      
-----------------------------+---------------------
- ganhos_extras              | public
- saml_providers             | auth
- buckets_vectors            | storage
- schema_migrations          | auth
- instances                  | auth
- oauth_client_states        | auth
- secrets                    | vault
- identities                 | auth
- limpezas                   | public
- job_run_details            | cron
- job                        | cron
- ical_sync_alerts           | public
- oauth_authorizations       | auth
- http_request_queue         | net
- _http_response             | net
- messages                   | realtime
- custos_fixos_proprietario  | public
- schema_migrations          | realtime
- messages_2026_05_19        | realtime
- admin_configs              | public
- messages_2026_05_20        | realtime
- one_time_tokens            | auth
- mfa_challenges             | auth
- subscription               | realtime
- mfa_factors                | auth
- saml_relay_states          | auth
- sessions                   | auth
- buckets_analytics          | storage
- migrations                 | storage
- vector_indexes             | storage
- messages_2026_05_21        | realtime
- admin_proprietarios        | public
- schema_migrations          | supabase_migrations
- custom_oauth_providers     | auth
- messages_2026_05_22        | realtime
- flow_state                 | auth
- user_roles                 | public
- profiles                   | public
- reservas                   | public
- messages_2026_05_23        | realtime
- webauthn_challenges        | auth
- oauth_consents             | auth
- sso_providers              | auth
- imoveis                    | public
- messages_2026_05_24        | realtime
- audit_log_entries          | auth
- mfa_amr_claims             | auth
- s3_multipart_uploads_parts | storage
- s3_multipart_uploads       | storage
- despesas_extras            | public
- messages_2026_05_25        | realtime
- buckets                    | storage
- objects                    | storage
- webauthn_credentials       | auth
- sso_domains                | auth
- refresh_tokens             | auth
- oauth_clients              | auth
- users                      | auth
-(58 rows)
+        table_name         
+---------------------------
+ ganhos_extras
+ limpezas
+ ical_sync_alerts
+ custos_fixos_proprietario
+ admin_configs
+ admin_proprietarios
+ reservas
+ profiles
+ user_roles
+ imoveis
+ despesas_extras
+(11 rows)
 
