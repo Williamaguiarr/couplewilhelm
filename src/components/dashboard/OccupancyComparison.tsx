@@ -92,48 +92,38 @@ function fmtCurrency(v: number): string {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function fetchMonthData(
+/**
+ * Calcula os dados de um mês específico com base em dados já buscados em lote.
+ */
+function processMonthData(
   month: number,
   year: number,
+  reservas: any[],
+  imoveisMap: Map<string, string>,
+  ganhosAvulsos: any[],
   imovelIds?: string[] | null,
-): Promise<MonthData> {
-  const firstDay = new Date(year, month, 1).toISOString().split("T")[0];
-  const lastDay = new Date(year, month + 1, 0).toISOString().split("T")[0];
+): MonthData {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const firstDayStr = firstDay.toISOString().split("T")[0];
+  const lastDayStr = lastDay.toISOString().split("T")[0];
 
-  const [{ data }, { data: imoveisData }] = await Promise.all([
-    supabase
-      .from("reservas")
-      .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
-      .lte("data_inicio", lastDay)
-      .gt("data_fim", firstDay),
-    supabase
-      .from("imoveis")
-      .select("id, nome_imovel")
-  ]);
+  // Filtrar reservas que se sobrepõem ao mês
+  const reservasNoMes = reservas.filter(r => 
+    r.data_inicio <= lastDayStr && r.data_fim > firstDayStr
+  );
 
-  const imoveisMap = new Map((imoveisData || []).map(i => [i.id, i.nome_imovel]));
+  // Ganhos avulsos do mês
+  const ganhosNoMes = ganhosAvulsos.filter(g => 
+    g.data >= firstDayStr && g.data <= lastDayStr
+  );
 
-  // Buscar ganhos extras não vinculados a reservas que caem no mês de checkout
-  let ganhosAvulsosQuery = supabase
-    .from("ganhos_extras")
-    .select("valor, regime_comissao, aplicar_comissao, imovel_id")
-    .is("reserva_id", null)
-    .gte("data", firstDay)
-    .lte("data", lastDay);
-
-  if (imovelIds && imovelIds.length > 0) {
-    ganhosAvulsosQuery = ganhosAvulsosQuery.in("imovel_id", imovelIds);
-  }
-
-  const { data: ganhosAvulsosData } = await ganhosAvulsosQuery;
-
-  // ── OCUPAÇÃO via lógica compartilhada (mesma da aba Calendário) ──
   const periodStart = atNoon(year, month, 1);
   const periodEnd = atNoon(year, month + 1, 1);
   const scopeIds = imovelIds && imovelIds.length > 0 ? imovelIds : Array.from(imoveisMap.keys());
   
   const occ = computeOccupancy(
-    (data || []).map((r: any) => ({
+    reservasNoMes.map((r: any) => ({
       imovel_id: r.imovel_id,
       data_inicio: r.data_inicio,
       data_fim: r.data_fim,
@@ -142,11 +132,10 @@ async function fetchMonthData(
     scopeIds,
     periodStart,
     periodEnd,
-    true // onlyValidated = true (Requisito da Visão Geral)
+    true // onlyValidated = true
   );
 
-  // ── BREAKDOWN: Detalhamento por imóvel (Audit tool) ──
-  const daysInMonth = Math.round((periodEnd.getTime() - periodStart.getTime()) / DAY_MS);
+  const daysInMonthCount = Math.round((periodEnd.getTime() - periodStart.getTime()) / DAY_MS);
   const breakdown: ImovelBreakdown[] = scopeIds.map(id => {
     const set = occ.occupiedByImovel.get(id);
     const nights = set?.size ?? 0;
@@ -154,15 +143,16 @@ async function fetchMonthData(
       id,
       nome: imoveisMap.get(id) || "Desconhecido",
       noites: nights,
-      totalDias: daysInMonth,
-      taxa: daysInMonth > 0 ? (nights / daysInMonth) * 100 : 0
+      totalDias: daysInMonthCount,
+      taxa: daysInMonthCount > 0 ? (nights / daysInMonthCount) * 100 : 0
     };
   }).sort((a, b) => b.taxa - a.taxa);
 
-  // ── RECEITA: somente reservas validadas, atribuídas ao mês de checkout ──
   let receita = 0;
   let reservationCount = 0;
-  (data || []).forEach((r: any) => {
+  
+  // Receita de reservas com checkout no mês
+  reservasNoMes.forEach((r: any) => {
     if (r.validada_financeiramente !== true) return;
     if (imovelIds && imovelIds.length > 0 && !imovelIds.includes(r.imovel_id)) return;
     
@@ -178,28 +168,20 @@ async function fetchMonthData(
     });
   });
 
-  // Somar ganhos avulsos
-  (ganhosAvulsosData || []).forEach((g: any) => {
+  ganhosNoMes.forEach((g: any) => {
     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-    if (regime !== "exclusivo_adm") {
-      receita += Number(g.valor) || 0;
-    }
+    if (regime !== "exclusivo_adm") receita += Number(g.valor) || 0;
   });
-
-  const occupiedDays = occ.occupiedNights;
-  const capacity = occ.capacity;
-  const occupancyRate = occ.occupancyRate;
-  const avgDailyRate = occupiedDays > 0 ? receita / occupiedDays : 0;
 
   return {
     month,
     year,
     label: `${MESES_CURTOS[month]} ${year}`,
     receita,
-    occupiedDays,
-    totalDays: capacity,
-    occupancyRate,
-    avgDailyRate,
+    occupiedDays: occ.occupiedNights,
+    totalDays: occ.capacity,
+    occupancyRate: occ.occupancyRate,
+    avgDailyRate: occ.occupiedNights > 0 ? receita / occ.occupiedNights : 0,
     reservationCount,
     breakdown
   };
