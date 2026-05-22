@@ -95,7 +95,7 @@ const GanhosExtrasDialog: React.FC<Props> = ({
   reservaId,
   imovelId
 }) => {
-  console.log("GanhosExtrasDialog: Initializing with reservaId:", reservaId, "imovelId:", imovelId);
+
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [form, setForm] = useState(emptyForm);
 

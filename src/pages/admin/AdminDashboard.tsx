@@ -109,10 +109,10 @@ const ANOS = Array.from(
 );
 
 const AdminDashboard: React.FC = () => {
-  console.log("AdminDashboard: Initializing...");
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { toast } = useToast();
+
 
 
   const [mesSelecionado, setMesSelecionado] = useState(now.getMonth()); 

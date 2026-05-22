@@ -285,7 +285,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   ano,
   imovelIds,
 }) => {
-  console.log("OccupancyComparison: Initializing with props:", { mes, ano, imovelIds });
+
 
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
   const [allData, setAllData] = useState<{ prior: any[]; current: any[]; next: any[] }>({ prior: [], current: [], next: [] });
@@ -363,8 +363,12 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }, [ano, imovelIds?.join(",")]);
 
   const filteredMonths = React.useMemo(() => {
-    // Hooks must be called before ANY early returns
+    // 1. Hooks outside of conditional logic
+    // (allData and monthsData are stable state)
+
+    // 2. Main Logic
     if (loading || monthsData.length === 0) return [];
+
     
     if (period === "current_month") {
       const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
