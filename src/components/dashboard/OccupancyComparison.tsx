@@ -110,7 +110,11 @@ async function fetchMonthData(
 
   let receita = 0;
   let reservationCount = 0;
-  const occupiedSet = new Set<string>();
+  // Nights are tracked per imóvel (deduplicado por imóvel) e somadas — assim
+  // dois imóveis ocupados no mesmo dia contam como 2 noites e a capacidade
+  // total é dias_do_mes × nº_imóveis, evitando que um único imóvel cheio
+  // apareça como 100% do portfólio.
+  const occupiedByImovel = new Map<string, Set<string>>();
   const monthStart = atNoon(year, month, 1);
   const nextMonthStart = atNoon(year, month + 1, 1);
 
@@ -126,9 +130,16 @@ async function fetchMonthData(
       const overlapEnd = new Date(Math.min(end.getTime(), nextMonthStart.getTime()));
       const nightsInMonth = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS));
 
-      for (let i = 0; i < nightsInMonth; i++) {
-        const occupiedDate = new Date(overlapStart.getTime() + i * DAY_MS);
-        occupiedSet.add(occupiedDate.toISOString().split("T")[0]);
+      if (nightsInMonth > 0) {
+        let set = occupiedByImovel.get(r.imovel_id);
+        if (!set) {
+          set = new Set<string>();
+          occupiedByImovel.set(r.imovel_id, set);
+        }
+        for (let i = 0; i < nightsInMonth; i++) {
+          const occupiedDate = new Date(overlapStart.getTime() + i * DAY_MS);
+          set.add(occupiedDate.toISOString().split("T")[0]);
+        }
       }
 
       const checkoutDate = end;
@@ -154,8 +165,17 @@ async function fetchMonthData(
     }
   });
 
-  const occupiedDays = Math.min(occupiedSet.size, total);
-  const occupancyRate = total > 0 ? (occupiedDays / total) * 100 : 0;
+  // Capacidade do portfólio = dias_do_mes × nº de imóveis filtrados (mínimo 1).
+  const propertyCount = imovelIds && imovelIds.length > 0 ? imovelIds.length : 1;
+  const capacity = total * propertyCount;
+  let occupiedDays = 0;
+  occupiedByImovel.forEach((set) => {
+    // Cap por imóvel para não exceder os dias do mês (proteção contra
+    // reservas sobrepostas — ex.: duplicadas via iCal Airbnb+Booking).
+    occupiedDays += Math.min(set.size, total);
+  });
+  occupiedDays = Math.min(occupiedDays, capacity);
+  const occupancyRate = capacity > 0 ? (occupiedDays / capacity) * 100 : 0;
   const avgDailyRate = occupiedDays > 0 ? receita / occupiedDays : 0;
 
   return {
