@@ -422,7 +422,7 @@ const Calendario: React.FC = () => {
                   {imoveis.map((im, rowIdx) => {
                     const color = colorMap.current[im.id];
                     const { dias, reservas: numReservas } = ocupacaoPorImovel[im.id] ?? { dias: 0, reservas: 0 };
-                    const taxaOcupacao = Math.round((dias / daysInMonth) * 100);
+                    const taxaOcupacao = daysInMonth > 0 ? Math.min(100, Math.round((dias / daysInMonth) * 100)) : 0;
 
                     return (
                       <tr
