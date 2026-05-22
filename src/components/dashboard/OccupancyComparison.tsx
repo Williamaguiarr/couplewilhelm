@@ -484,58 +484,6 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }
 
 
-    return {
-      totalReceita, totalOccupiedDays, totalDays, avgOccupancy, avgDailyRate,
-      priorReceita, priorOccupiedDays, priorTotalDays, priorAvgOccupancy, priorAvgDailyRate
-    };
-  }, [filteredMonths]);
-
-  if (loading || monthsData.length === 0) {
-    return (
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-primary" />
-            Indicadores de Desempenho
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-    if (filteredMonths.length === 0) {
-      return { 
-        totalReceita: 0, totalOccupiedDays: 0, totalDays: 0, avgOccupancy: 0, avgDailyRate: 0,
-        priorReceita: 0, priorOccupiedDays: 0, priorTotalDays: 0, priorAvgOccupancy: 0, priorAvgDailyRate: 0
-      };
-    }
-    
-    const totalReceita = filteredMonths.reduce((s, m) => s + (Number(m.receita) || 0), 0);
-    const totalOccupiedDays = filteredMonths.reduce((s, m) => s + (Number(m.occupiedDays) || 0), 0);
-    const totalDays = filteredMonths.reduce((s, m) => s + (Number(m.totalDays) || 0), 0);
-    const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
-    const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
-
-    const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
-    const priorReceita = priorMonths.reduce((s, m) => s + (Number(m?.receita) || 0), 0);
-    const priorOccupiedDays = priorMonths.reduce((s, m) => s + (Number(m?.occupiedDays) || 0), 0);
-    const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
-    const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
-    const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
-
-    return {
-      totalReceita, totalOccupiedDays, totalDays, avgOccupancy, avgDailyRate,
-      priorReceita, priorOccupiedDays, priorTotalDays, priorAvgOccupancy, priorAvgDailyRate
-    };
-  }, [filteredMonths]);
-
   const {
     totalReceita, avgOccupancy, avgDailyRate,
     priorReceita, priorAvgOccupancy, priorAvgDailyRate
