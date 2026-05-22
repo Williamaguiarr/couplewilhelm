@@ -17,14 +17,18 @@ const MasterDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     try {
+      console.log("MasterDashboard: Fetching stats...");
       setError(null);
-      // Busca IDs dos admins que ainda existem em user_roles
+      
       const { data: adminRoles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "admin");
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error("MasterDashboard: rolesError", rolesError);
+        throw rolesError;
+      }
 
       const adminIds = (adminRoles || []).map((r) => r.user_id);
 
@@ -36,13 +40,15 @@ const MasterDashboard: React.FC = () => {
         supabase.from("imoveis").select("*", { count: "exact", head: true }),
       ]);
 
-      if (propRes.error) throw propRes.error;
-      if (imovRes.error) throw imovRes.error;
+      if (propRes.error) {
+        console.error("MasterDashboard: propRes error", propRes.error);
+        throw propRes.error;
+      }
+      if (imovRes.error) {
+        console.error("MasterDashboard: imovRes error", imovRes.error);
+        throw imovRes.error;
+      }
 
-      const totalProprietarios = propRes.count || 0;
-      const totalImoveis = imovRes.count || 0;
-
-      // Admins ativos: cruzamento entre user_roles (admin existente) e admin_configs (ativo=true)
       let adminsAtivos = 0;
       if (adminIds.length > 0) {
         const { count, error: configError } = await supabase
@@ -51,15 +57,19 @@ const MasterDashboard: React.FC = () => {
           .eq("ativo", true)
           .in("admin_id", adminIds);
         
-        if (configError) throw configError;
-        adminsAtivos = count || 0;
+        if (configError) {
+          console.error("MasterDashboard: configError", configError);
+          // Don't throw if only admin_configs fails, it might be a new setup
+        } else {
+          adminsAtivos = count || 0;
+        }
       }
 
       setStats({
         totalAdmins: adminIds.length,
         adminsAtivos,
-        totalProprietarios: totalProprietarios || 0,
-        totalImoveis: totalImoveis || 0,
+        totalProprietarios: propRes.count || 0,
+        totalImoveis: imovRes.count || 0,
       });
     } catch (err: any) {
       console.error("Error fetching master stats:", err);
@@ -72,7 +82,6 @@ const MasterDashboard: React.FC = () => {
   useEffect(() => {
     fetchStats();
 
-    // Realtime: atualiza automaticamente ao alterar admins, imóveis ou proprietários
     const channel = supabase
       .channel("master-dashboard-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, fetchStats)
@@ -84,33 +93,6 @@ const MasterDashboard: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  const cards = [
-    {
-      title: "Total de Admins",
-      value: stats.totalAdmins,
-      icon: ShieldCheck,
-      description: `${stats.adminsAtivos} ativos`,
-    },
-    {
-      title: "Proprietários",
-      value: stats.totalProprietarios,
-      icon: Users,
-      description: "na plataforma",
-    },
-    {
-      title: "Imóveis",
-      value: stats.totalImoveis,
-      icon: Building2,
-      description: "cadastrados",
-    },
-    {
-      title: "Admins Ativos",
-      value: stats.adminsAtivos,
-      icon: Activity,
-      description: `de ${stats.totalAdmins} totais`,
-    },
-  ];
 
   return (
     <PageTransition>
@@ -135,36 +117,73 @@ const MasterDashboard: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <Card
-                key={card.title}
-                className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group"
-              >
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
-                    {card.title}
-                  </CardTitle>
-                  <Icon className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-                </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-                ) : (
-                  <>
-                    <p className="font-display text-2xl text-foreground">
-                      {card.value}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {card.description}
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+          <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">Total de Admins</CardTitle>
+              <ShieldCheck className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <>
+                  <p className="font-display text-2xl text-foreground">{stats.totalAdmins}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{stats.adminsAtivos} ativos</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">Proprietários</CardTitle>
+              <Users className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <>
+                  <p className="font-display text-2xl text-foreground">{stats.totalProprietarios}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">na plataforma</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">Imóveis</CardTitle>
+              <Building2 className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <>
+                  <p className="font-display text-2xl text-foreground">{stats.totalImoveis}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">cadastrados</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">Admins Ativos</CardTitle>
+              <Activity className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                <>
+                  <p className="font-display text-2xl text-foreground">{stats.adminsAtivos}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">de {stats.totalAdmins} totais</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </PageTransition>
