@@ -547,15 +547,20 @@ const AdminDashboard: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card, idx) => (
-            <Card key={card.title} className="spotlight-card group">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
-                <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><card.icon className="h-4 w-4 text-primary" /></div>
-              </CardHeader>
-              <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{formatValue(card.value, card.format)}</p>}</CardContent>
-            </Card>
-          ))}
+          {cards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <Card key={card.title} className="spotlight-card group">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
+                  <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                </CardHeader>
+                <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{formatValue(card.value, card.format)}</p>}</CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
