@@ -22,16 +22,16 @@ const MasterDashboard: React.FC = () => {
 
     const adminIds = (adminRoles || []).map((r) => r.user_id);
 
-    const [
-      { count: totalProprietarios },
-      { count: totalImoveis },
-    ] = await Promise.all([
+    const [propRes, imovRes] = await Promise.all([
       supabase
         .from("user_roles")
         .select("*", { count: "exact", head: true })
         .eq("role", "proprietario"),
       supabase.from("imoveis").select("*", { count: "exact", head: true }),
     ]);
+
+    const totalProprietarios = propRes.count || 0;
+    const totalImoveis = imovRes.count || 0;
 
     // Admins ativos: cruzamento entre user_roles (admin existente) e admin_configs (ativo=true)
     let adminsAtivos = 0;
@@ -109,17 +109,19 @@ const MasterDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => (
-            <Card
-              key={card.title}
-              className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group"
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
-                  {card.title}
-                </CardTitle>
-                <card.icon className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-              </CardHeader>
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <Card
+                key={card.title}
+                className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:shadow-luxury group"
+              >
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide">
+                    {card.title}
+                  </CardTitle>
+                  <Icon className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+                </CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="h-8 w-16 bg-muted animate-pulse rounded" />
@@ -135,7 +137,8 @@ const MasterDashboard: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          ))}
+          );
+        })}
         </div>
       </div>
     </PageTransition>
