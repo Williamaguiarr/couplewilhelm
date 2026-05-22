@@ -360,6 +360,27 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     load();
   }, [ano, imovelIds?.join(",")]);
 
+  if (loading) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            Indicadores de Desempenho
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
   const filteredMonths = React.useMemo(() => {
     if (loading) return [];
     
