@@ -95,8 +95,10 @@ const GanhosExtrasDialog: React.FC<Props> = ({
   reservaId,
   imovelId
 }) => {
+
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
   const [form, setForm] = useState(emptyForm);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);

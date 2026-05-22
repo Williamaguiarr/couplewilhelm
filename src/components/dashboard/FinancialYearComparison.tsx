@@ -81,6 +81,8 @@ const TrendIcon = ({ val }: { val: number }) =>
 
 
 const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
+
+
   const [anoBase, setAnoBase] = useState(currentYear);
   const [anoComparacao, setAnoComparacao] = useState(currentYear - 1);
   const [dataBase, setDataBase] = useState<YearData | null>(null);
@@ -190,7 +192,56 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
 
   const sameYear = anoBase === anoComparacao;
 
-  if (loading || !dataBase || !dataComparacao) {
+  // Render variables derived from state (not state itself)
+  const singleYearData = React.useMemo(() => {
+    if (!dataBase) return [];
+    return dataBase.months.map((m) => ({
+      mes: m.mes,
+      valor: m.valorBruto,
+      reservas: m.reservas,
+    }));
+  }, [dataBase]);
+
+  const comparisonData = React.useMemo(() => {
+    if (!dataBase || !dataComparacao) return [];
+    return dataBase.months.map((m, i) => {
+      const compVal = dataComparacao.months[i].valorBruto;
+      const compRes = dataComparacao.months[i].reservas;
+
+      return {
+        mes: m.mes,
+        [`valor_${anoBase}`]: m.valorBruto,
+        ...(sameYear ? {} : { [`valor_${anoComparacao}`]: compVal }),
+        [`reservas_${anoBase}`]: m.reservas,
+        ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: compRes }),
+      };
+    });
+  }, [dataBase, dataComparacao, anoBase, anoComparacao, sameYear]);
+
+  const summaryData = React.useMemo(() => {
+    if (!dataBase || !dataComparacao) return null;
+    const variacao = (atual: number, anterior: number) => {
+      if (anterior === 0) return atual > 0 ? 100 : 0;
+      return ((atual - anterior) / anterior) * 100;
+    };
+    const varBruto = variacao(dataBase.totalBruto, dataComparacao.totalBruto);
+    const varComissao = variacao(dataBase.totalComissao, dataComparacao.totalComissao);
+    const varRepasse = variacao(dataBase.totalRepasse, dataComparacao.totalRepasse);
+
+    return {
+      varBruto,
+      varComissao,
+      varRepasse,
+      summaryCards: [
+        { label: "Receita Bruta", base: dataBase.totalBruto, comp: dataComparacao.totalBruto, var: varBruto },
+        { label: "Comissão ADM", base: dataBase.totalComissao, comp: dataComparacao.totalComissao, var: varComissao },
+        { label: "Repasse", base: dataBase.totalRepasse, comp: dataComparacao.totalRepasse, var: varRepasse },
+      ]
+    };
+  }, [dataBase, dataComparacao, anoComparacao]);
+
+  if (loading || !dataBase || !dataComparacao || !summaryData) {
+
     return (
       <Card className="bg-card border-border">
         <CardHeader>
@@ -205,41 +256,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     );
   }
 
-  // --- Chart 1 & 2: Single year data ---
-  const singleYearData = dataBase.months.map((m) => ({
-    mes: m.mes,
-    valor: m.valorBruto,
-    reservas: m.reservas,
-  }));
+  // --- Charts configuration ---
 
-  // --- Chart 3 & 4: Comparison data with year-over-year evolution line ---
-  const comparisonData = dataBase.months.map((m, i) => {
-    const compVal = dataComparacao.months[i].valorBruto;
-    const compRes = dataComparacao.months[i].reservas;
-
-    return {
-      mes: m.mes,
-      [`valor_${anoBase}`]: m.valorBruto,
-      ...(sameYear ? {} : { [`valor_${anoComparacao}`]: compVal }),
-      [`reservas_${anoBase}`]: m.reservas,
-      ...(sameYear ? {} : { [`reservas_${anoComparacao}`]: compRes }),
-    };
-  });
-
-  // Summary
-  const variacao = (atual: number, anterior: number) => {
-    if (anterior === 0) return atual > 0 ? 100 : 0;
-    return ((atual - anterior) / anterior) * 100;
-  };
-  const varBruto = variacao(dataBase.totalBruto, dataComparacao.totalBruto);
-  const varComissao = variacao(dataBase.totalComissao, dataComparacao.totalComissao);
-  const varRepasse = variacao(dataBase.totalRepasse, dataComparacao.totalRepasse);
-
-  const summaryCards = [
-    { label: "Receita Bruta", base: dataBase.totalBruto, comp: dataComparacao.totalBruto, var: varBruto },
-    { label: "Comissão ADM", base: dataBase.totalComissao, comp: dataComparacao.totalComissao, var: varComissao },
-    { label: "Repasse", base: dataBase.totalRepasse, comp: dataComparacao.totalRepasse, var: varRepasse },
-  ];
 
 
   const singleConfig = {
@@ -288,7 +306,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       <CardContent className="space-y-6">
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {summaryCards.map((s) => (
+          {summaryData.summaryCards.map((s) => (
+
             <div key={s.label} className="rounded-xl border border-border p-4 bg-background/50">
               <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">{s.label}</p>
               <p className="text-xl font-display text-foreground font-semibold tabular-nums">{fmt(s.base)}</p>
@@ -429,8 +448,9 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                 <td className="py-2 pr-3 text-foreground">Total</td>
                 <td className="py-2 px-2 text-right text-foreground">{fmt(dataBase.totalBruto)}</td>
                 <td className="py-2 px-2 text-right text-muted-foreground">{fmt(dataComparacao.totalBruto)}</td>
-                <td className={`py-2 px-2 text-right ${varBruto > 0 ? "text-emerald-500" : varBruto < 0 ? "text-red-500" : "text-muted-foreground"}`}>
-                  {varBruto > 0 ? "+" : ""}{varBruto.toFixed(1)}%
+                <td className={`py-2 px-2 text-right ${summaryData.varBruto > 0 ? "text-emerald-500" : summaryData.varBruto < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                  {summaryData.varBruto > 0 ? "+" : ""}{summaryData.varBruto.toFixed(1)}%
+
                 </td>
               </tr>
             </tbody>
