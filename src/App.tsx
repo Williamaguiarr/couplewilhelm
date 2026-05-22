@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
+import ErrorBoundary from "@/components/error/ErrorBoundary";
 import Login from "@/pages/Login";
 import ResetPassword from "@/pages/ResetPassword";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -25,50 +26,51 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ThemeProvider>
-            <Routes>
-              {/* Public */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/setup" element={<Setup />} />
-              <Route path="/" element={<Navigate to="/login" replace />} />
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <ThemeProvider>
+              <Routes>
+                {/* Public */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/setup" element={<Setup />} />
+                <Route path="/" element={<Navigate to="/login" replace />} />
 
-              {/* Master */}
-              <Route element={<ProtectedLayout requiredRole="master" />}>
-                <Route path="/master" element={<MasterDashboard />} />
-                <Route path="/master/admins" element={<AdminsList />} />
-              </Route>
+                {/* Master */}
+                <Route element={<ProtectedLayout requiredRole="master" />}>
+                  <Route path="/master" element={<MasterDashboard />} />
+                  <Route path="/master/admins" element={<AdminsList />} />
+                </Route>
 
-              {/* Admin */}
-              <Route element={<ProtectedLayout requiredRole="admin" />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/proprietarios" element={<Proprietarios />} />
-                <Route path="/admin/imoveis" element={<Imoveis />} />
-                <Route path="/admin/reservas" element={<Reservas />} />
-                <Route path="/admin/configuracoes" element={<Configuracoes />} />
-                <Route path="/admin/calendario" element={<Calendario />} />
-                
-              </Route>
+                {/* Admin */}
+                <Route element={<ProtectedLayout requiredRole="admin" />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/proprietarios" element={<Proprietarios />} />
+                  <Route path="/admin/imoveis" element={<Imoveis />} />
+                  <Route path="/admin/reservas" element={<Reservas />} />
+                  <Route path="/admin/configuracoes" element={<Configuracoes />} />
+                  <Route path="/admin/calendario" element={<Calendario />} />
+                </Route>
 
-              {/* Proprietário */}
-              <Route element={<ProtectedLayout requiredRole="proprietario" />}>
-                <Route path="/dashboard" element={<ProprietarioDashboard />} />
-                <Route path="/dashboard/imoveis" element={<MeusImoveis />} />
-              </Route>
+                {/* Proprietário */}
+                <Route element={<ProtectedLayout requiredRole="proprietario" />}>
+                  <Route path="/dashboard" element={<ProprietarioDashboard />} />
+                  <Route path="/dashboard/imoveis" element={<MeusImoveis />} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ThemeProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ThemeProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
