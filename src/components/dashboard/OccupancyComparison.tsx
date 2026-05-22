@@ -442,7 +442,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
             {/* Ocupação */}
             <div className="border border-border rounded-xl p-4 sm:p-5 space-y-2 bg-background/50">
               <p className="text-xs text-muted-foreground flex items-center gap-1 uppercase tracking-wider font-medium">
-                Ocupação <InfoIcon tooltip="Percentual de noites reservadas sobre o total de noites no período." />
+                Ocupação <InfoIcon tooltip="Noites ocupadas ÷ (dias do período × nº de imóveis no filtro). Considera apenas reservas validadas financeiramente. Reservas sobrepostas são deduplicadas por imóvel." />
               </p>
               <p className="font-display text-2xl text-foreground font-semibold tabular-nums">
                 {avgOccupancy.toFixed(0)}%
