@@ -69,10 +69,16 @@ interface Props {
 
 const now = new Date();
 const currentYear = now.getFullYear();
-const availableYears = Array.from({ length: currentYear - 2023 }, (_, i) => 2024 + i);
+const availableYears = Array.from({ length: currentYear - 2023 + 2 }, (_, i) => 2024 + i);
 
 const BRAND_BLUE = "#0A192F";
 const BRAND_GOLD = "#C5A059";
+
+const TrendIcon = ({ val }: { val: number }) =>
+  val > 0 ? <TrendingUp className="h-3.5 w-3.5 text-primary" /> :
+  val < 0 ? <TrendingDown className="h-3.5 w-3.5 text-destructive" /> :
+  <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
+
 
 const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
   const [anoBase, setAnoBase] = useState(currentYear);
@@ -229,16 +235,12 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
   const varComissao = variacao(dataBase.totalComissao, dataComparacao.totalComissao);
   const varRepasse = variacao(dataBase.totalRepasse, dataComparacao.totalRepasse);
 
-  const TrendIcon = ({ val }: { val: number }) =>
-    val > 0 ? <TrendingUp className="h-3.5 w-3.5 text-primary" /> :
-    val < 0 ? <TrendingDown className="h-3.5 w-3.5 text-destructive" /> :
-    <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
-
   const summaryCards = [
     { label: "Receita Bruta", base: dataBase.totalBruto, comp: dataComparacao.totalBruto, var: varBruto },
     { label: "Comissão ADM", base: dataBase.totalComissao, comp: dataComparacao.totalComissao, var: varComissao },
     { label: "Repasse", base: dataBase.totalRepasse, comp: dataComparacao.totalRepasse, var: varRepasse },
   ];
+
 
   const singleConfig = {
     valor: { label: "Valor (R$)", color: BRAND_BLUE },

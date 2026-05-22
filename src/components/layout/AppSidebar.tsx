@@ -164,19 +164,17 @@ const AppSidebar: React.FC = () => {
       </SidebarHeader>
 
       <SidebarContent className="px-2">
-        {isMasterAdmin ? (
+        {isMasterAdmin && (
           <>
             {renderItems(masterItems, "Plataforma")}
             <div className="mx-3 border-t border-sidebar-border/60 my-2" />
             {renderItems(adminItems, "Minha Gestão")}
           </>
-        ) : role === "master" ? (
-          renderItems(masterItems)
-        ) : role === "admin" ? (
-          renderItems(adminItems)
-        ) : (
-          renderItems(proprietarioItems)
         )}
+        {!isMasterAdmin && role === "master" && renderItems(masterItems)}
+        {!isMasterAdmin && role === "admin" && renderItems(adminItems)}
+        {!isMasterAdmin && role === "proprietario" && renderItems(proprietarioItems)}
+
       </SidebarContent>
 
       <SidebarFooter className="px-4 py-4 border-t border-sidebar-border/60">

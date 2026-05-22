@@ -458,20 +458,21 @@ const AdminDashboard: React.FC = () => {
     });
   }, [despesas, imoveis, filtroProprietario, anoSelecionado, mesSelecionado]);
 
-  const cards = [
+  const cards = useMemo(() => [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
     { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
     { title: "Reservas no mês", value: stats.totalReservas, icon: CalendarDays, format: "number" },
     { title: "Repasse a Proprietários", value: stats.receitaMes, icon: TrendingUp, format: "currency" },
-  ];
+  ], [filtroProprietario, stats.totalProprietarios, stats.totalImoveis, stats.totalReservas, stats.receitaMes]);
 
-  const financeiroCards = [
+  const financeiroCards = useMemo(() => [
     { title: "Receita Bruta", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
     { title: "Taxa Limpeza", value: financeiro.taxaLimpeza, icon: Percent, description: "Dedução do bruto" },
     { title: "Receita Líquida", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
     { title: "Comissão ADM", value: financeiro.comissaoCW, icon: Percent, description: "Sobre líquido" },
     { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
-  ];
+  ], [financeiro]);
+
 
   const formatValue = (value: number, format: string) => format === "currency" ? fmt(value) : value.toString();
 
@@ -576,36 +577,74 @@ const AdminDashboard: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card, idx) => {
-            const Icon = card.icon;
-            return (
-              <Card key={card.title} className="spotlight-card group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
-                  <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                </CardHeader>
-                <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{formatValue(card.value, card.format)}</p>}</CardContent>
-              </Card>
-            );
-          })}
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{filtroProprietario === "todos" ? "Proprietários" : "Proprietário"}</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><Users className="h-4 w-4 text-primary" /></div>
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{stats.totalProprietarios}</p>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Imóveis</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><Building2 className="h-4 w-4 text-primary" /></div>
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{stats.totalImoveis}</p>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Reservas no mês</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><CalendarDays className="h-4 w-4 text-primary" /></div>
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{stats.totalReservas}</p>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Repasse a Proprietários</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center"><TrendingUp className="h-4 w-4 text-primary" /></div>
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-8 w-24 bg-muted animate-pulse rounded-lg" /> : <p className="font-display text-2xl font-semibold">{fmt(stats.receitaMes)}</p>}</CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {financeiroCards.map((card, idx) => {
-            const Icon = card.icon;
-            return (
-              <Card key={card.title} className="spotlight-card group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{card.title}</CardTitle>
-                  <Icon className="h-3.5 w-3.5 text-primary opacity-60" />
-                </CardHeader>
-                <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(card.value)}</p><p className="text-[11px] text-muted-foreground">{card.description}</p></div>}</CardContent>
-              </Card>
-            );
-          })}
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Receita Bruta</CardTitle>
+              <DollarSign className="h-3.5 w-3.5 text-primary opacity-60" />
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.valorBruto)}</p><p className="text-[11px] text-muted-foreground">Total sem deduções</p></div>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Taxa Limpeza</CardTitle>
+              <Percent className="h-3.5 w-3.5 text-primary opacity-60" />
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.taxaLimpeza)}</p><p className="text-[11px] text-muted-foreground">Dedução do bruto</p></div>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Receita Líquida</CardTitle>
+              <DollarSign className="h-3.5 w-3.5 text-primary opacity-60" />
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.valorLiquido)}</p><p className="text-[11px] text-muted-foreground">Bruto - Limpeza</p></div>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Comissão ADM</CardTitle>
+              <Percent className="h-3.5 w-3.5 text-primary opacity-60" />
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.comissaoCW)}</p><p className="text-[11px] text-muted-foreground">Sobre líquido</p></div>}</CardContent>
+          </Card>
+          <Card className="spotlight-card group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Proprietário</CardTitle>
+              <UserCheck className="h-3.5 w-3.5 text-primary opacity-60" />
+            </CardHeader>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.valorProprietario)}</p><p className="text-[11px] text-muted-foreground">Líquido - Comissão</p></div>}</CardContent>
+          </Card>
         </div>
+
 
         <OccupancyComparison 
           mes={mesSelecionado} 
