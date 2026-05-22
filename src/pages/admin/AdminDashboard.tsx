@@ -44,6 +44,8 @@ import {
   ChevronRight,
   FileDown,
   Sparkles,
+  AlertCircle,
+  RefreshCcw,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
@@ -54,6 +56,7 @@ import { Badge } from "@/components/ui/badge";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
   drawFooterAllPages, premiumTableStyles, genTimestamp,
@@ -137,6 +140,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [reservasSemValores, setReservasSemValores] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
@@ -215,6 +219,8 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
+    setError(null);
+    try {
     const isAcumuladoMes = mesSelecionado === -1;
     const isAcumuladoAno = anoSelecionado === -1;
 
@@ -362,14 +368,19 @@ const AdminDashboard: React.FC = () => {
       totalReservas: currentReservas.length,
       receitaMes: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
     });
-    setFinanceiro({
-      valorBruto: totaisReservas.valorBruto + totaisGanhos.valorBruto,
-      taxaLimpeza: totaisReservas.taxaLimpeza,
-      valorLiquido: totaisReservas.valorLiquido + totaisGanhos.valorBruto,
-      comissaoCW: totaisReservas.comissaoCW + totaisGanhos.comissaoCW,
-      valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
-    });
-    setLoading(false);
+      setFinanceiro({
+        valorBruto: totaisReservas.valorBruto + totaisGanhos.valorBruto,
+        taxaLimpeza: totaisReservas.taxaLimpeza,
+        valorLiquido: totaisReservas.valorLiquido + totaisGanhos.valorBruto,
+        comissaoCW: totaisReservas.comissaoCW + totaisGanhos.comissaoCW,
+        valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
+      });
+    } catch (err: any) {
+      console.error("Dashboard calculation error:", err);
+      setError(err.message || "Erro ao carregar métricas do dashboard.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchDespesas = async () => {
@@ -467,6 +478,24 @@ const AdminDashboard: React.FC = () => {
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 w-full overflow-x-hidden">
+        {error && (
+          <Alert variant="destructive" className="bg-destructive/5 border-destructive/20 mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Ops! Algo deu errado ao carregar os dados</AlertTitle>
+            <AlertDescription className="flex flex-col gap-3">
+              <span className="text-xs opacity-80">{error}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-fit gap-2 h-8 text-[10px]" 
+                onClick={() => fetchStats()}
+              >
+                <RefreshCcw className="h-3 w-3" />
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
