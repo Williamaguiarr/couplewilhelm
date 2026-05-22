@@ -9,16 +9,13 @@
  *  - A contagem por imóvel é limitada ao total de dias do período (proteção
  *    extra contra qualquer inconsistência de dados).
  *  - O denominador é (dias do período × nº de imóveis no escopo).
- *  - Para fins de OCUPAÇÃO, consideramos TODAS as reservas (validadas ou não),
- *    pois é isso que aparece bloqueado no calendário real.
- *  - Receita e diária média podem opcionalmente considerar apenas reservas
- *    com valor (validadas) — para evitar distorção do ticket médio.
  */
 
 export interface ReservaParaOcupacao {
   imovel_id: string;
   data_inicio: string; // YYYY-MM-DD
   data_fim: string;    // YYYY-MM-DD
+  validada_financeiramente?: boolean;
 }
 
 const DAY_MS = 86400000;
@@ -34,11 +31,17 @@ export function getOccupiedDatesInRange(
 ): string[] {
   const [y1, m1, d1] = reserva.data_inicio.split("-").map(Number);
   const [y2, m2, d2] = reserva.data_fim.split("-").map(Number);
+  
+  // Normalizar para 12:00 para evitar problemas de fuso horário em cálculos de diferença
   const start = new Date(y1, m1 - 1, d1, 12, 0, 0, 0);
   const end = new Date(y2, m2 - 1, d2, 12, 0, 0, 0); // checkout excluído
 
   const overlapStart = new Date(Math.max(start.getTime(), periodStart.getTime()));
   const overlapEnd = new Date(Math.min(end.getTime(), periodEnd.getTime()));
+  
+  // Garantir que não contamos noites se o checkout for antes/no mesmo dia do checkin no overlap
+  if (overlapEnd <= overlapStart) return [];
+
   const nights = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / DAY_MS));
 
   const dates: string[] = [];
@@ -80,16 +83,18 @@ export interface OccupancySummary {
 /**
  * Cálculo principal de ocupação para um período arbitrário.
  *
- * @param reservas reservas que se sobrepõem ao período (qualquer status)
+ * @param reservas reservas que se sobrepõem ao período
  * @param imovelIds lista FECHADA de imóveis no escopo — usada para o denominador
  * @param periodStart início inclusivo
  * @param periodEnd fim exclusivo
+ * @param onlyValidated se true, considera apenas validada_financeiramente: true
  */
 export function computeOccupancy(
   reservas: ReservaParaOcupacao[],
   imovelIds: string[],
   periodStart: Date,
   periodEnd: Date,
+  onlyValidated: boolean = false
 ): OccupancySummary {
   const totalDaysInPeriod = Math.max(
     0,
@@ -97,12 +102,25 @@ export function computeOccupancy(
   );
 
   const occupiedByImovel = new Map<string, Set<string>>();
+  
+  // Inicializar o mapa com todos os imóveis do escopo para garantir que apareçam na auditoria
+  imovelIds.forEach(id => {
+    occupiedByImovel.set(id, new Set<string>());
+  });
+
   for (const r of reservas) {
+    // Filtrar por imóvel se a lista de escopo for fornecida
     if (imovelIds.length > 0 && !imovelIds.includes(r.imovel_id)) continue;
+    
+    // Filtrar por validação financeira se solicitado
+    if (onlyValidated && r.validada_financeiramente !== true) continue;
+
     const dates = getOccupiedDatesInRange(r, periodStart, periodEnd);
     if (dates.length === 0) continue;
+
     let set = occupiedByImovel.get(r.imovel_id);
     if (!set) {
+      // Se não estava no mapa inicial mas passou no filtro de scopeIds (ou scopeIds vazio)
       set = new Set<string>();
       occupiedByImovel.set(r.imovel_id, set);
     }
@@ -111,13 +129,24 @@ export function computeOccupancy(
 
   let occupiedNights = 0;
   occupiedByImovel.forEach((set) => {
+    // Cada imóvel pode ter no máximo totalDaysInPeriod noites ocupadas no período
     occupiedNights += Math.min(set.size, totalDaysInPeriod);
   });
 
-  const propertyCount = imovelIds.length > 0 ? imovelIds.length : 1;
+  // CRITICAL: capacity must use the actual number of properties in the scope
+  const propertyCount = imovelIds.length;
   const capacity = totalDaysInPeriod * propertyCount;
-  occupiedNights = Math.min(occupiedNights, capacity);
-  const occupancyRate = capacity > 0 ? (occupiedNights / capacity) * 100 : 0;
+  
+  let occupancyRate = 0;
+  if (capacity > 0) {
+    occupancyRate = (occupiedNights / capacity) * 100;
+  }
 
-  return { occupiedNights, capacity, occupancyRate, occupiedByImovel };
+  return { 
+    occupiedNights, 
+    capacity, 
+    occupancyRate, 
+    occupiedByImovel 
+  };
 }
+

@@ -620,7 +620,18 @@ const AdminDashboard: React.FC = () => {
           ))}
         </div>
 
-        <OccupancyComparison mes={mesSelecionado} ano={anoSelecionado} imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : imoveis.map(i => i.id)} />
+        <OccupancyComparison 
+          mes={mesSelecionado} 
+          ano={anoSelecionado} 
+          imovelIds={
+            filtroImovel !== "todos" 
+              ? [filtroImovel] 
+              : filtroProprietario !== "todos" 
+                ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) 
+                : imoveis.map(i => i.id)
+          } 
+        />
+
         <FinancialYearComparison imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : undefined} imoveis={imoveis} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
