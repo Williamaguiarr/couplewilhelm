@@ -1,0 +1,15 @@
+        table_name         
+---------------------------
+ ganhos_extras
+ limpezas
+ ical_sync_alerts
+ custos_fixos_proprietario
+ admin_configs
+ admin_proprietarios
+ reservas
+ profiles
+ user_roles
+ imoveis
+ despesas_extras
+(11 rows)
+

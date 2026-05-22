@@ -1,0 +1,10 @@
+           routine_name           
+----------------------------------
+ update_updated_at_column
+ set_reserva_validacao_financeira
+ is_active_admin
+ validate_comissao_percentual
+ handle_new_user
+ has_role
+(6 rows)
+

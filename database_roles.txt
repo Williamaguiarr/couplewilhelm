@@ -1,0 +1,22 @@
+                                         List of roles
+             Role name             |                         Attributes                         
+-----------------------------------+------------------------------------------------------------
+ anon                              | Cannot login
+ authenticated                     | Cannot login
+ authenticator                     | No inheritance
+ dashboard_user                    | Create role, Create DB, Cannot login, Replication
+ pgbouncer                         | 
+ postgres                          | Create role, Create DB, Replication, Bypass RLS
+ sandbox_exec                      | Bypass RLS
+ sandbox_exec_ogtijrskgwlkqevoencg | Bypass RLS
+ service_role                      | Cannot login, Bypass RLS
+ supabase_admin                    | Superuser, Create role, Create DB, Replication, Bypass RLS
+ supabase_auth_admin               | No inheritance, Create role
+ supabase_etl_admin                | Replication, Bypass RLS
+ supabase_functions_admin          | No inheritance, Create role
+ supabase_privileged_role          | Cannot login
+ supabase_read_only_user           | Bypass RLS
+ supabase_realtime_admin           | No inheritance, Cannot login
+ supabase_replication_admin        | Replication
+ supabase_storage_admin            | No inheritance, Create role
+

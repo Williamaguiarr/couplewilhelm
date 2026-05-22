@@ -1,0 +1,17 @@
+             List of schemas
+        Name         |       Owner       
+---------------------+-------------------
+ auth                | supabase_admin
+ cron                | supabase_admin
+ extensions          | postgres
+ graphql             | supabase_admin
+ graphql_public      | supabase_admin
+ net                 | supabase_admin
+ pgbouncer           | pgbouncer
+ public              | pg_database_owner
+ realtime            | supabase_admin
+ storage             | supabase_admin
+ supabase_migrations | postgres
+ vault               | supabase_admin
+(12 rows)
+
