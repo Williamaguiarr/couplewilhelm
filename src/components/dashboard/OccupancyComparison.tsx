@@ -286,7 +286,11 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
 
   // Filter months based on period
   let filteredMonths: any[];
-  if (period === "ytd") {
+  if (period === "current_month") {
+    const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
+    const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
+    filteredMonths = found ? [found] : [];
+  } else if (period === "ytd") {
     filteredMonths = monthsData.filter((m) => {
       if (ano === currentYear) return m.month <= currentMonth;
       return true;
