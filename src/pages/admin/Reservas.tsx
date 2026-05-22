@@ -1304,8 +1304,8 @@ const Reservas: React.FC = () => {
       />
 
       <Dialog open={alertsOpen} onOpenChange={setAlertsOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
             <DialogTitle className="flex items-center gap-2 text-warning">
               <AlertCircle className="h-5 w-5" /> Alertas de Sincronização iCal
             </DialogTitle>
@@ -1313,7 +1313,7 @@ const Reservas: React.FC = () => {
               As reservas abaixo não foram encontradas no feed iCal mais recente e podem ter sido canceladas.
             </p>
           </DialogHeader>
-          <div className="space-y-3 mt-4">
+          <div className="space-y-3 px-6 py-4 overflow-y-auto flex-1 min-h-0">
             {syncAlerts.map((alert) => (
               <div key={alert.id} className="p-3 border border-border rounded-lg bg-muted/20 flex items-center justify-between gap-4">
                 <div className="space-y-1">
