@@ -478,6 +478,24 @@ const AdminDashboard: React.FC = () => {
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 w-full overflow-x-hidden">
+        {error && (
+          <Alert variant="destructive" className="bg-destructive/5 border-destructive/20 mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Ops! Algo deu errado ao carregar os dados</AlertTitle>
+            <AlertDescription className="flex flex-col gap-3">
+              <span className="text-xs opacity-80">{error}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-fit gap-2 h-8 text-[10px]" 
+                onClick={() => fetchStats()}
+              >
+                <RefreshCcw className="h-3 w-3" />
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Visão Geral</h1>
