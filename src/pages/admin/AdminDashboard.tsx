@@ -458,20 +458,21 @@ const AdminDashboard: React.FC = () => {
     });
   }, [despesas, imoveis, filtroProprietario, anoSelecionado, mesSelecionado]);
 
-  const cards = [
+  const cards = useMemo(() => [
     { title: filtroProprietario === "todos" ? "Proprietários" : "Proprietário", value: stats.totalProprietarios, icon: Users, format: "number" },
     { title: "Imóveis", value: stats.totalImoveis, icon: Building2, format: "number" },
     { title: "Reservas no mês", value: stats.totalReservas, icon: CalendarDays, format: "number" },
     { title: "Repasse a Proprietários", value: stats.receitaMes, icon: TrendingUp, format: "currency" },
-  ];
+  ], [filtroProprietario, stats.totalProprietarios, stats.totalImoveis, stats.totalReservas, stats.receitaMes]);
 
-  const financeiroCards = [
+  const financeiroCards = useMemo(() => [
     { title: "Receita Bruta", value: financeiro.valorBruto, icon: DollarSign, description: "Total sem deduções" },
     { title: "Taxa Limpeza", value: financeiro.taxaLimpeza, icon: Percent, description: "Dedução do bruto" },
     { title: "Receita Líquida", value: financeiro.valorLiquido, icon: DollarSign, description: "Bruto - Limpeza" },
     { title: "Comissão ADM", value: financeiro.comissaoCW, icon: Percent, description: "Sobre líquido" },
     { title: "Proprietário", value: financeiro.valorProprietario, icon: UserCheck, description: "Líquido - Comissão" },
-  ];
+  ], [financeiro]);
+
 
   const formatValue = (value: number, format: string) => format === "currency" ? fmt(value) : value.toString();
 
