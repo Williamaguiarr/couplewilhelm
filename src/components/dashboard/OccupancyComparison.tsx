@@ -234,10 +234,11 @@ const OccupancyAuditDialog: React.FC<{ monthData: MonthData }> = ({ monthData })
               {monthData.breakdown.map((item) => (
                 <TableRow key={item.id} className="border-border hover:bg-muted/10 transition-colors">
                   <TableCell className="text-sm font-medium py-2.5">{item.nome}</TableCell>
-                  <TableCell className="text-sm text-center py-2.5 tabular-nums">{item.noites} / {item.totalDays}</TableCell>
+                  <TableCell className="text-sm text-center py-2.5 tabular-nums">{item.noites} / {item.totalDias}</TableCell>
                   <TableCell className="text-sm text-right py-2.5 font-semibold text-foreground">{item.taxa.toFixed(0)}%</TableCell>
                 </TableRow>
               ))}
+
               {monthData.breakdown.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm italic">
