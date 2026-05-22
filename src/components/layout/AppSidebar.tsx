@@ -89,6 +89,7 @@ const AppSidebar: React.FC = () => {
         <SidebarMenu>
           {items.map((item) => {
             const active = isActive(item.url);
+            const Icon = item.icon;
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
@@ -104,7 +105,7 @@ const AppSidebar: React.FC = () => {
                         : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                     }`}
                   >
-                    <item.icon
+                    <Icon
                       className={`h-4 w-4 flex-shrink-0 transition-colors duration-200 ${active ? "text-sidebar-primary" : ""}`}
                     />
                     {!collapsed && <span>{item.title}</span>}
