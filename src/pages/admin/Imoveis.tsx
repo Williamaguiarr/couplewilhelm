@@ -172,6 +172,34 @@ const Imoveis: React.FC = () => {
     setOpen(true);
   };
 
+  // Valida se a URL parece um endpoint iCal (.ics) e não um link de página HTML
+  const validateIcalUrl = (url: string, plataforma: "airbnb" | "booking"): string | null => {
+    const u = url.trim();
+    if (!u) return null;
+    try {
+      const parsed = new URL(u);
+      const path = parsed.pathname.toLowerCase();
+      const isIcs =
+        path.endsWith(".ics") || path.includes("/ical/") || path.includes("ical.html");
+      const isListingPage =
+        path.includes("/rooms/") ||
+        (path.includes("/hotel/") && !path.includes("ical")) ||
+        path === "/" ||
+        (path.endsWith(".html") && !path.includes("ical"));
+      if (!isIcs || isListingPage) {
+        return plataforma === "airbnb"
+          ? "URL inválida. Use o link exportado em Anúncio → Disponibilidade → Sincronizar calendários → Exportar calendário (deve terminar em .ics)."
+          : "URL inválida. Use o link exportado na Extranet Booking → Tarifas e Disponibilidade → Sincronização → Exportar Calendário (deve conter ical.html ou .ics).";
+      }
+      return null;
+    } catch {
+      return "URL malformada.";
+    }
+  };
+
+  const icalAirbnbError = validateIcalUrl(form.ical_url_airbnb, "airbnb");
+  const icalBookingError = validateIcalUrl(form.ical_url_booking, "booking");
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -183,6 +211,15 @@ const Imoveis: React.FC = () => {
       toast({
         title: "Proprietários iguais",
         description: "O 2º proprietário deve ser diferente do 1º.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (icalAirbnbError || icalBookingError) {
+      toast({
+        title: "URL iCal inválida",
+        description: icalAirbnbError || icalBookingError || "",
         variant: "destructive",
       });
       return;
