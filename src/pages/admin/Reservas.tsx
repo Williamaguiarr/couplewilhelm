@@ -1176,12 +1176,22 @@ const Reservas: React.FC = () => {
                   const repasseTotal = valorPropBase + repasseGanhosExtras;
                   
                   const semValores = r.valor_bruto == null;
+                  const isIcal = r.plataforma_origem === "airbnb" || r.plataforma_origem === "booking";
+                  const aguardandoValidacao = semValores && isIcal;
                   return (
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
                       <TableCell className="text-foreground font-medium">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {r.imovel?.nome_imovel || "—"}
-                          {semValores && (
+                          {aguardandoValidacao ? (
+                            <Badge
+                              className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20 text-xs font-medium gap-1"
+                              title="Reserva importada via iCal aguardando valor. Não aparece para o proprietário nem nos relatórios financeiros até ser validada."
+                            >
+                              <AlertCircle className="h-3 w-3" />
+                              Aguardando validação financeira
+                            </Badge>
+                          ) : semValores && (
                             <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20 text-xs font-medium gap-1">
                               <AlertCircle className="h-3 w-3" />
                               Sem valores
