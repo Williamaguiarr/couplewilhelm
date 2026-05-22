@@ -1,0 +1,17 @@
+             trigger_name             | event_manipulation |    event_object_table     |                   action_statement                    
+--------------------------------------+--------------------+---------------------------+-------------------------------------------------------
+ update_objects_updated_at            | UPDATE             | objects                   | EXECUTE FUNCTION storage.update_updated_at_column()
+ enforce_bucket_name_length_trigger   | INSERT             | buckets                   | EXECUTE FUNCTION storage.enforce_bucket_name_length()
+ enforce_bucket_name_length_trigger   | UPDATE             | buckets                   | EXECUTE FUNCTION storage.enforce_bucket_name_length()
+ protect_buckets_delete               | DELETE             | buckets                   | EXECUTE FUNCTION storage.protect_delete()
+ protect_objects_delete               | DELETE             | objects                   | EXECUTE FUNCTION storage.protect_delete()
+ update_admin_configs_updated_at      | UPDATE             | admin_configs             | EXECUTE FUNCTION update_updated_at_column()
+ trg_validate_comissao_percentual     | INSERT             | profiles                  | EXECUTE FUNCTION validate_comissao_percentual()
+ trg_validate_comissao_percentual     | UPDATE             | profiles                  | EXECUTE FUNCTION validate_comissao_percentual()
+ update_custos_fixos_updated_at       | UPDATE             | custos_fixos_proprietario | EXECUTE FUNCTION update_updated_at_column()
+ update_ganhos_extras_updated_at      | UPDATE             | ganhos_extras             | EXECUTE FUNCTION update_updated_at_column()
+ trg_limpezas_updated_at              | UPDATE             | limpezas                  | EXECUTE FUNCTION update_updated_at_column()
+ trg_set_reserva_validacao_financeira | INSERT             | reservas                  | EXECUTE FUNCTION set_reserva_validacao_financeira()
+ trg_set_reserva_validacao_financeira | UPDATE             | reservas                  | EXECUTE FUNCTION set_reserva_validacao_financeira()
+(13 rows)
+
