@@ -317,8 +317,11 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       setLoading(true);
 
       const baseYear = ano === -1 ? currentYear : ano;
+      // Fetch current year, previous year, and next year (if needed)
       const years = [baseYear - 1, baseYear, baseYear + 1];
       const allPromises: Promise<MonthData>[] = [];
+      
+      // We only need to fetch what is truly needed, let's keep it simple but efficient
       for (const y of years) {
         for (let m = 0; m < 12; m++) {
           allPromises.push(fetchMonthData(m, y, imovelIds));
@@ -327,31 +330,27 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
 
       const allResults = await Promise.all(allPromises);
 
-      // Group by year
       const priorYear = allResults.slice(0, 12);
       const currentYearData = allResults.slice(12, 24);
       const nextYearData = allResults.slice(24, 36);
 
-      // Enrich current year with prior for YoY comparison
       const enriched = currentYearData.map((m, i) => ({
         ...m,
         _prior: priorYear[i],
       }));
 
-      // Store all data for flexible filtering
-      const allEnriched = {
+      setAllData({
         prior: priorYear.map((m, i) => ({ ...m, _prior: priorYear[i] })),
         current: enriched,
         next: nextYearData.map((m, i) => ({ ...m, _prior: currentYearData[i] })),
-      };
-
-      setAllData(allEnriched as any);
+      } as any);
+      
       setMonthsData(enriched as any);
       setLoading(false);
     };
 
     load();
-  }, [ano, JSON.stringify(imovelIds)]);
+  }, [ano, imovelIds?.join(",")]);
 
   if (loading) {
     return (
