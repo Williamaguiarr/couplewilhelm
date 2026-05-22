@@ -448,8 +448,9 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
                 <td className="py-2 pr-3 text-foreground">Total</td>
                 <td className="py-2 px-2 text-right text-foreground">{fmt(dataBase.totalBruto)}</td>
                 <td className="py-2 px-2 text-right text-muted-foreground">{fmt(dataComparacao.totalBruto)}</td>
-                <td className={`py-2 px-2 text-right ${varBruto > 0 ? "text-emerald-500" : varBruto < 0 ? "text-red-500" : "text-muted-foreground"}`}>
-                  {varBruto > 0 ? "+" : ""}{varBruto.toFixed(1)}%
+                <td className={`py-2 px-2 text-right ${summaryData.varBruto > 0 ? "text-emerald-500" : summaryData.varBruto < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                  {summaryData.varBruto > 0 ? "+" : ""}{summaryData.varBruto.toFixed(1)}%
+
                 </td>
               </tr>
             </tbody>
