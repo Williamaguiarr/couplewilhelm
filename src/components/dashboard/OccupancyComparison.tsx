@@ -439,7 +439,6 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }, [period, loading, monthsData, allData, ano, currentMonth, currentYear]);
 
 
-  if (loading || monthsData.length === 0) {
     return (
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
@@ -458,6 +457,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       </Card>
     );
   }
+
 
 
   const kpis = React.useMemo(() => {
