@@ -217,8 +217,12 @@ Deno.serve(async (req) => {
 
       try {
         const response = await fetch(parsedUrl.toString(), {
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; CoupleWilhelm/1.0)" },
-          redirect: "error",
+          headers: { 
+            "User-Agent": "Mozilla/5.0 (compatible; CoupleWilhelm/1.0)",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          },
+          redirect: "follow",
         });
 
         if (!response.ok) {
