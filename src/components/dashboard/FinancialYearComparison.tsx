@@ -182,6 +182,8 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
     load();
   }, [anoBase, anoComparacao, imovelIds, imoveis]);
 
+  const sameYear = anoBase === anoComparacao;
+
   if (loading || !dataBase || !dataComparacao) {
     return (
       <Card className="bg-card border-border">
@@ -196,8 +198,6 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       </Card>
     );
   }
-
-  const sameYear = anoBase === anoComparacao;
 
   // --- Chart 1 & 2: Single year data ---
   const singleYearData = dataBase.months.map((m) => ({
