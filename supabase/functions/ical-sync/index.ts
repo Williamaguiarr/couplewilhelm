@@ -308,12 +308,32 @@ Deno.serve(async (req) => {
           // Tentar encontrar por ical_uid primeiro (mais preciso)
           const { data: existingByUid } = await supabase
             .from("reservas")
-            .select("id")
+            .select("id, data_inicio, data_fim, nome_hospede, num_hospedes")
             .eq("imovel_id", imovel.id)
             .eq("ical_uid", event.uid)
             .maybeSingle();
 
-          if (!existingByUid) {
+          if (existingByUid) {
+            // Verificar se houve mudanças reais
+            const hasChanged = 
+              existingByUid.data_inicio !== event.dtstart || 
+              existingByUid.data_fim !== event.dtend ||
+              existingByUid.nome_hospede !== guestName ||
+              existingByUid.num_hospedes !== numGuests;
+
+            if (hasChanged) {
+              const { error: updateError } = await supabase
+                .from("reservas")
+                .update(payload)
+                .eq("id", existingByUid.id);
+              
+              if (updateError) {
+                result.errors.push(`Erro ao atualizar reserva ${event.uid}: ${updateError.message}`);
+              } else {
+                result.synced++;
+              }
+            }
+          } else {
             // Fallback por datas se não tiver UID (retrocompatibilidade ou mudança de UID)
             const { data: existingByDates } = await supabase
               .from("reservas")
