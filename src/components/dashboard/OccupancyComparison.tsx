@@ -207,7 +207,7 @@ const ChangeIndicator: React.FC<{ current: number; previous: number; format?: "c
   );
 };
 
-type PeriodFilter = "ytd" | "last_year" | "last3_next9" | "last12" | "next12";
+type PeriodFilter = "current_month" | "ytd" | "last_year" | "last3_next9" | "last12" | "next12";
 
 const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   mes,
@@ -286,7 +286,11 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
 
   // Filter months based on period
   let filteredMonths: any[];
-  if (period === "ytd") {
+  if (period === "current_month") {
+    const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
+    const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
+    filteredMonths = found ? [found] : [];
+  } else if (period === "ytd") {
     filteredMonths = monthsData.filter((m) => {
       if (ano === currentYear) return m.month <= currentMonth;
       return true;
@@ -364,6 +368,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
 
   const periodLabels: Record<PeriodFilter, string> = {
+    current_month: `${MESES[currentMonth]} ${currentYear}`,
     ytd: ano === -1 ? "Este ano até hoje" : `${ano} até hoje`,
     last_year: ano === -1 ? "Ano passado completo" : `${ano - 1} completo`,
     last3_next9: "Últimos 3 e próximos 9 meses",
@@ -387,6 +392,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="current_month">Mês atual</SelectItem>
                 <SelectItem value="ytd">Este ano</SelectItem>
                 <SelectItem value="last_year">Ano passado</SelectItem>
                 <SelectItem value="last3_next9">Últimos 3 e próximos 9 meses</SelectItem>
