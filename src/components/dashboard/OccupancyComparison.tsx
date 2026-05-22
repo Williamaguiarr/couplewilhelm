@@ -285,6 +285,8 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   ano,
   imovelIds,
 }) => {
+  console.log("OccupancyComparison: Initializing with props:", { mes, ano, imovelIds });
+
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
   const [allData, setAllData] = useState<{ prior: any[]; current: any[]; next: any[] }>({ prior: [], current: [], next: [] });
   const [loading, setLoading] = useState(true);

@@ -81,6 +81,8 @@ const TrendIcon = ({ val }: { val: number }) =>
 
 
 const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
+  console.log("FinancialYearComparison: Initializing with imovelIds:", imovelIds);
+
   const [anoBase, setAnoBase] = useState(currentYear);
   const [anoComparacao, setAnoComparacao] = useState(currentYear - 1);
   const [dataBase, setDataBase] = useState<YearData | null>(null);
