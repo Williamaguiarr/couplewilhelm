@@ -368,6 +368,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
 
   const periodLabels: Record<PeriodFilter, string> = {
+    current_month: `${MESES[currentMonth]} ${currentYear}`,
     ytd: ano === -1 ? "Este ano até hoje" : `${ano} até hoje`,
     last_year: ano === -1 ? "Ano passado completo" : `${ano - 1} completo`,
     last3_next9: "Últimos 3 e próximos 9 meses",
