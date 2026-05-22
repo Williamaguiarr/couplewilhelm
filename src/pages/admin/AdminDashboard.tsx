@@ -474,6 +474,7 @@ const AdminDashboard: React.FC = () => {
   ], [financeiro]);
 
 
+
   const formatValue = (value: number, format: string) => format === "currency" ? fmt(value) : value.toString();
 
   return (

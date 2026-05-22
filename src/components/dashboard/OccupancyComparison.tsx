@@ -361,11 +361,12 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }, [ano, imovelIds?.join(",")]);
 
   const filteredMonths = React.useMemo(() => {
+    // Hooks must be called before ANY early returns
     if (loading || monthsData.length === 0) return [];
     
     if (period === "current_month") {
       const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
-      const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
+      const found = Array.isArray(source) ? source.find((m: any) => m.month === currentMonth && m.year === currentYear) : null;
       return found ? [found] : [];
     }
     
@@ -376,7 +377,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       });
     }
     
-    if (period === "last_year") return allData.prior;
+    if (period === "last_year") return allData.prior || [];
     
     if (period === "last3_next9") {
       const result: any[] = [];
@@ -391,7 +392,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
         else if (targetYear === ano) source = monthsData;
         else if (targetYear === ano + 1) source = allData.next;
         
-        const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+        const found = Array.isArray(source) ? source.find((m: any) => m.month === targetMonth && m.year === targetYear) : null;
         if (found) result.push(found);
       }
       return result;
@@ -408,7 +409,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
         if (targetYear === ano - 1) source = allData.prior;
         else if (targetYear === ano) source = monthsData;
         
-        const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+        const found = Array.isArray(source) ? source.find((m: any) => m.month === targetMonth && m.year === targetYear) : null;
         if (found) result.push(found);
       }
       return result;
@@ -425,13 +426,14 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       if (targetYear === ano) source = monthsData;
       else if (targetYear === ano + 1) source = allData.next;
       
-      const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      const found = Array.isArray(source) ? source.find((m: any) => m.month === targetMonth && m.year === targetYear) : null;
       if (found) result.push(found);
     }
     return result;
   }, [period, loading, monthsData, allData, ano, currentMonth, currentYear]);
 
-  if (loading) {
+
+  if (loading || monthsData.length === 0) {
     return (
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
@@ -450,6 +452,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       </Card>
     );
   }
+
 
   const kpis = React.useMemo(() => {
     if (filteredMonths.length === 0) {
