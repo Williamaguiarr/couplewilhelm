@@ -206,7 +206,59 @@ async function fetchMonthData(
 }
 
 
+const OccupancyAuditDialog: React.FC<{ monthData: MonthData }> = ({ monthData }) => (
+  <Dialog>
+    <DialogTrigger asChild>
+      <button className="flex items-center gap-1.5 text-[10px] text-primary hover:underline font-medium mt-1">
+        <ClipboardCheck className="h-3 w-3" /> Ver auditoria por imóvel
+      </button>
+    </DialogTrigger>
+    <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogHeader>
+        <DialogTitle className="text-base font-semibold flex items-center gap-2">
+          <ClipboardCheck className="h-5 w-5 text-primary" />
+          Auditoria de Ocupação - {monthData.label}
+        </DialogTitle>
+      </DialogHeader>
+      <div className="py-4">
+        <div className="rounded-lg border border-border overflow-hidden">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="border-border">
+                <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Imóvel</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-center">Noites</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-right">Taxa</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {monthData.breakdown.map((item) => (
+                <TableRow key={item.id} className="border-border hover:bg-muted/10 transition-colors">
+                  <TableCell className="text-sm font-medium py-2.5">{item.nome}</TableCell>
+                  <TableCell className="text-sm text-center py-2.5 tabular-nums">{item.noites} / {item.totalDays}</TableCell>
+                  <TableCell className="text-sm text-right py-2.5 font-semibold text-foreground">{item.taxa.toFixed(0)}%</TableCell>
+                </TableRow>
+              ))}
+              {monthData.breakdown.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm italic">
+                    Nenhum imóvel encontrado no filtro.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <p className="mt-4 text-[10px] text-muted-foreground leading-relaxed italic">
+          * A auditoria considera apenas reservas financeiramente validadas conforme o requisito do dashboard.
+          Nights are counted as the number of occupied nights (check-in to check-out, excluding checkout day).
+        </p>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
 const InfoIcon: React.FC<{ tooltip: string }> = ({ tooltip }) => (
+
   <Tooltip>
     <TooltipTrigger asChild>
       <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
