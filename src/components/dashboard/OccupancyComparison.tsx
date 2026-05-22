@@ -299,18 +299,44 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       setLoading(true);
 
       const baseYear = ano === -1 ? currentYear : ano;
-      // Fetch current year, previous year, and next year (if needed)
-      const years = [baseYear - 1, baseYear, baseYear + 1];
-      const allPromises: Promise<MonthData>[] = [];
+      const startYear = baseYear - 1;
+      const endYear = baseYear + 1;
       
-      // We only need to fetch what is truly needed, let's keep it simple but efficient
+      const firstDayTotal = `${startYear}-01-01`;
+      const lastDayTotal = `${endYear}-12-31`;
+
+      // 1. Fetch ALL data in BULK
+      const [
+        { data: allReservas },
+        { data: imoveisData },
+        { data: allGanhosAvulsos }
+      ] = await Promise.all([
+        supabase
+          .from("reservas")
+          .select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)")
+          .lte("data_inicio", lastDayTotal)
+          .gt("data_fim", firstDayTotal),
+        supabase
+          .from("imoveis")
+          .select("id, nome_imovel"),
+        supabase
+          .from("ganhos_extras")
+          .select("valor, regime_comissao, aplicar_comissao, imovel_id, data")
+          .is("reserva_id", null)
+          .gte("data", firstDayTotal)
+          .lte("data", lastDayTotal)
+      ]);
+
+      const imoveisMap = new Map((imoveisData || []).map(i => [i.id, i.nome_imovel]));
+      const years = [startYear, baseYear, endYear];
+      
+      // 2. Process everything on client
+      const allResults: MonthData[] = [];
       for (const y of years) {
         for (let m = 0; m < 12; m++) {
-          allPromises.push(fetchMonthData(m, y, imovelIds));
+          allResults.push(processMonthData(m, y, allReservas || [], imoveisMap, allGanhosAvulsos || [], imovelIds));
         }
       }
-
-      const allResults = await Promise.all(allPromises);
 
       const priorYear = allResults.slice(0, 12);
       const currentYearData = allResults.slice(12, 24);
@@ -334,76 +360,60 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     load();
   }, [ano, imovelIds?.join(",")]);
 
-  if (loading) {
-    return (
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-primary" />
-            Indicadores de Desempenho
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Filter months based on period
-  let filteredMonths: any[];
-  if (period === "current_month") {
-    const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
-    const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
-    filteredMonths = found ? [found] : [];
-  } else if (period === "ytd") {
-    filteredMonths = monthsData.filter((m) => {
-      if (ano === currentYear) return m.month <= currentMonth;
-      return true;
-    });
-  } else if (period === "last_year") {
-    filteredMonths = allData.prior;
-  } else if (period === "last3_next9") {
-    // Last 3 months + next 9 months from current month
-    const result: any[] = [];
-    for (let i = -3; i < 9; i++) {
-      let targetMonth = currentMonth + i;
-      let targetYear = currentYear;
-      if (targetMonth < 0) { targetMonth += 12; targetYear--; }
-      if (targetMonth > 11) { targetMonth -= 12; targetYear++; }
-      
-      let source: any[];
-      if (targetYear === ano - 1) source = allData.prior;
-      else if (targetYear === ano) source = monthsData;
-      else if (targetYear === ano + 1) source = allData.next;
-      else continue;
-      
-      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
-      if (found) result.push(found);
+  const filteredMonths = React.useMemo(() => {
+    if (loading) return [];
+    
+    if (period === "current_month") {
+      const source = currentYear === ano ? monthsData : (currentYear === ano - 1 ? allData.prior : allData.next);
+      const found = source?.find?.((m: any) => m.month === currentMonth && m.year === currentYear);
+      return found ? [found] : [];
     }
-    filteredMonths = result;
-  } else if (period === "last12") {
-    // Last 12 months from current month
-    const result: any[] = [];
-    for (let i = -11; i <= 0; i++) {
-      let targetMonth = currentMonth + i;
-      let targetYear = currentYear;
-      while (targetMonth < 0) { targetMonth += 12; targetYear--; }
-      
-      let source: any[];
-      if (targetYear === ano - 1) source = allData.prior;
-      else if (targetYear === ano) source = monthsData;
-      else continue;
-      
-      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
-      if (found) result.push(found);
+    
+    if (period === "ytd") {
+      return monthsData.filter((m) => {
+        if (ano === currentYear) return m.month <= currentMonth;
+        return true;
+      });
     }
-    filteredMonths = result;
-  } else {
+    
+    if (period === "last_year") return allData.prior;
+    
+    if (period === "last3_next9") {
+      const result: any[] = [];
+      for (let i = -3; i < 9; i++) {
+        let targetMonth = currentMonth + i;
+        let targetYear = currentYear;
+        if (targetMonth < 0) { targetMonth += 12; targetYear--; }
+        if (targetMonth > 11) { targetMonth -= 12; targetYear++; }
+        
+        let source: any[] = [];
+        if (targetYear === ano - 1) source = allData.prior;
+        else if (targetYear === ano) source = monthsData;
+        else if (targetYear === ano + 1) source = allData.next;
+        
+        const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+        if (found) result.push(found);
+      }
+      return result;
+    }
+    
+    if (period === "last12") {
+      const result: any[] = [];
+      for (let i = -11; i <= 0; i++) {
+        let targetMonth = currentMonth + i;
+        let targetYear = currentYear;
+        while (targetMonth < 0) { targetMonth += 12; targetYear--; }
+        
+        let source: any[] = [];
+        if (targetYear === ano - 1) source = allData.prior;
+        else if (targetYear === ano) source = monthsData;
+        
+        const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
+        if (found) result.push(found);
+      }
+      return result;
+    }
+    
     // next12
     const result: any[] = [];
     for (let i = 1; i <= 12; i++) {
@@ -411,31 +421,47 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       let targetYear = currentYear;
       while (targetMonth > 11) { targetMonth -= 12; targetYear++; }
       
-      let source: any[];
+      let source: any[] = [];
       if (targetYear === ano) source = monthsData;
       else if (targetYear === ano + 1) source = allData.next;
-      else continue;
       
-      const found = source.find((m: any) => m.month === targetMonth && m.year === targetYear);
+      const found = source?.find((m: any) => m.month === targetMonth && m.year === targetYear);
       if (found) result.push(found);
     }
-    filteredMonths = result;
-  }
+    return result;
+  }, [period, loading, monthsData, allData, ano, currentMonth, currentYear]);
 
-  // Calculate KPIs
-  const totalReceita = filteredMonths.reduce((s, m) => s + (Number(m.receita) || 0), 0);
-  const totalOccupiedDays = filteredMonths.reduce((s, m) => s + (Number(m.occupiedDays) || 0), 0);
-  const totalDays = filteredMonths.reduce((s, m) => s + (Number(m.totalDays) || 0), 0);
-  const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
-  const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
+  const kpis = React.useMemo(() => {
+    if (filteredMonths.length === 0) {
+      return { 
+        totalReceita: 0, totalOccupiedDays: 0, totalDays: 0, avgOccupancy: 0, avgDailyRate: 0,
+        priorReceita: 0, priorOccupiedDays: 0, priorTotalDays: 0, priorAvgOccupancy: 0, priorAvgDailyRate: 0
+      };
+    }
+    
+    const totalReceita = filteredMonths.reduce((s, m) => s + (Number(m.receita) || 0), 0);
+    const totalOccupiedDays = filteredMonths.reduce((s, m) => s + (Number(m.occupiedDays) || 0), 0);
+    const totalDays = filteredMonths.reduce((s, m) => s + (Number(m.totalDays) || 0), 0);
+    const avgOccupancy = totalDays > 0 ? (totalOccupiedDays / totalDays) * 100 : 0;
+    const avgDailyRate = totalOccupiedDays > 0 ? totalReceita / totalOccupiedDays : 0;
 
-  // Prior year KPIs for same period
-  const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
-  const priorReceita = priorMonths.reduce((s, m) => s + (Number(m?.receita) || 0), 0);
-  const priorOccupiedDays = priorMonths.reduce((s, m) => s + (Number(m?.occupiedDays) || 0), 0);
-  const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
-  const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
-  const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
+    const priorMonths = filteredMonths.map((m: any) => m._prior as MonthData).filter(Boolean);
+    const priorReceita = priorMonths.reduce((s, m) => s + (Number(m?.receita) || 0), 0);
+    const priorOccupiedDays = priorMonths.reduce((s, m) => s + (Number(m?.occupiedDays) || 0), 0);
+    const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
+    const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
+    const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
+
+    return {
+      totalReceita, totalOccupiedDays, totalDays, avgOccupancy, avgDailyRate,
+      priorReceita, priorOccupiedDays, priorTotalDays, priorAvgOccupancy, priorAvgDailyRate
+    };
+  }, [filteredMonths]);
+
+  const {
+    totalReceita, avgOccupancy, avgDailyRate,
+    priorReceita, priorAvgOccupancy, priorAvgDailyRate
+  } = kpis;
 
   const periodLabels: Record<PeriodFilter, string> = {
     current_month: `${MESES[currentMonth]} ${currentYear}`,
