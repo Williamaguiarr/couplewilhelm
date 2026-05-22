@@ -151,6 +151,16 @@ const AdminDashboard: React.FC = () => {
     tipo: "manutencao",
   });
 
+  const filteredImovelIds = useMemo(() => {
+    if (filtroImovel !== "todos") return [filtroImovel];
+    if (filtroProprietario !== "todos") {
+      return imoveis
+        .filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario)
+        .map(i => i.id);
+    }
+    return imoveis.map(i => i.id);
+  }, [filtroImovel, filtroProprietario, imoveis]);
+
   useEffect(() => {
     fetchProprietarios();
     fetchDespesas();
@@ -563,13 +573,7 @@ const AdminDashboard: React.FC = () => {
         <OccupancyComparison 
           mes={mesSelecionado} 
           ano={anoSelecionado} 
-          imovelIds={useMemo(() => {
-            if (filtroImovel !== "todos") return [filtroImovel];
-            if (filtroProprietario !== "todos") {
-              return imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id);
-            }
-            return imoveis.map(i => i.id);
-          }, [filtroImovel, filtroProprietario, imoveis])} 
+          imovelIds={filteredImovelIds} 
         />
 
         <FinancialYearComparison imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : undefined} imoveis={imoveis} />
