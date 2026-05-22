@@ -184,7 +184,7 @@ async function fetchMonthData(
     label: `${MESES_CURTOS[month]} ${year}`,
     receita,
     occupiedDays,
-    totalDays: total,
+    totalDays: capacity,
     occupancyRate,
     avgDailyRate,
     reservationCount,
