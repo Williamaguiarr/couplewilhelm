@@ -51,6 +51,14 @@ interface OccupancyComparisonProps {
   imovelIds?: string[] | null;
 }
 
+interface ImovelBreakdown {
+  id: string;
+  nome: string;
+  noites: number;
+  totalDias: number;
+  taxa: number;
+}
+
 interface MonthData {
   month: number;
   year: number;
@@ -61,7 +69,9 @@ interface MonthData {
   occupancyRate: number;
   avgDailyRate: number;
   reservationCount: number;
+  breakdown: ImovelBreakdown[];
 }
+
 
 const DAY_MS = 86400000;
 
