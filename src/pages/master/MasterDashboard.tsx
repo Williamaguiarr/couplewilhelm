@@ -137,7 +137,8 @@ const MasterDashboard: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          ))}
+          );
+        })}
         </div>
       </div>
     </PageTransition>
