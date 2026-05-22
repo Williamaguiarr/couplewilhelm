@@ -119,11 +119,14 @@ async function fetchMonthData(
       imovel_id: r.imovel_id,
       data_inicio: r.data_inicio,
       data_fim: r.data_fim,
+      validada_financeiramente: r.validada_financeiramente,
     })),
     scopeIds,
     periodStart,
     periodEnd,
+    true // onlyValidated = true (Requisito da Visão Geral)
   );
+
 
   // ── RECEITA: somente reservas validadas, atribuídas ao mês de checkout ──
   let receita = 0;
