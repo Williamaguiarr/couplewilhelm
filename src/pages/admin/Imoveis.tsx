@@ -172,6 +172,34 @@ const Imoveis: React.FC = () => {
     setOpen(true);
   };
 
+  // Valida se a URL parece um endpoint iCal (.ics) e não um link de página HTML
+  const validateIcalUrl = (url: string, plataforma: "airbnb" | "booking"): string | null => {
+    const u = url.trim();
+    if (!u) return null;
+    try {
+      const parsed = new URL(u);
+      const path = parsed.pathname.toLowerCase();
+      const isIcs =
+        path.endsWith(".ics") || path.includes("/ical/") || path.includes("ical.html");
+      const isListingPage =
+        path.includes("/rooms/") ||
+        (path.includes("/hotel/") && !path.includes("ical")) ||
+        path === "/" ||
+        (path.endsWith(".html") && !path.includes("ical"));
+      if (!isIcs || isListingPage) {
+        return plataforma === "airbnb"
+          ? "URL inválida. Use o link exportado em Anúncio → Disponibilidade → Sincronizar calendários → Exportar calendário (deve terminar em .ics)."
+          : "URL inválida. Use o link exportado na Extranet Booking → Tarifas e Disponibilidade → Sincronização → Exportar Calendário (deve conter ical.html ou .ics).";
+      }
+      return null;
+    } catch {
+      return "URL malformada.";
+    }
+  };
+
+  const icalAirbnbError = validateIcalUrl(form.ical_url_airbnb, "airbnb");
+  const icalBookingError = validateIcalUrl(form.ical_url_booking, "booking");
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -183,6 +211,15 @@ const Imoveis: React.FC = () => {
       toast({
         title: "Proprietários iguais",
         description: "O 2º proprietário deve ser diferente do 1º.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (icalAirbnbError || icalBookingError) {
+      toast({
+        title: "URL iCal inválida",
+        description: icalAirbnbError || icalBookingError || "",
         variant: "destructive",
       });
       return;
@@ -504,9 +541,12 @@ const Imoveis: React.FC = () => {
                     <Input
                       value={form.ical_url_airbnb}
                       onChange={(e) => setForm({ ...form, ical_url_airbnb: e.target.value })}
-                      placeholder="https://www.airbnb.com/calendar/ical/..."
-                      className="bg-background text-sm"
+                      placeholder="https://www.airbnb.com/calendar/ical/....ics"
+                      className={`bg-background text-sm ${icalAirbnbError ? "border-destructive" : ""}`}
                     />
+                    {icalAirbnbError && (
+                      <p className="text-xs text-destructive">{icalAirbnbError}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground text-sm">URL iCal — Booking.com</Label>
@@ -514,8 +554,11 @@ const Imoveis: React.FC = () => {
                       value={form.ical_url_booking}
                       onChange={(e) => setForm({ ...form, ical_url_booking: e.target.value })}
                       placeholder="https://admin.booking.com/hotel/hoteladmin/ical.html?..."
-                      className="bg-background text-sm"
+                      className={`bg-background text-sm ${icalBookingError ? "border-destructive" : ""}`}
                     />
+                    {icalBookingError && (
+                      <p className="text-xs text-destructive">{icalBookingError}</p>
+                    )}
                   </div>
                 </div>
 
