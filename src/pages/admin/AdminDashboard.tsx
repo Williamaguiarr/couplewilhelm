@@ -44,6 +44,8 @@ import {
   ChevronRight,
   FileDown,
   Sparkles,
+  AlertCircle,
+  RefreshCcw,
 } from "lucide-react";
 import PageTransition from "@/components/layout/PageTransition";
 import OccupancyComparison from "@/components/dashboard/OccupancyComparison";
@@ -54,6 +56,7 @@ import { Badge } from "@/components/ui/badge";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   createPdfDoc, drawHeader, drawSummaryCards, drawSectionTitle,
   drawFooterAllPages, premiumTableStyles, genTimestamp,
@@ -137,6 +140,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [reservasSemValores, setReservasSemValores] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [imoveis, setImoveis] = useState<Imovel[]>([]);
@@ -215,6 +219,8 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = async () => {
     setLoading(true);
+    setError(null);
+    try {
     const isAcumuladoMes = mesSelecionado === -1;
     const isAcumuladoAno = anoSelecionado === -1;
 
@@ -362,14 +368,19 @@ const AdminDashboard: React.FC = () => {
       totalReservas: currentReservas.length,
       receitaMes: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
     });
-    setFinanceiro({
-      valorBruto: totaisReservas.valorBruto + totaisGanhos.valorBruto,
-      taxaLimpeza: totaisReservas.taxaLimpeza,
-      valorLiquido: totaisReservas.valorLiquido + totaisGanhos.valorBruto,
-      comissaoCW: totaisReservas.comissaoCW + totaisGanhos.comissaoCW,
-      valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
-    });
-    setLoading(false);
+      setFinanceiro({
+        valorBruto: totaisReservas.valorBruto + totaisGanhos.valorBruto,
+        taxaLimpeza: totaisReservas.taxaLimpeza,
+        valorLiquido: totaisReservas.valorLiquido + totaisGanhos.valorBruto,
+        comissaoCW: totaisReservas.comissaoCW + totaisGanhos.comissaoCW,
+        valorProprietario: totaisReservas.valorProprietario + totaisGanhos.valorProprietario,
+      });
+    } catch (err: any) {
+      console.error("Dashboard calculation error:", err);
+      setError(err.message || "Erro ao carregar métricas do dashboard.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchDespesas = async () => {
