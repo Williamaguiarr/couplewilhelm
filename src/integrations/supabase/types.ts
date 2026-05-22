@@ -419,6 +419,7 @@ export type Database = {
           plataforma_origem: string | null
           taxa_comissao_reserva: number | null
           taxa_limpeza: number | null
+          validada_financeiramente: boolean
           valor_bruto: number | null
           valor_liquido_proprietario: number | null
         }
@@ -438,6 +439,7 @@ export type Database = {
           plataforma_origem?: string | null
           taxa_comissao_reserva?: number | null
           taxa_limpeza?: number | null
+          validada_financeiramente?: boolean
           valor_bruto?: number | null
           valor_liquido_proprietario?: number | null
         }
@@ -457,6 +459,7 @@ export type Database = {
           plataforma_origem?: string | null
           taxa_comissao_reserva?: number | null
           taxa_limpeza?: number | null
+          validada_financeiramente?: boolean
           valor_bruto?: number | null
           valor_liquido_proprietario?: number | null
         }
