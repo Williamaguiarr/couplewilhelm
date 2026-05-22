@@ -363,11 +363,8 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   }, [ano, imovelIds?.join(",")]);
 
   const filteredMonths = React.useMemo(() => {
-    // 1. Hooks outside of conditional logic
-    // (allData and monthsData are stable state)
-
-    // 2. Main Logic
     if (loading || monthsData.length === 0) return [];
+
 
     
     if (period === "current_month") {
@@ -459,6 +456,33 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
     const priorTotalDays = priorMonths.reduce((s, m) => s + (Number(m?.totalDays) || 0), 0);
     const priorAvgOccupancy = priorTotalDays > 0 ? (priorOccupiedDays / priorTotalDays) * 100 : 0;
     const priorAvgDailyRate = priorOccupiedDays > 0 ? priorReceita / priorOccupiedDays : 0;
+
+    return {
+      totalReceita, totalOccupiedDays, totalDays, avgOccupancy, avgDailyRate,
+      priorReceita, priorOccupiedDays, priorTotalDays, priorAvgOccupancy, priorAvgDailyRate
+    };
+  }, [filteredMonths]);
+
+  if (loading || monthsData.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground tracking-wide flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            Indicadores de Desempenho
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-16 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
     return {
       totalReceita, totalOccupiedDays, totalDays, avgOccupancy, avgDailyRate,
