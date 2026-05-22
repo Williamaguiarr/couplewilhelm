@@ -209,42 +209,51 @@ const Calendario: React.FC = () => {
   const today = new Date();
 
   // Build occupancy map: day → list of {imovel, reserva}
-  const occupancyMap: Record<number, Array<{ imovel: Imovel; reserva: Reserva }>> = {};
-  for (let d = 1; d <= daysInMonth; d++) occupancyMap[d] = [];
+  const occupancyMap = useMemo(() => {
+    const map: Record<number, Array<{ imovel: Imovel; reserva: Reserva }>> = {};
+    for (let d = 1; d <= daysInMonth; d++) map[d] = [];
 
-  reservas.forEach((r) => {
-    const imovel = imoveis.find((im) => im.id === r.imovel_id);
-    if (!imovel) return;
-    daysOccupied(r, ano, mes).forEach((d) => {
-      occupancyMap[d].push({ imovel, reserva: r });
+    reservas.forEach((r) => {
+      const imovel = imoveis.find((im) => im.id === r.imovel_id);
+      if (!imovel) return;
+      daysOccupied(r, ano, mes).forEach((d) => {
+        if (map[d]) map[d].push({ imovel, reserva: r });
+      });
     });
-  });
+    return map;
+  }, [reservas, imoveis, ano, mes, daysInMonth]);
 
   // Count total occupied days per imovel — using the unified logic
-  const periodStart = new Date(ano, mes, 1, 12, 0, 0, 0);
-  const periodEnd = new Date(ano, mes + 1, 1, 12, 0, 0, 0);
-  
-  const summary = computeOccupancy(
-    reservas.map(r => ({
-      imovel_id: r.imovel_id,
-      data_inicio: r.data_inicio,
-      data_fim: r.data_fim,
-    })),
-    imoveis.map(i => i.id),
-    periodStart,
-    periodEnd,
-    false // In calendar we show ALL (including unvalidated)
-  );
+  const ocupacaoPorImovel = useMemo(() => {
+    if (imoveis.length === 0) return {};
+    
+    const periodStart = new Date(ano, mes, 1, 12, 0, 0, 0);
+    const periodEnd = new Date(ano, mes + 1, 1, 12, 0, 0, 0);
+    
+    const summary = computeOccupancy(
+      reservas.map(r => ({
+        imovel_id: r.imovel_id,
+        data_inicio: r.data_inicio,
+        data_fim: r.data_fim,
+      })),
+      imoveis.map(i => i.id),
+      periodStart,
+      periodEnd,
+      false // In calendar we show ALL
+    );
 
-  const ocupacaoPorImovel: Record<string, { dias: number; reservas: number }> = {};
-  imoveis.forEach((im) => {
-    const set = summary.occupiedByImovel.get(im.id);
-    const numRes = reservas.filter(r => r.imovel_id === im.id).length;
-    ocupacaoPorImovel[im.id] = { 
-      dias: set?.size ?? 0, 
-      reservas: numRes 
-    };
-  });
+    const result: Record<string, { dias: number; reservas: number }> = {};
+    imoveis.forEach((im) => {
+      const set = summary.occupiedByImovel.get(im.id);
+      const numRes = reservas.filter(r => r.imovel_id === im.id).length;
+      result[im.id] = { 
+        dias: set?.size ?? 0, 
+        reservas: numRes 
+      };
+    });
+    return result;
+  }, [reservas, imoveis, ano, mes]);
+
 
 
   const handleCellClick = (
