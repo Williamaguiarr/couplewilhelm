@@ -576,7 +576,7 @@ const AdminDashboard: React.FC = () => {
           imovelIds={filteredImovelIds} 
         />
 
-        <FinancialYearComparison imovelIds={filtroProprietario !== "todos" ? (imoveis.filter(i => i.proprietario_id === filtroProprietario || i.proprietario_id_2 === filtroProprietario).map(i => i.id)) : undefined} imoveis={imoveis} />
+        <FinancialYearComparison imovelIds={filteredImovelIds} imoveis={imoveis} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>

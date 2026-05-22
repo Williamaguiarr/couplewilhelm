@@ -22,16 +22,16 @@ const MasterDashboard: React.FC = () => {
 
     const adminIds = (adminRoles || []).map((r) => r.user_id);
 
-    const [
-      { count: totalProprietarios },
-      { count: totalImoveis },
-    ] = await Promise.all([
+    const [propRes, imovRes] = await Promise.all([
       supabase
         .from("user_roles")
         .select("*", { count: "exact", head: true })
         .eq("role", "proprietario"),
       supabase.from("imoveis").select("*", { count: "exact", head: true }),
     ]);
+
+    const totalProprietarios = propRes.count || 0;
+    const totalImoveis = imovRes.count || 0;
 
     // Admins ativos: cruzamento entre user_roles (admin existente) e admin_configs (ativo=true)
     let adminsAtivos = 0;
