@@ -366,14 +366,24 @@ const ProprietarioDashboard: React.FC = () => {
   const previsaoFutura = reservasImovelSelecionado
     .filter((r) => {
       const [y, m, d] = r.data_fim.split("-").map(Number);
-      const fim = new Date(y, m - 1, d);
+      // Use local date for "today" to match user's perspective
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
-      const isFuture = fim > new Date();
-      if (!isFuture) return false;
-      
-      const matchAno = filterAno === -1 || fim.getFullYear() === filterAno;
-      const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
-      return matchAno && matchMes;
+      const checkoutDate = new Date(y, m - 1, d);
+      checkoutDate.setHours(0, 0, 0, 0);
+
+      // Rule: From TODAY onwards
+      if (checkoutDate < today) return false;
+
+      // Rule: Until the end of the next 3 full calendar months
+      // Example: If today is May 15, current month is 4 (0-indexed).
+      // Next 3 full months are June (5), July (6), August (7).
+      // End date is the last day of August.
+      const limitDate = new Date(today.getFullYear(), today.getMonth() + 4, 0);
+      limitDate.setHours(23, 59, 59, 999);
+
+      return checkoutDate <= limitDate;
     })
     .reduce((acc, r) => {
       const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
