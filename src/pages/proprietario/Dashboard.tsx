@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -337,8 +337,8 @@ const ProprietarioDashboard: React.FC = () => {
     return 0;
   };
 
-  const receitaMesAtual =
-    reservasImovelSelecionado
+  const receitaMesAtual = useMemo(() => {
+    const reservasVal = reservasImovelSelecionado
       .filter((r) => {
         const [y, m, d] = r.data_fim.split("-").map(Number);
         const fim = new Date(y, m - 1, d);
@@ -346,11 +346,9 @@ const ProprietarioDashboard: React.FC = () => {
         const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
         return matchAno && matchMes;
       })
-      .reduce((acc, r) => {
-        const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
-        return acc + f.proprietario;
-      }, 0)
-    + ganhosImovelSelecionado
+      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+
+    const ganhosVal = ganhosImovelSelecionado
       .filter((g) => {
         const effectiveDate = g.reservas?.data_fim || g.data;
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate || "");
@@ -363,50 +361,50 @@ const ProprietarioDashboard: React.FC = () => {
       })
       .reduce((acc, g) => acc + ganhoProprietarioValor(g), 0);
 
-  const previsaoFutura = reservasImovelSelecionado
-    .filter((r) => {
-      const [y, m, d] = r.data_fim.split("-").map(Number);
-      // Use local date for "today" to match user's perspective
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const checkoutDate = new Date(y, m - 1, d);
-      checkoutDate.setHours(0, 0, 0, 0);
+    return reservasVal + ganhosVal;
+  }, [reservasImovelSelecionado, ganhosImovelSelecionado, filterMes, filterAno, ganhoProprietarioValor]);
 
-      // Rule: From TODAY onwards
-      if (checkoutDate < today) return false;
+  const previsaoFutura = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Regra: Final dos próximos 3 meses completos
+    const limitDate = new Date(today.getFullYear(), today.getMonth() + 4, 0);
+    limitDate.setHours(23, 59, 59, 999);
 
-      // Rule: Until the end of the next 3 full calendar months
-      // Example: If today is May 15, current month is 4 (0-indexed).
-      // Next 3 full months are June (5), July (6), August (7).
-      // End date is the last day of August.
-      const limitDate = new Date(today.getFullYear(), today.getMonth() + 4, 0);
-      limitDate.setHours(23, 59, 59, 999);
+    return reservasImovelSelecionado
+      .filter((r) => {
+        const [y, m, d] = r.data_fim.split("-").map(Number);
+        const checkoutDate = new Date(y, m - 1, d);
+        checkoutDate.setHours(0, 0, 0, 0);
 
-      return checkoutDate <= limitDate;
-    })
-    .reduce((acc, r) => {
-      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
-      return acc + f.proprietario;
-    }, 0);
+        // De HOJE em diante até o limite
+        return checkoutDate >= today && checkoutDate <= limitDate;
+      })
+      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+  }, [reservasImovelSelecionado]);
 
   const occupiedDays = reservasImovelSelecionado.flatMap((r) =>
     getDaysBetween(r.data_inicio, r.data_fim)
   );
 
-  const totaisReservas = reservasFiltradas.reduce(
-    (acc, r) => {
-      const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
-      return {
-        bruto: acc.bruto + f.bruto,
-        limpeza: acc.limpeza + f.limpeza,
-        plataforma: acc.plataforma + f.plataforma,
-        comissao: acc.comissao + f.comissao,
-        proprietario: acc.proprietario + f.proprietario,
-      };
-    },
-    { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
-  );
+  const totaisReservas = useMemo(() => {
+    return reservasFiltradas.reduce(
+      (acc, r) => {
+        const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+        // Usar o valor do banco se disponível, senão o calculado
+        const proprietario = r.valor_liquido_proprietario ?? f.proprietario;
+        return {
+          bruto: acc.bruto + f.bruto,
+          limpeza: acc.limpeza + f.limpeza,
+          plataforma: acc.plataforma + f.plataforma,
+          comissao: acc.comissao + f.comissao,
+          proprietario: acc.proprietario + proprietario,
+        };
+      },
+      { bruto: 0, limpeza: 0, plataforma: 0, comissao: 0, proprietario: 0 }
+    );
+  }, [reservasFiltradas, comissaoRate, getRateForImovel]);
 
   // Totais de ganhos extras (defensivo: valor inválido = 0, nunca NaN).
   const totaisGanhos = ganhosFiltrados.reduce(
