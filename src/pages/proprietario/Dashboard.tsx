@@ -675,7 +675,7 @@ const ProprietarioDashboard: React.FC = () => {
                 ) : (
                   <p className="font-display text-2xl sm:text-4xl text-foreground font-semibold tabular-nums">{fmt(previsaoFutura)}</p>
                 )}
-                <p className="text-xs text-muted-foreground/70">Reservas confirmadas</p>
+                <p className="text-xs text-muted-foreground/70">Próximos 3 meses (até {format(new Date(new Date().getFullYear(), new Date().getMonth() + 4, 0), "dd/MM/yyyy")})</p>
               </div>
               <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
                 <CalendarCheck className="h-5 w-5 text-primary" />
