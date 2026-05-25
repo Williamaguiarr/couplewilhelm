@@ -496,6 +496,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_owner_future_forecast: {
+        Args: { p_imovel_id?: string; p_owner_id: string }
+        Returns: number
+      }
+      calculate_reserva_liquido_proprietario: {
+        Args: {
+          p_comissao_plataforma: number
+          p_imovel_id: string
+          p_taxa_comissao_reserva?: number
+          p_taxa_limpeza: number
+          p_valor_bruto: number
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
