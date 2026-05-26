@@ -19,9 +19,24 @@ function generateToken(): string {
     .join('')
 }
 
+function parseJwtClaims(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  try {
+    const payload = parts[1]
+      .replaceAll('-', '+')
+      .replaceAll('_', '/')
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, '=')
+    return JSON.parse(atob(payload)) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
 // Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
 // gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// reaches this code.
+
 
 Deno.serve(async (req) => {
   // console.log(`Recebendo requisição: ${req.method} ${req.url}`)
@@ -41,6 +56,22 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: 'Server configuration error' }),
       {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
+  const authHeader = req.headers.get('Authorization')
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : null
+  const claims = token ? parseJwtClaims(token) : null
+
+  // 1. Check if caller has permission (service_role only)
+  if (claims?.role !== 'service_role') {
+    console.error('Unauthorized access attempt', { role: claims?.role })
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized: Service role required' }),
+      {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
