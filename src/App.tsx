@@ -21,6 +21,7 @@ import MeusImoveis from "@/pages/proprietario/MeusImoveis";
 import AdminsList from "@/pages/master/AdminsList";
 import MasterDashboard from "@/pages/master/MasterDashboard";
 import Setup from "@/pages/Setup";
+import Unsubscribe from "@/pages/Unsubscribe";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/setup" element={<Setup />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
                 <Route path="/" element={<Navigate to="/login" replace />} />
 
                 {/* Master */}
