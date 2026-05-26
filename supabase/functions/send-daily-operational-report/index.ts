@@ -1,5 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
+import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import * as React from 'https://esm.sh/react@18.3.1?dev'
+import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.22?deps=react@18.3.1,react-dom@18.3.1'
+
+
 
 // Defaults (mirrors src/components/calendario/types.ts)
 const HORA_CHECKIN_PADRAO = '15:00'
@@ -21,11 +26,24 @@ function isoDateBRT(offsetDays = 0): string {
   return `${year}-${month}-${day}`
 }
 
+const SITE_NAME = "couplewilhelm"
+const SENDER_DOMAIN = "notify.couplewilhelm.online"
+const FROM_DOMAIN = "notify.couplewilhelm.online"
+
+function generateToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
   const hoje = isoDateBRT(0)
@@ -137,12 +155,23 @@ Deno.serve(async (req) => {
     console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
     const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: payload
+      body: payload,
     })
 
     if (iErr) {
       console.error(`Erro ao invocar send-transactional-email:`, iErr)
     }
+
+    results.push({
+      admin_id: cfg.admin_id,
+      email: cfg.relatorio_diario_email,
+      checkins_hoje: diaHoje.checkins.length,
+      checkouts_hoje: diaHoje.checkouts.length,
+      checkins_amanha: diaAmanha.checkins.length,
+      checkouts_amanha: diaAmanha.checkouts.length,
+      invoke_data: iData,
+      error: iErr,
+    })
 
     results.push({
       admin_id: cfg.admin_id,

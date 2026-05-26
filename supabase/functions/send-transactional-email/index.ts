@@ -1,5 +1,6 @@
-import * as React from 'https://esm.sh/react@18.3.1'
-import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.22'
+import * as React from 'https://esm.sh/react@18.3.1?dev'
+import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.22?deps=react@18.3.1,react-dom@18.3.1'
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
@@ -19,9 +20,24 @@ function generateToken(): string {
     .join('')
 }
 
+function parseJwtClaims(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  try {
+    const payload = parts[1]
+      .replaceAll('-', '+')
+      .replaceAll('_', '/')
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, '=')
+    return JSON.parse(atob(payload)) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
 // Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
 // gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// reaches this code.
+
 
 Deno.serve(async (req) => {
   // console.log(`Recebendo requisição: ${req.method} ${req.url}`)
@@ -45,6 +61,12 @@ Deno.serve(async (req) => {
       }
     )
   }
+
+  // Auth note: verify_jwt = true in config.toml ensures only valid tokens reach here.
+  // The gateway handles this automatically.
+
+
+
 
   // Parse request body
   let templateName: string
