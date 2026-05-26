@@ -10,7 +10,8 @@ const normHora = (h?: string | null) => (h ? String(h).slice(0, 5) : null)
 function isoDateBRT(offsetDays = 0): string {
   // BRT = UTC-3 (no DST since 2019)
   const now = new Date()
-  // Ensure we are working with the date in BRT
+  // No server side, o 'now' já está na data correta do sistema
+  // Mas para garantir o dia do calendário BRT:
   const brt = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
   brt.setDate(brt.getDate() + offsetDays)
   
@@ -133,12 +134,31 @@ Deno.serve(async (req) => {
 
     console.log(`Invocando send-transactional-email via supabase.functions.invoke para ${cfg.relatorio_diario_email}`)
 
-    const { data: invokeData, error: invokeErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: payload
-    })
+    // Fallback manual se o invoke falhar por questões de JWT em ambiente de teste
+    let invokeData = null
+    let invokeError = null
 
-    if (invokeErr) {
-      console.error(`Erro ao invocar send-transactional-email:`, invokeErr)
+    try {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceKey}`
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!resp.ok) {
+        invokeError = await resp.text()
+      } else {
+        invokeData = await resp.json()
+      }
+    } catch (e: any) {
+      invokeError = e.message
+    }
+
+    if (invokeError) {
+      console.error(`Erro ao invocar send-transactional-email:`, invokeError)
     }
 
     results.push({
@@ -149,7 +169,7 @@ Deno.serve(async (req) => {
       checkins_amanha: diaAmanha.checkins.length,
       checkouts_amanha: diaAmanha.checkouts.length,
       invoke_data: invokeData,
-      error: invokeErr?.message,
+      error: invokeError,
     })
   }
 
