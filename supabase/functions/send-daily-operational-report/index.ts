@@ -152,72 +152,25 @@ Deno.serve(async (req) => {
       },
     }
 
-    console.log(`Enfileirando email para ${cfg.relatorio_diario_email}`)
+    console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
-    const templateName = 'operational-daily-report'
-    const template = TEMPLATES[templateName]
-    
-    // Resolve effective recipient
-    const effectiveRecipient = cfg.relatorio_diario_email
-    const normalizedEmail = effectiveRecipient.toLowerCase()
-
-    // 1. Get/Create unsubscribe token
-    let unsubscribeToken: string
-    const { data: existingToken } = await supabase
-      .from('email_unsubscribe_tokens')
-      .select('token')
-      .eq('email', normalizedEmail)
-      .maybeSingle()
-
-    if (existingToken) {
-      unsubscribeToken = existingToken.token
-    } else {
-      unsubscribeToken = generateToken()
-      await supabase.from('email_unsubscribe_tokens').insert({ token: unsubscribeToken, email: normalizedEmail })
-    }
-
-    // 2. Render templates
-    const html = await renderAsync(React.createElement(template.component, payload.templateData))
-    const plainText = await renderAsync(React.createElement(template.component, payload.templateData), { plainText: true })
-    const resolvedSubject = typeof template.subject === 'function' ? template.subject(payload.templateData) : template.subject
-    const messageId = crypto.randomUUID()
-
-    // 3. Log pending
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: templateName,
-      recipient_email: effectiveRecipient,
-      status: 'pending',
+    const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
+      body: payload,
     })
 
-    // 4. Enqueue
-    const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
-        message_id: messageId,
-        to: effectiveRecipient,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject: resolvedSubject,
-        html,
-        text: plainText,
-        purpose: 'transactional',
-        label: templateName,
-        idempotency_key: idem,
-        unsubscribe_token: unsubscribeToken,
-        queued_at: new Date().toISOString(),
-      },
-    })
-
-    if (enqueueError) {
-      console.error(`Erro ao enfileirar email:`, enqueueError)
+    if (iErr) {
+      console.error(`Erro ao invocar send-transactional-email:`, iErr)
     }
 
     results.push({
       admin_id: cfg.admin_id,
       email: cfg.relatorio_diario_email,
-      enqueued: !enqueueError,
-      error: enqueueError,
+      checkins_hoje: diaHoje.checkins.length,
+      checkouts_hoje: diaHoje.checkouts.length,
+      checkins_amanha: diaAmanha.checkins.length,
+      checkouts_amanha: diaAmanha.checkouts.length,
+      invoke_data: iData,
+      error: iErr,
     })
 
     results.push({
