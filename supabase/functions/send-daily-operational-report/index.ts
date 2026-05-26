@@ -136,9 +136,31 @@ Deno.serve(async (req) => {
 
     console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
-    const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: payload
-    })
+    // Use absolute URL instead of .invoke to bypass internal issues
+    let iData = null
+    let iErr = null
+
+    try {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceKey}`
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!resp.ok) {
+        const errorText = await resp.text()
+        console.error(`Erro ao invocar send-transactional-email: ${resp.status}`, errorText)
+        iErr = { message: errorText, status: resp.status }
+      } else {
+        iData = await resp.json()
+      }
+    } catch (e: any) {
+      console.error(`Erro de rede ao invocar:`, e)
+      iErr = { message: e.message }
+    }
 
     if (iErr) {
       console.error(`Erro ao invocar send-transactional-email:`, iErr)
