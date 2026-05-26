@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       { label: 'AMANHÃ', data: amanha, ...diaAmanha },
     ]
 
-    const idem = `op-report-${cfg.admin_id}-${hoje}`
+    const idem = `op-report-${cfg.admin_id}-${hoje}-${Date.now()}`
 
     const payload = {
       templateName: 'operational-daily-report',
