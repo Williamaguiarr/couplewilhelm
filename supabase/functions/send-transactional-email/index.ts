@@ -85,10 +85,8 @@ Deno.serve(async (req) => {
   // 1. Look up template from registry (early — needed to resolve recipient)
   const template = TEMPLATES[templateName]
 
-  // console.log(`Buscando template: ${templateName}`, { templateFound: !!template })
-
   if (!template) {
-    console.error('Template not found in registry', { templateName, available: Object.keys(TEMPLATES) })
+    console.error('Template not found in registry', { templateName })
     return new Response(
       JSON.stringify({
         error: `Template '${templateName}' not found. Available: ${Object.keys(TEMPLATES).join(', ')}`,
@@ -100,10 +98,10 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Resolve effective recipient
+  // Resolve effective recipient: template-level `to` takes precedence over
+  // the caller-provided recipientEmail. This allows notification templates
+  // to always send to a fixed address (e.g., site owner from env var).
   const effectiveRecipient = template.to || recipientEmail
-
-  // console.log(`Destinatário: ${effectiveRecipient}`)
 
   if (!effectiveRecipient) {
     return new Response(
