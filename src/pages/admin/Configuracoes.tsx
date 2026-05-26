@@ -333,7 +333,39 @@ const Configuracoes: React.FC = () => {
     setSavingComissao(false);
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSaveRelatorio = async () => {
+    if (!user) return;
+    const email = relatorioEmail.trim();
+    if (relatorioAtivo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "E-mail inválido", description: "Informe um e-mail válido para receber o relatório.", variant: "destructive" });
+      return;
+    }
+    setSavingRelatorio(true);
+    const payload: any = {
+      relatorio_diario_email: email || null,
+      relatorio_diario_ativo: relatorioAtivo,
+    };
+    if (config) {
+      await supabase.from("admin_configs" as any).update(payload).eq("admin_id", user.id);
+    } else {
+      await supabase.from("admin_configs" as any).insert({ ...payload, admin_id: user.id, slug: form.slug || user.id, ativo: true });
+    }
+    toast({ title: "Relatório configurado!", description: relatorioAtivo ? "Você receberá o relatório diariamente." : "Envio automático desativado." });
+    fetchConfig();
+    setSavingRelatorio(false);
+  };
+
+  const handleEnviarRelatorioAgora = async () => {
+    setTestingRelatorio(true);
+    const { error } = await supabase.functions.invoke("send-daily-operational-report");
+    if (error) {
+      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Disparado!", description: "Verifique sua caixa de entrada em alguns instantes." });
+    }
+    setTestingRelatorio(false);
+  };
+
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
