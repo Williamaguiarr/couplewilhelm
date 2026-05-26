@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
 
 // Defaults (mirrors src/components/calendario/types.ts)
 const HORA_CHECKIN_PADRAO = '15:00'
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       { label: 'AMANHÃ', data: amanha, ...diaAmanha },
     ]
 
-    const idem = `op-report-${cfg.admin_id}-${hoje}`
+    const idem = `op-report-${cfg.admin_id}-${hoje}-${Date.now()}`
 
     const payload = {
       templateName: 'operational-daily-report',
@@ -136,16 +136,12 @@ Deno.serve(async (req) => {
 
     console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
-    // Fallback manual se o invoke falhar por questões de JWT em ambiente de teste
-    let invokeData = null
-    let invokeError = null
-
-    const { data: invokeData, error: invokeError } = await supabase.functions.invoke('send-transactional-email', {
+    const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
       body: payload
     })
 
-    if (invokeError) {
-      console.error(`Erro ao invocar send-transactional-email:`, invokeError)
+    if (iErr) {
+      console.error(`Erro ao invocar send-transactional-email:`, iErr)
     }
 
     results.push({
@@ -155,8 +151,8 @@ Deno.serve(async (req) => {
       checkouts_hoje: diaHoje.checkouts.length,
       checkins_amanha: diaAmanha.checkins.length,
       checkouts_amanha: diaAmanha.checkouts.length,
-      invoke_data: invokeData,
-      error: invokeError,
+      invoke_data: iData,
+      error: iErr,
     })
   }
 
