@@ -128,34 +128,21 @@ Deno.serve(async (req) => {
       templateData: {
         empresaNome: cfg.nome_empresa || 'couplewilhelm',
         geradoEm: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+        hoje,
+        amanha,
         dias,
       },
     }
 
-    console.log(`Invocando send-transactional-email via supabase.functions.invoke para ${cfg.relatorio_diario_email}`)
+    console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
     // Fallback manual se o invoke falhar por questões de JWT em ambiente de teste
     let invokeData = null
     let invokeError = null
 
-    try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serviceKey}`
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (!resp.ok) {
-        invokeError = await resp.text()
-      } else {
-        invokeData = await resp.json()
-      }
-    } catch (e: any) {
-      invokeError = e.message
-    }
+    const { data: invokeData, error: invokeError } = await supabase.functions.invoke('send-transactional-email', {
+      body: payload
+    })
 
     if (invokeError) {
       console.error(`Erro ao invocar send-transactional-email:`, invokeError)
