@@ -62,8 +62,11 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get('Authorization')
+  console.log(`Auth header presence: ${!!authHeader}`)
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : null
+  console.log(`Token presence: ${!!token}`)
   const claims = token ? parseJwtClaims(token) : null
+  console.log(`Role: ${claims?.role}`)
 
   // 1. Check if caller has permission (service_role only)
   if (claims?.role !== 'service_role') {
