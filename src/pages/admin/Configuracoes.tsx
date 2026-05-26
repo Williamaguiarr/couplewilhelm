@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Upload, Palette, Save, Building2, Percent, Check } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Settings, Upload, Palette, Save, Building2, Percent, Check, Mail, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 
@@ -22,6 +23,8 @@ interface AdminConfig {
   logo_url: string | null;
   ativo: boolean;
   comissao_cw: number;
+  relatorio_diario_email?: string | null;
+  relatorio_diario_ativo?: boolean;
 }
 
 // Paleta baseada na roda de cores - 24 cores organizadas por matiz
