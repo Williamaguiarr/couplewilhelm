@@ -236,6 +236,11 @@ const Configuracoes: React.FC = () => {
 
   const [comissaoInput, setComissaoInput] = useState("25");
 
+  const [relatorioEmail, setRelatorioEmail] = useState("");
+  const [relatorioAtivo, setRelatorioAtivo] = useState(false);
+  const [savingRelatorio, setSavingRelatorio] = useState(false);
+  const [testingRelatorio, setTestingRelatorio] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     fetchConfig();
@@ -261,6 +266,8 @@ const Configuracoes: React.FC = () => {
       });
       const pct = Math.round((c.comissao_cw ?? 0.25) * 100);
       setComissaoInput(String(pct));
+      setRelatorioEmail(c.relatorio_diario_email || "");
+      setRelatorioAtivo(!!c.relatorio_diario_ativo);
     }
     setLoading(false);
   };
