@@ -140,8 +140,6 @@ Deno.serve(async (req) => {
     const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
       body: payload,
       headers: {
-        'x-client-info': 'supabase-js-v2',
-        'apikey': anonKey,
         'Authorization': `Bearer ${serviceKey}`
       }
     })
