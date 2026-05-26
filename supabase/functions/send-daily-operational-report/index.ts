@@ -131,21 +131,14 @@ Deno.serve(async (req) => {
       },
     }
 
-    console.log(`Chamando send-transactional-email para ${cfg.relatorio_diario_email}`)
+    console.log(`Invocando send-transactional-email via supabase.functions.invoke para ${cfg.relatorio_diario_email}`)
 
-    const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceKey}`
-      },
-      body: JSON.stringify(payload)
+    const { data: invokeData, error: invokeErr } = await supabase.functions.invoke('send-transactional-email', {
+      body: payload
     })
 
-    let invokeErrorText = ''
-    if (!resp.ok) {
-      invokeErrorText = await resp.text()
-      console.error(`Erro ao chamar send-transactional-email: ${resp.status}`, invokeErrorText)
+    if (invokeErr) {
+      console.error(`Erro ao invocar send-transactional-email:`, invokeErr)
     }
 
     results.push({
@@ -155,8 +148,8 @@ Deno.serve(async (req) => {
       checkouts_hoje: diaHoje.checkouts.length,
       checkins_amanha: diaAmanha.checkins.length,
       checkouts_amanha: diaAmanha.checkouts.length,
-      status: resp.status,
-      error: invokeErrorText,
+      invoke_data: invokeData,
+      error: invokeErr?.message,
     })
   }
 
