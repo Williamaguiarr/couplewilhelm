@@ -30,8 +30,11 @@ function generateToken(): string {
 // reaches this code. No in-function auth check is needed.
 
 Deno.serve(async (req) => {
+  console.log(`Recebendo requisição: ${req.method} ${req.url}`)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('Preflight request')
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -56,7 +59,9 @@ Deno.serve(async (req) => {
   let messageId: string
   let templateData: Record<string, any> = {}
   try {
-    const body = await req.json()
+    const rawBody = await req.text()
+    console.log(`Corpo bruto: ${rawBody}`)
+    const body = JSON.parse(rawBody)
     templateName = body.templateName || body.template_name
     recipientEmail = body.recipientEmail || body.recipient_email
     messageId = crypto.randomUUID()
