@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
   const hoje = isoDateBRT(0)
@@ -139,7 +140,9 @@ Deno.serve(async (req) => {
     const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
       body: payload,
       headers: {
-        Authorization: `Bearer ${serviceKey}`
+        'x-client-info': 'supabase-js-v2',
+        'apikey': anonKey,
+        'Authorization': `Bearer ${serviceKey}`
       }
     })
 
