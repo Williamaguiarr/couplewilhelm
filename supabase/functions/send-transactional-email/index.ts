@@ -1,7 +1,7 @@
 import * as React from 'https://esm.sh/react@18.3.1'
 import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.22'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
