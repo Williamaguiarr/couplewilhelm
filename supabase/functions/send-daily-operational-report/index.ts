@@ -1,5 +1,5 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 // Defaults (mirrors src/components/calendario/types.ts)
 const HORA_CHECKIN_PADRAO = '15:00'
