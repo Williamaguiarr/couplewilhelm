@@ -120,21 +120,33 @@ Deno.serve(async (req) => {
 
     const idem = `op-report-${cfg.admin_id}-${hoje}`
 
-    const { error: invokeErr } = await supabase.functions.invoke('send-transactional-email', {
+    const payload = {
+      templateName: 'operational-daily-report',
+      recipientEmail: cfg.relatorio_diario_email,
+      idempotencyKey: idem,
+      templateData: {
+        empresaNome: cfg.nome_empresa || 'couplewilhelm',
+        geradoEm: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+        dias,
+      },
+    }
+
+    console.log(`Chamando send-transactional-email para ${cfg.relatorio_diario_email}`)
+
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${serviceKey}`
       },
-      body: {
-        templateName: 'operational-daily-report',
-        recipientEmail: cfg.relatorio_diario_email,
-        idempotencyKey: idem,
-        templateData: {
-          empresaNome: cfg.nome_empresa || 'couplewilhelm',
-          geradoEm: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-          dias,
-        },
-      },
+      body: JSON.stringify(payload)
     })
+
+    let invokeErrorText = ''
+    if (!resp.ok) {
+      invokeErrorText = await resp.text()
+      console.error(`Erro ao chamar send-transactional-email: ${resp.status}`, invokeErrorText)
+    }
 
     results.push({
       admin_id: cfg.admin_id,
@@ -143,7 +155,8 @@ Deno.serve(async (req) => {
       checkouts_hoje: diaHoje.checkouts.length,
       checkins_amanha: diaAmanha.checkins.length,
       checkouts_amanha: diaAmanha.checkouts.length,
-      error: invokeErr?.message,
+      status: resp.status,
+      error: invokeErrorText,
     })
   }
 
