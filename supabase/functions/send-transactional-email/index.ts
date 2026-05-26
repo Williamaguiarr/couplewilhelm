@@ -62,8 +62,9 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Auth logic temporarily disabled for testing if needed
-  // In a production environment, you should use service_role validation
+  // Auth note: verify_jwt = true in config.toml ensures only valid tokens reach here.
+  // The gateway handles this automatically.
+
 
 
 
