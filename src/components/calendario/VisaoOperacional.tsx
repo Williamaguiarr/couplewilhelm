@@ -13,6 +13,7 @@ import { CalendarDays, Filter, Search } from "lucide-react";
 import EventoCard from "./EventoCard";
 import LimpezaDialog from "./LimpezaDialog";
 import ResumoDia from "./ResumoDia";
+import RelatorioDialog from "./RelatorioDialog";
 import {
   getHoraCheckin,
   getHoraCheckout,
@@ -259,7 +260,10 @@ export default function VisaoOperacional() {
 
   return (
     <div className="space-y-4">
-      <ResumoDia {...resumo} />
+      <div className="flex items-center justify-between">
+        <ResumoDia {...resumo} />
+        <RelatorioDialog eventos={eventos} />
+      </div>
 
       {/* Período */}
       <div className="flex flex-wrap items-center gap-2">
