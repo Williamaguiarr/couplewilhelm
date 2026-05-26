@@ -10,8 +10,6 @@ const SITE_NAME = "couplewilhelm"
 const SENDER_DOMAIN = "notify.couplewilhelm.online"
 const FROM_DOMAIN = "notify.couplewilhelm.online"
 
-console.log('Ambiente:', { SITE_NAME, SENDER_DOMAIN, FROM_DOMAIN })
-
 // Generate a cryptographically random 32-byte hex token
 function generateToken(): string {
   const bytes = new Uint8Array(32)
@@ -26,11 +24,11 @@ function generateToken(): string {
 // reaches this code. No in-function auth check is needed.
 
 Deno.serve(async (req) => {
-  console.log(`Recebendo requisição: ${req.method} ${req.url}`)
+  // console.log(`Recebendo requisição: ${req.method} ${req.url}`)
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    console.log('Preflight request')
+    // console.log('Preflight request')
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -55,9 +53,8 @@ Deno.serve(async (req) => {
   let messageId: string
   let templateData: Record<string, any> = {}
   try {
-    const rawBody = await req.text()
-    console.log(`Corpo bruto: ${rawBody}`)
-    const body = JSON.parse(rawBody)
+    const body = await req.json()
+    // console.log(`Corpo:`, body)
     templateName = body.templateName || body.template_name
     recipientEmail = body.recipientEmail || body.recipient_email
     messageId = crypto.randomUUID()
@@ -88,7 +85,7 @@ Deno.serve(async (req) => {
   // 1. Look up template from registry (early — needed to resolve recipient)
   const template = TEMPLATES[templateName]
 
-  console.log(`Buscando template: ${templateName}`, { templateFound: !!template })
+  // console.log(`Buscando template: ${templateName}`, { templateFound: !!template })
 
   if (!template) {
     console.error('Template not found in registry', { templateName, available: Object.keys(TEMPLATES) })
@@ -106,7 +103,7 @@ Deno.serve(async (req) => {
   // Resolve effective recipient
   const effectiveRecipient = template.to || recipientEmail
 
-  console.log(`Destinatário: ${effectiveRecipient}`)
+  // console.log(`Destinatário: ${effectiveRecipient}`)
 
   if (!effectiveRecipient) {
     return new Response(
