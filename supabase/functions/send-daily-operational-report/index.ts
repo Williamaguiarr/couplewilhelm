@@ -137,7 +137,10 @@ Deno.serve(async (req) => {
     console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
     const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: payload
+      body: payload,
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`
+      }
     })
 
     if (iErr) {
