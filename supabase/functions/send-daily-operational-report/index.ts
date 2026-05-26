@@ -121,6 +121,9 @@ Deno.serve(async (req) => {
     const idem = `op-report-${cfg.admin_id}-${hoje}`
 
     const { error: invokeErr } = await supabase.functions.invoke('send-transactional-email', {
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`
+      },
       body: {
         templateName: 'operational-daily-report',
         recipientEmail: cfg.relatorio_diario_email,
