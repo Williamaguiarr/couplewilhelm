@@ -10,9 +10,14 @@ const normHora = (h?: string | null) => (h ? String(h).slice(0, 5) : null)
 function isoDateBRT(offsetDays = 0): string {
   // BRT = UTC-3 (no DST since 2019)
   const now = new Date()
-  const brt = new Date(now.getTime() - 3 * 60 * 60 * 1000)
-  brt.setUTCDate(brt.getUTCDate() + offsetDays)
-  return brt.toISOString().slice(0, 10)
+  // Ensure we are working with the date in BRT
+  const brt = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  brt.setDate(brt.getDate() + offsetDays)
+  
+  const year = brt.getFullYear()
+  const month = String(brt.getMonth() + 1).padStart(2, '0')
+  const day = String(brt.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 Deno.serve(async (req) => {
@@ -71,7 +76,7 @@ Deno.serve(async (req) => {
     // 3. Reservas com check-in OU check-out em hoje/amanha
     const { data: reservas } = await supabase
       .from('reservas')
-      .select('id, imovel_id, data_inicio, data_fim, nome_hospede, hora_checkin_override, hora_checkout_override, status')
+      .select('id, imovel_id, data_inicio, data_fim, nome_hospede, hora_checkin_override, hora_checkout_override')
       .in('imovel_id', imovelIds)
       .or(`data_inicio.in.(${hoje},${amanha}),data_fim.in.(${hoje},${amanha})`)
 
@@ -79,7 +84,8 @@ Deno.serve(async (req) => {
       const checkins: any[] = []
       const checkouts: any[] = []
       for (const r of reservas ?? []) {
-        if ((r as any).status === 'cancelada') continue
+        // No status column available based on schema check
+        // if ((r as any).status === 'cancelada') continue
         const im = imovelMap.get(r.imovel_id)
         if (!im) continue
         if (r.data_inicio === data) {
