@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
 
       if (!resp.ok) {
         const errorText = await resp.text()
-        console.error(`Erro ao invocar send-transactional-email: ${resp.status}`, errorText)
+        console.error(`Erro ao invocar send-transactional-email: ${resp.status}`, errorText, { serviceKeyLength: serviceKey?.length })
         iErr = { message: errorText, status: resp.status }
       } else {
         iData = await resp.json()
