@@ -1,5 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from 'https://esm.sh/@supabase/supabase-js@2/cors'
+import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import * as React from 'https://esm.sh/react@18.3.1'
+import { renderAsync } from 'https://esm.sh/@react-email/components@0.0.22'
+
 
 // Defaults (mirrors src/components/calendario/types.ts)
 const HORA_CHECKIN_PADRAO = '15:00'
@@ -19,6 +23,18 @@ function isoDateBRT(offsetDays = 0): string {
   const month = String(brt.getMonth() + 1).padStart(2, '0')
   const day = String(brt.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+const SITE_NAME = "couplewilhelm"
+const SENDER_DOMAIN = "notify.couplewilhelm.online"
+const FROM_DOMAIN = "notify.couplewilhelm.online"
+
+function generateToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 Deno.serve(async (req) => {
@@ -135,18 +151,73 @@ Deno.serve(async (req) => {
       },
     }
 
-    console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
+    console.log(`Enfileirando email para ${cfg.relatorio_diario_email}`)
 
-    const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: payload,
-      headers: {
-        'Authorization': `Bearer ${serviceKey}`
-      }
+    const templateName = 'operational-daily-report'
+    const template = TEMPLATES[templateName]
+    
+    // Resolve effective recipient
+    const effectiveRecipient = cfg.relatorio_diario_email
+    const normalizedEmail = effectiveRecipient.toLowerCase()
+
+    // 1. Get/Create unsubscribe token
+    let unsubscribeToken: string
+    const { data: existingToken } = await supabase
+      .from('email_unsubscribe_tokens')
+      .select('token')
+      .eq('email', normalizedEmail)
+      .maybeSingle()
+
+    if (existingToken) {
+      unsubscribeToken = existingToken.token
+    } else {
+      unsubscribeToken = generateToken()
+      await supabase.from('email_unsubscribe_tokens').insert({ token: unsubscribeToken, email: normalizedEmail })
+    }
+
+    // 2. Render templates
+    const html = await renderAsync(React.createElement(template.component, payload.templateData))
+    const plainText = await renderAsync(React.createElement(template.component, payload.templateData), { plainText: true })
+    const resolvedSubject = typeof template.subject === 'function' ? template.subject(payload.templateData) : template.subject
+    const messageId = crypto.randomUUID()
+
+    // 3. Log pending
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: templateName,
+      recipient_email: effectiveRecipient,
+      status: 'pending',
     })
 
-    if (iErr) {
-      console.error(`Erro ao invocar send-transactional-email:`, iErr)
+    // 4. Enqueue
+    const { error: enqueueError } = await supabase.rpc('enqueue_email', {
+      queue_name: 'transactional_emails',
+      payload: {
+        message_id: messageId,
+        to: effectiveRecipient,
+        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        sender_domain: SENDER_DOMAIN,
+        subject: resolvedSubject,
+        html,
+        text: plainText,
+        purpose: 'transactional',
+        label: templateName,
+        idempotency_key: idem,
+        unsubscribe_token: unsubscribeToken,
+        queued_at: new Date().toISOString(),
+      },
+    })
+
+    if (enqueueError) {
+      console.error(`Erro ao enfileirar email:`, enqueueError)
     }
+
+    results.push({
+      admin_id: cfg.admin_id,
+      email: cfg.relatorio_diario_email,
+      enqueued: !enqueueError,
+      error: enqueueError,
+    })
 
     results.push({
       admin_id: cfg.admin_id,
