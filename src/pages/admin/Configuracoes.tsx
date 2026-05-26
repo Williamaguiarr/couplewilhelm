@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Upload, Palette, Save, Building2, Percent, Check } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Settings, Upload, Palette, Save, Building2, Percent, Check, Mail, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 
@@ -22,6 +23,8 @@ interface AdminConfig {
   logo_url: string | null;
   ativo: boolean;
   comissao_cw: number;
+  relatorio_diario_email?: string | null;
+  relatorio_diario_ativo?: boolean;
 }
 
 // Paleta baseada na roda de cores - 24 cores organizadas por matiz
@@ -233,6 +236,11 @@ const Configuracoes: React.FC = () => {
 
   const [comissaoInput, setComissaoInput] = useState("25");
 
+  const [relatorioEmail, setRelatorioEmail] = useState("");
+  const [relatorioAtivo, setRelatorioAtivo] = useState(false);
+  const [savingRelatorio, setSavingRelatorio] = useState(false);
+  const [testingRelatorio, setTestingRelatorio] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     fetchConfig();
@@ -258,6 +266,8 @@ const Configuracoes: React.FC = () => {
       });
       const pct = Math.round((c.comissao_cw ?? 0.25) * 100);
       setComissaoInput(String(pct));
+      setRelatorioEmail(c.relatorio_diario_email || "");
+      setRelatorioAtivo(!!c.relatorio_diario_ativo);
     }
     setLoading(false);
   };
@@ -323,6 +333,39 @@ const Configuracoes: React.FC = () => {
     setSavingComissao(false);
   };
 
+  const handleSaveRelatorio = async () => {
+    if (!user) return;
+    const email = relatorioEmail.trim();
+    if (relatorioAtivo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "E-mail inválido", description: "Informe um e-mail válido para receber o relatório.", variant: "destructive" });
+      return;
+    }
+    setSavingRelatorio(true);
+    const payload: any = {
+      relatorio_diario_email: email || null,
+      relatorio_diario_ativo: relatorioAtivo,
+    };
+    if (config) {
+      await supabase.from("admin_configs" as any).update(payload).eq("admin_id", user.id);
+    } else {
+      await supabase.from("admin_configs" as any).insert({ ...payload, admin_id: user.id, slug: form.slug || user.id, ativo: true });
+    }
+    toast({ title: "Relatório configurado!", description: relatorioAtivo ? "Você receberá o relatório diariamente." : "Envio automático desativado." });
+    fetchConfig();
+    setSavingRelatorio(false);
+  };
+
+  const handleEnviarRelatorioAgora = async () => {
+    setTestingRelatorio(true);
+    const { error } = await supabase.functions.invoke("send-daily-operational-report");
+    if (error) {
+      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Disparado!", description: "Verifique sua caixa de entrada em alguns instantes." });
+    }
+    setTestingRelatorio(false);
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -375,14 +418,18 @@ const Configuracoes: React.FC = () => {
         </div>
 
         <Tabs defaultValue="identidade" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/40">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/40">
             <TabsTrigger value="identidade" className="gap-2">
               <Palette className="h-3.5 w-3.5" />
-              Identidade Visual
+              Identidade
             </TabsTrigger>
             <TabsTrigger value="comissao" className="gap-2">
               <Percent className="h-3.5 w-3.5" />
               Comissão
+            </TabsTrigger>
+            <TabsTrigger value="relatorio" className="gap-2">
+              <Mail className="h-3.5 w-3.5" />
+              Relatório Diário
             </TabsTrigger>
           </TabsList>
 
@@ -729,6 +776,64 @@ const Configuracoes: React.FC = () => {
               <Save className="h-4 w-4" />
               {savingComissao ? "Salvando..." : "Salvar comissão"}
             </Button>
+          </TabsContent>
+
+          {/* ── ABA: RELATÓRIO DIÁRIO ── */}
+          <TabsContent value="relatorio" className="space-y-6 mt-6">
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-base font-medium text-foreground">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Relatório Operacional Diário por E-mail
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <p className="text-sm text-muted-foreground">
+                  Receba todo dia, às 07h (horário de Brasília), o resumo de check-ins e check-outs de <strong>hoje</strong> e <strong>amanhã</strong> direto no seu e-mail.
+                </p>
+
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 p-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Envio automático diário</p>
+                    <p className="text-xs text-muted-foreground">Ative para começar a receber</p>
+                  </div>
+                  <Switch checked={relatorioAtivo} onCheckedChange={setRelatorioAtivo} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                    E-mail para envio
+                  </Label>
+                  <Input
+                    type="email"
+                    value={relatorioEmail}
+                    onChange={(e) => setRelatorioEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="bg-background border-border"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={handleSaveRelatorio} disabled={savingRelatorio} className="gap-2">
+                    <Save className="h-4 w-4" />
+                    {savingRelatorio ? "Salvando..." : "Salvar configuração"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleEnviarRelatorioAgora}
+                    disabled={testingRelatorio || !relatorioEmail || !relatorioAtivo}
+                    className="gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    {testingRelatorio ? "Enviando..." : "Enviar teste agora"}
+                  </Button>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Dica: o envio só funciona com a opção ativa e e-mail salvo. A entrega pode levar alguns minutos no primeiro envio enquanto o domínio é verificado.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
