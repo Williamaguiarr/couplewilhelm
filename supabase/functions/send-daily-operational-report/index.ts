@@ -26,13 +26,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const supabase = createClient(supabaseUrl, serviceKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${serviceKey}`
-      }
-    }
-  })
+  const supabase = createClient(supabaseUrl, serviceKey)
 
   const hoje = isoDateBRT(0)
   const amanha = isoDateBRT(1)
@@ -143,7 +137,10 @@ Deno.serve(async (req) => {
     console.log(`Invocando send-transactional-email para ${cfg.relatorio_diario_email}`)
 
     const { data: iData, error: iErr } = await supabase.functions.invoke('send-transactional-email', {
-      body: payload
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${serviceKey}`
+      }
     })
 
     if (iErr) {
