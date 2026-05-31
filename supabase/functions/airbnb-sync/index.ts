@@ -102,24 +102,33 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { imovel_id, bulk } = await req.json();
+    const { imovel_id, airbnb_link, bulk } = await req.json();
 
-    let query = supabase.from("imoveis").select("id, airbnb_link, nome_imovel");
+    let imoveis: any[] = [];
 
-    if (imovel_id) {
-      query = query.eq("id", imovel_id);
+    if (airbnb_link) {
+      // Direct link provided (from form)
+      imoveis = [{ id: "temp", airbnb_link, nome_imovel: "Preview" }];
+    } else if (imovel_id) {
+      const { data, error: fetchError } = await supabase
+        .from("imoveis")
+        .select("id, airbnb_link, nome_imovel")
+        .eq("id", imovel_id);
+      if (fetchError) throw fetchError;
+      imoveis = data || [];
     } else if (bulk) {
-      query = query.not("airbnb_link", "is", null);
+      const { data, error: fetchError } = await supabase
+        .from("imoveis")
+        .select("id, airbnb_link, nome_imovel")
+        .not("airbnb_link", "is", null);
+      if (fetchError) throw fetchError;
+      imoveis = data || [];
     } else {
-      return new Response(JSON.stringify({ error: "Missing imovel_id or bulk flag" }), {
+      return new Response(JSON.stringify({ error: "Missing imovel_id, airbnb_link or bulk flag" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const { data: imoveis, error: fetchError } = await query;
-
-    if (fetchError) throw fetchError;
 
     const results = [];
 
@@ -139,15 +148,20 @@ Deno.serve(async (req) => {
         if (metadata.title) updateData.airbnb_title = metadata.title;
         if (metadata.image) updateData.airbnb_image_url = metadata.image;
 
-        const { error: updateError } = await supabase
-          .from("imoveis")
-          .update(updateData)
-          .eq("id", imovel.id);
+        if (imovel.id !== "temp") {
+          const { error: updateError } = await supabase
+            .from("imoveis")
+            .update(updateData)
+            .eq("id", imovel.id);
 
-        if (updateError) {
-          results.push({ id: imovel.id, status: "error", error: updateError.message });
+          if (updateError) {
+            results.push({ id: imovel.id, status: "error", error: updateError.message });
+          } else {
+            results.push({ id: imovel.id, status: "success", title: metadata.title, image: metadata.image });
+          }
         } else {
-          results.push({ id: imovel.id, status: "success", title: metadata.title });
+          // Temp/Preview mode
+          results.push({ id: imovel.id, status: "success", title: metadata.title, image: metadata.image });
         }
       } else {
         results.push({ id: imovel.id, status: "failed", error: metadata.error || "Could not extract metadata" });
