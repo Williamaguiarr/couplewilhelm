@@ -613,14 +613,19 @@ const Reservas: React.FC = () => {
     // ── Totais
     let totalBruto = 0, totalLimpeza = 0, totalPlataforma = 0, totalLiquido = 0, totalComissao = 0, totalProprietario = 0, totalGanhosExtras = 0;
     filteredReservas.forEach((r) => {
-      const bruto = r.valor_bruto || 0;
-      const limpeza = r.taxa_limpeza || 0;
-      const plataforma = r.comissao_plataforma || 0;
-      const liquido = bruto - limpeza - plataforma;
+      const bruto = safeNum(r.valor_bruto);
+      const limpeza = safeNum(r.taxa_limpeza);
+      const plataforma = safeNum(r.comissao_plataforma);
       const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
       
-      const valorPropBase = liquido * (1 - rate);
-      const comissaoBase = liquido * rate;
+      const financeiro = calcularFinanceiroReserva({
+        bruto,
+        limpeza,
+        plataforma,
+        percentualAdm: rate
+      });
+
+      const { baseComissao, comissaoAdm, valorProprietario: valorPropBase } = financeiro;
       
       let comissaoGanhosExtras = 0;
       let repasseGanhosExtras = 0;
@@ -644,8 +649,8 @@ const Reservas: React.FC = () => {
       totalBruto += bruto + brutoGanhosExtras;
       totalLimpeza += limpeza;
       totalPlataforma += plataforma;
-      totalLiquido += liquido + brutoGanhosExtras;
-      totalComissao += comissaoBase + comissaoGanhosExtras;
+      totalLiquido += baseComissao + brutoGanhosExtras; // Base líquida agora é bruto - plataforma
+      totalComissao += comissaoAdm + comissaoGanhosExtras;
       totalProprietario += valorPropBase + repasseGanhosExtras;
       totalGanhosExtras += brutoGanhosExtras;
     });
@@ -664,11 +669,19 @@ const Reservas: React.FC = () => {
 
     // ── Tabela de reservas
     const tableData = filteredReservas.map((r) => {
-      const bruto = r.valor_bruto || 0;
-      const limpeza = r.taxa_limpeza || 0;
-      const plataforma = r.comissao_plataforma || 0;
-      const liquido = bruto - limpeza - plataforma;
+      const bruto = safeNum(r.valor_bruto);
+      const limpeza = safeNum(r.taxa_limpeza);
+      const plataforma = safeNum(r.comissao_plataforma);
       const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : getRateForImovel(r.imovel_id);
+      
+      const financeiro = calcularFinanceiroReserva({
+        bruto,
+        limpeza,
+        plataforma,
+        percentualAdm: rate
+      });
+
+      const { baseComissao, comissaoAdm, valorProprietario: valorPropBase } = financeiro;
       
       let repasseGanhosExtras = 0;
       let comissaoGanhosExtras = 0;
@@ -688,8 +701,7 @@ const Reservas: React.FC = () => {
         }
       });
 
-      const valorPropBase = liquido * (1 - rate);
-      const comissaoTotal = (liquido * rate) + comissaoGanhosExtras;
+      const comissaoTotal = comissaoAdm + comissaoGanhosExtras;
       const proprietarioTotal = valorPropBase + repasseGanhosExtras;
       return [
         r.imovel?.airbnb_title || r.imovel?.nome_imovel || "—",
@@ -704,7 +716,7 @@ const Reservas: React.FC = () => {
         fmtBRL(bruto),
         fmtBRL(limpeza),
         plataforma > 0 ? fmtBRL(plataforma) : "—",
-        fmtBRL(liquido),
+        fmtBRL(baseComissao),
         fmtBRL(comissaoTotal),
         fmtBRL(proprietarioTotal),
         r.observacoes || "",
@@ -1023,13 +1035,25 @@ const Reservas: React.FC = () => {
       if (isAuditing) {
         if (isHistorical) {
           finalComissaoAdmin = r.valor_comissao_admin;
-          finalBaseComissao = r.valor_base_comissao || (calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0));
+          const financeiro = calcularFinanceiroReserva({
+            bruto: safeNum(r.valor_bruto),
+            limpeza: safeNum(r.taxa_limpeza),
+            plataforma: safeNum(r.comissao_plataforma),
+            percentualAdm: (r.taxa_comissao_reserva || 25) / 100
+          });
+          finalBaseComissao = r.valor_base_comissao || financeiro.baseComissao;
           finalLiquidoProp = r.valor_liquido_proprietario;
           finalPercentual = r.taxa_comissao_reserva || (r.valor_comissao_admin && r.valor_base_comissao ? (r.valor_comissao_admin / r.valor_base_comissao * 100) : 25);
         } else {
           const rateDefault = getRateForImovel(r.imovel_id);
           const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
-          const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+          
+          const financeiro = calcularFinanceiroReserva({
+            bruto: safeNum(r.valor_bruto),
+            limpeza: safeNum(r.taxa_limpeza),
+            plataforma: safeNum(r.comissao_plataforma),
+            percentualAdm: rate
+          });
           
           const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
@@ -1038,16 +1062,15 @@ const Reservas: React.FC = () => {
             return acc;
           }, 0);
 
-          finalComissaoAdmin = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
-          finalBaseComissao = valorLiquidoBase;
-          const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+          finalComissaoAdmin = financeiro.comissaoAdm + comissaoGanhosExtras;
+          finalBaseComissao = financeiro.baseComissao;
           const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
             if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
             if (regime === "sem_comissao") return acc + (g.valor || 0);
             return acc;
           }, 0);
-          finalLiquidoProp = valorPropBase + repasseGanhosExtras;
+          finalLiquidoProp = financeiro.valorProprietario + repasseGanhosExtras;
           finalPercentual = rate * 100;
         }
       }
@@ -1116,29 +1139,41 @@ const Reservas: React.FC = () => {
 
         if (isHistorical) {
           finalComissaoAdmin = r.valor_comissao_admin;
-          finalBaseComissao = r.valor_base_comissao || (calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0));
+          const financeiro = calcularFinanceiroReserva({
+            bruto: safeNum(r.valor_bruto),
+            limpeza: safeNum(r.taxa_limpeza),
+            plataforma: safeNum(r.comissao_plataforma),
+            percentualAdm: (r.taxa_comissao_reserva || 25) / 100
+          });
+          finalBaseComissao = r.valor_base_comissao || financeiro.baseComissao;
           finalLiquidoProp = r.valor_liquido_proprietario;
           finalPercentual = r.taxa_comissao_reserva || (r.valor_comissao_admin && r.valor_base_comissao ? (r.valor_comissao_admin / r.valor_base_comissao * 100) : 25);
         } else {
           const rateDefault = getRateForImovel(r.imovel_id);
           const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
-          const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+          
+          const financeiro = calcularFinanceiroReserva({
+            bruto: safeNum(r.valor_bruto),
+            limpeza: safeNum(r.taxa_limpeza),
+            plataforma: safeNum(r.comissao_plataforma),
+            percentualAdm: rate
+          });
+
           const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
             if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
             if (regime === "exclusivo_adm") return acc + (g.valor || 0);
             return acc;
           }, 0);
-          finalComissaoAdmin = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
-          finalBaseComissao = valorLiquidoBase;
-          const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+          finalComissaoAdmin = financeiro.comissaoAdm + comissaoGanhosExtras;
+          finalBaseComissao = financeiro.baseComissao;
           const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
             const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
             if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
             if (regime === "sem_comissao") return acc + (g.valor || 0);
             return acc;
           }, 0);
-          finalLiquidoProp = valorPropBase + repasseGanhosExtras;
+          finalLiquidoProp = financeiro.valorProprietario + repasseGanhosExtras;
           finalPercentual = rate * 100;
         }
 
@@ -1393,7 +1428,7 @@ const Reservas: React.FC = () => {
             {/* Contador de resultados */}
             <div className="ml-auto self-end">
               <span className="text-xs text-muted-foreground">
-                {filteredReservas.length} reserva{filteredReservas.length !== 1 ? "s" : ""} encontrada{filteredReservas.length !== 1 ? "s" : ""}
+                {filteredReservas.length} reserva{filteredReservas.length !== 1 ? "s" : ""}
               </span>
             </div>
           </div>
