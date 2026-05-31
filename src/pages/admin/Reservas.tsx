@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles, ShieldCheck, ShieldAlert, CheckCircle2 } from "lucide-react";
 import GanhosExtrasDialog from "@/components/reservas/GanhosExtrasDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -73,6 +73,11 @@ interface Reserva {
   hora_checkout_override: string | null;
   imovel?: { nome_imovel: string };
   ganhos_extras?: any[];
+  auditada: boolean;
+  auditada_em?: string | null;
+  auditada_por?: string | null;
+  valor_comissao_admin?: number | null;
+  valor_base_comissao?: number | null;
 }
 
 interface Imovel {
@@ -267,6 +272,7 @@ const ReservaFormFields = ({
   comissaoRate,
   reservas,
   editingId,
+  isAudited = false,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
@@ -274,6 +280,7 @@ const ReservaFormFields = ({
   comissaoRate: number;
   reservas: Reserva[];
   editingId?: string | null;
+  isAudited?: boolean;
 }) => {
   const conflitos = detectarConflitosReserva(form, imoveis, reservas, editingId);
   const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
@@ -289,6 +296,18 @@ const ReservaFormFields = ({
 
   return (
     <>
+      {isAudited && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 p-3 flex items-start gap-2.5 mb-2">
+          <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-primary">Reserva Auditada</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Esta reserva está congelada. Para alterar valores financeiros, você deve primeiro remover a auditoria na listagem.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label className="text-muted-foreground">Imóvel</Label>
         <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}>
@@ -313,6 +332,7 @@ const ReservaFormFields = ({
             value={form.data_inicio}
             onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
             required
+            disabled={isAudited}
             className="bg-background"
           />
         </div>
@@ -428,6 +448,7 @@ const ReservaFormFields = ({
           <CurrencyInput
             value={form.valor_bruto}
             onChange={(v) => setForm({ ...form, valor_bruto: v })}
+            disabled={isAudited}
             className="bg-background"
           />
         </div>
@@ -436,8 +457,9 @@ const ReservaFormFields = ({
           <CurrencyInput
             value={form.taxa_limpeza}
             onChange={(v) => setForm({ ...form, taxa_limpeza: v })}
-            className="bg-background"
-          />
+          disabled={isAudited}
+          className="bg-background"
+        />
         </div>
       </div>
 
@@ -487,6 +509,7 @@ const ReservaFormFields = ({
             value={form.taxa_comissao_reserva}
             onChange={(e) => setForm({ ...form, taxa_comissao_reserva: e.target.value })}
             placeholder="Padrão do imóvel/prop"
+            disabled={isAudited}
             className="bg-background"
           />
         </div>
@@ -947,6 +970,148 @@ const Reservas: React.FC = () => {
     setDeleteId(null);
   };
 
+  const handleToggleAudit = async (r: Reserva) => {
+    const isAuditing = !r.auditada;
+    
+    if (isAuditing) {
+      if (r.valor_bruto == null) {
+        toast({ 
+          title: "Não é possível auditar", 
+          description: "Preencha o valor bruto antes de auditar.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      const confirm = window.confirm(
+        "Deseja marcar esta reserva como AUDITADA? \n\nIsso irá congelar os valores financeiros e impedir alterações automáticas pelo sistema. O proprietário verá esses valores exatamente como estão agora."
+      );
+      if (!confirm) return;
+    } else {
+      const confirm = window.confirm(
+        "Deseja remover a auditoria? \n\nA reserva voltará a permitir alterações e recálculos automáticos."
+      );
+      if (!confirm) return;
+    }
+
+    try {
+      const rateDefault = getRateForImovel(r.imovel_id);
+      const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+      
+      const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+      const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+        if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+        if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+        return acc;
+      }, 0);
+
+      const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+      const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+      const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+        if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+        if (regime === "sem_comissao") return acc + (g.valor || 0);
+        return acc;
+      }, 0);
+      const repasseTotal = valorPropBase + repasseGanhosExtras;
+
+      const { error } = await supabase
+        .from("reservas")
+        .update({
+          auditada: isAuditing,
+          auditada_em: isAuditing ? new Date().toISOString() : null,
+          auditada_por: isAuditing ? user?.id : null,
+          valor_comissao_admin: isAuditing ? comissaoTotal : null,
+          valor_base_comissao: isAuditing ? valorLiquidoBase : null,
+          valor_liquido_proprietario: isAuditing ? repasseTotal : r.valor_liquido_proprietario
+        } as any)
+        .eq("id", r.id);
+
+      if (error) throw error;
+
+      if (isAuditing) {
+        await supabase.from("historico_auditoria").insert({
+          reserva_id: r.id,
+          usuario_id: user?.id,
+          valores_anteriores: r as any,
+          valores_congelados: {
+            valor_bruto: r.valor_bruto,
+            taxa_limpeza: r.taxa_limpeza,
+            comissao_plataforma: r.comissao_plataforma,
+            taxa_comissao_reserva: r.taxa_comissao_reserva,
+            valor_comissao_admin: comissaoTotal,
+            valor_liquido_proprietario: repasseTotal,
+            valor_base_comissao: valorLiquidoBase
+          }
+        } as any);
+      }
+
+      toast({ title: isAuditing ? "Reserva auditada!" : "Auditoria removida." });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro ao atualizar auditoria", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkAudit = async () => {
+    const pendentes = filteredReservas.filter(r => !r.auditada && r.valor_bruto != null);
+    if (pendentes.length === 0) {
+      toast({ title: "Nenhuma reserva para auditar", description: "Apenas reservas com valor bruto preenchido podem ser auditadas." });
+      return;
+    }
+
+    const confirm = window.confirm(
+      `Deseja auditar em massa ${pendentes.length} reservas? \n\nIsso congelará os valores financeiros de todas elas.`
+    );
+    if (!confirm) return;
+
+    setLoading(true);
+    let successCount = 0;
+    for (const r of pendentes) {
+      try {
+        const rateDefault = getRateForImovel(r.imovel_id);
+        const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+        const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+        const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+          if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+          if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+          return acc;
+        }, 0);
+        const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+        const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+        const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+          if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+          if (regime === "sem_comissao") return acc + (g.valor || 0);
+          return acc;
+        }, 0);
+        const repasseTotal = valorPropBase + repasseGanhosExtras;
+
+        await supabase
+          .from("reservas")
+          .update({
+            auditada: true,
+            auditada_em: new Date().toISOString(),
+            auditada_por: user?.id,
+            valor_comissao_admin: comissaoTotal,
+            valor_base_comissao: valorLiquidoBase,
+            valor_liquido_proprietario: repasseTotal
+          } as any)
+          .eq("id", r.id);
+        
+        successCount++;
+      } catch (e) {
+        console.error("Erro ao auditar reserva", r.id, e);
+      }
+    }
+
+    toast({ title: "Auditoria em massa concluída", description: `${successCount} reservas foram auditadas.` });
+    fetchData();
+    setLoading(false);
+  };
+
   const semValoresCount = reservas.filter((r) => r.valor_bruto == null).length;
 
   const filteredReservas = reservas.filter((r) => {
@@ -1134,6 +1299,19 @@ const Reservas: React.FC = () => {
               </Button>
             )}
 
+            {/* Ação em Massa: Auditar */}
+            {!loading && filteredReservas.some(r => !r.auditada && r.valor_bruto != null) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkAudit}
+                className="gap-1.5 self-end border-primary/50 text-primary hover:bg-primary/10"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Auditar pendentes ({filteredReservas.filter(r => !r.auditada && r.valor_bruto != null).length})
+              </Button>
+            )}
+
             {/* Contador de resultados */}
             <div className="ml-auto self-end">
               <span className="text-xs text-muted-foreground">
@@ -1167,8 +1345,9 @@ const Reservas: React.FC = () => {
                   <TableHead>Valor Bruto</TableHead>
                   <TableHead>Tx. Limpeza</TableHead>
                   <TableHead>Comissão ADM</TableHead>
-                  <TableHead>Proprietário</TableHead>
-                  <TableHead className="w-20"></TableHead>
+                   <TableHead>Proprietário</TableHead>
+                   <TableHead>Auditada</TableHead>
+                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1205,6 +1384,7 @@ const Reservas: React.FC = () => {
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
                       <TableCell className="text-foreground font-medium">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {r.auditada && <ShieldCheck className="h-4 w-4 text-primary shrink-0" />}
                           {r.imovel?.nome_imovel || "—"}
                           {aguardandoValidacao ? (
                             <Badge
@@ -1247,6 +1427,31 @@ const Reservas: React.FC = () => {
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.taxa_limpeza)}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissaoTotal)}</TableCell>
                       <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(repasseTotal)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAudit(r)}
+                          className={cn(
+                            "h-8 px-2 gap-1.5",
+                            r.auditada 
+                              ? "text-primary hover:text-primary hover:bg-primary/10" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {r.auditada ? (
+                            <>
+                              <ShieldCheck className="h-4 w-4" />
+                              <span className="text-[10px] font-medium uppercase tracking-wider">Sim</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShieldAlert className="h-4 w-4 opacity-50" />
+                              <span className="text-[10px] font-medium uppercase tracking-wider">Não</span>
+                            </>
+                          )}
+                        </Button>
+                      </TableCell>
                       <TableCell className="flex gap-1">
                         <Button 
                           variant="ghost" 
@@ -1285,12 +1490,12 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} reservas={reservas} editingId={editingReserva?.id ?? null} />
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} reservas={reservas} editingId={editingReserva?.id ?? null} isAudited={editingReserva?.auditada} />
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id} className="flex-1">
+              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id || editingReserva?.auditada} className="flex-1">
                 {editSubmitting ? "Salvando..." : "Salvar alterações"}
               </Button>
             </div>

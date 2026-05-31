@@ -315,6 +315,44 @@ export type Database = {
           },
         ]
       }
+      historico_auditoria: {
+        Row: {
+          created_at: string
+          data_auditoria: string
+          id: string
+          reserva_id: string
+          usuario_id: string
+          valores_anteriores: Json | null
+          valores_congelados: Json | null
+        }
+        Insert: {
+          created_at?: string
+          data_auditoria?: string
+          id?: string
+          reserva_id: string
+          usuario_id: string
+          valores_anteriores?: Json | null
+          valores_congelados?: Json | null
+        }
+        Update: {
+          created_at?: string
+          data_auditoria?: string
+          id?: string
+          reserva_id?: string
+          usuario_id?: string
+          valores_anteriores?: Json | null
+          valores_congelados?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_auditoria_reserva_id_fkey"
+            columns: ["reserva_id"]
+            isOneToOne: false
+            referencedRelation: "reservas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ical_sync_alerts: {
         Row: {
           created_at: string
@@ -512,6 +550,9 @@ export type Database = {
       }
       reservas: {
         Row: {
+          auditada: boolean | null
+          auditada_em: string | null
+          auditada_por: string | null
           codigo_reserva: string | null
           comissao_plataforma: number | null
           created_at: string | null
@@ -531,10 +572,15 @@ export type Database = {
           taxa_comissao_reserva: number | null
           taxa_limpeza: number | null
           validada_financeiramente: boolean
+          valor_base_comissao: number | null
           valor_bruto: number | null
+          valor_comissao_admin: number | null
           valor_liquido_proprietario: number | null
         }
         Insert: {
+          auditada?: boolean | null
+          auditada_em?: string | null
+          auditada_por?: string | null
           codigo_reserva?: string | null
           comissao_plataforma?: number | null
           created_at?: string | null
@@ -554,10 +600,15 @@ export type Database = {
           taxa_comissao_reserva?: number | null
           taxa_limpeza?: number | null
           validada_financeiramente?: boolean
+          valor_base_comissao?: number | null
           valor_bruto?: number | null
+          valor_comissao_admin?: number | null
           valor_liquido_proprietario?: number | null
         }
         Update: {
+          auditada?: boolean | null
+          auditada_em?: string | null
+          auditada_por?: string | null
           codigo_reserva?: string | null
           comissao_plataforma?: number | null
           created_at?: string | null
@@ -577,7 +628,9 @@ export type Database = {
           taxa_comissao_reserva?: number | null
           taxa_limpeza?: number | null
           validada_financeiramente?: boolean
+          valor_base_comissao?: number | null
           valor_bruto?: number | null
+          valor_comissao_admin?: number | null
           valor_liquido_proprietario?: number | null
         }
         Relationships: [

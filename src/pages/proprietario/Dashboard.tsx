@@ -64,6 +64,9 @@ interface Reserva {
   observacoes: string | null;
   taxa_comissao_reserva: number | null;
   imovel?: { nome_imovel: string };
+  auditada?: boolean;
+  valor_comissao_admin?: number | null;
+  valor_base_comissao?: number | null;
 }
 
 interface DespesaExtra {
@@ -115,6 +118,17 @@ const getDaysBetween = (start: string, end: string): Date[] => {
 };
 
 const calcFinanceiro = (r: Reserva, defaultRate: number, getRateForImovel: (id: string) => number) => {
+  if (r.auditada && r.valor_comissao_admin != null && r.valor_liquido_proprietario != null) {
+    return {
+      bruto: r.valor_bruto ?? 0,
+      limpeza: r.taxa_limpeza ?? 0,
+      plataforma: r.comissao_plataforma ?? 0,
+      liquido: r.valor_base_comissao ?? ((r.valor_bruto ?? 0) - (r.taxa_limpeza ?? 0) - (r.comissao_plataforma ?? 0)),
+      comissao: r.valor_comissao_admin,
+      proprietario: r.valor_liquido_proprietario
+    };
+  }
+
   const bruto = r.valor_bruto ?? 0;
   const limpeza = r.taxa_limpeza ?? 0;
   const plataforma = r.comissao_plataforma ?? 0;
