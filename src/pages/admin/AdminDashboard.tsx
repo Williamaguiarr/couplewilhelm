@@ -451,12 +451,11 @@ const AdminDashboard: React.FC = () => {
       y += 4;
       y = drawSectionTitle(doc, "Detalhamento Financeiro", y, palette, pageW);
       const finData = [
-        ["Receita Bruta (Diárias)", fmt(financeiro.valorBruto), "Soma dos valores brutos das reservas"],
-        ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.valorLiquido), "Comissão das plataformas"],
-        ["= Base Comissão ADM", fmt(financeiro.valorLiquido), "Valor Bruto − Comissão OTA"],
+        ["Receita Bruta", fmt(financeiro.valorBruto), "Soma dos valores brutos das reservas"],
+        ["(−) Comissão OTA + Limpeza", fmt(financeiro.valorBruto - financeiro.valorLiquido), "Deduções obrigatórias"],
+        ["= Valor Líquido", fmt(financeiro.valorLiquido), "Base para cálculo da comissão ADM"],
         ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
-        ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Taxas de limpeza recolhidas"],
-        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Base ADM − Comissão ADM − Limpeza"],
+        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Valor Líquido − Comissão ADM"],
       ];
       autoTable(doc, { startY: y, head: [["Descrição", "Valor", "Observação"]], body: finData, ...premiumTableStyles(palette), columnStyles: { 1: { halign: "right", fontStyle: "bold" }, 2: { textColor: [130, 130, 130], fontSize: 7 } } });
       drawFooterAllPages(doc, palette, companyName, pageW, pageH);
