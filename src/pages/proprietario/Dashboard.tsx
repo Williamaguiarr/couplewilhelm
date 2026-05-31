@@ -51,6 +51,7 @@ import {
 } from "@/lib/pdf/builder";
 import { useToast } from "@/hooks/use-toast";
 import CustosFixosProprietario from "@/components/dashboard/CustosFixosProprietario";
+import { calcularFinanceiroReserva, safeNum } from "@/lib/financeiro";
 
 interface Reserva {
   id: string;
