@@ -94,29 +94,8 @@ interface Imovel {
 }
 
 import { formatBRL as fmt, toNum } from "@/lib/supabase-helpers";
+import { calcularFinanceiroReserva, safeNum } from "@/lib/financeiro";
 
-
-const calcValorLiquido = (
-  valorBruto: string | number | null,
-  taxaLimpeza: string | number | null,
-  comissaoPlataforma: string | number | null = 0
-): number | null => {
-  const bruto = toNum(valorBruto);
-  if (bruto == null) return null;
-  const limpeza = toNum(taxaLimpeza) ?? 0;
-  const plataforma = toNum(comissaoPlataforma) ?? 0;
-  return bruto - limpeza - plataforma;
-};
-
-const calcComissao = (valorLiquido: number | null, rate: number): number => {
-  if (valorLiquido == null) return 0;
-  return valorLiquido * rate;
-};
-
-const calcValorProprietario = (valorLiquido: number | null, rate: number): number | null => {
-  if (valorLiquido == null) return null;
-  return valorLiquido * (1 - rate);
-};
 
 const emptyForm = {
   imovel_id: "",
