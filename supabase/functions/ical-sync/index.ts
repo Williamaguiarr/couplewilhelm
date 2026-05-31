@@ -80,17 +80,35 @@ function parseICalDate(val: string): string {
  * Extract guest name from SUMMARY.
  * Airbnb format: "Reserved - João Silva" or "Reservado - João Silva"
  * Booking format: "CLOSED - João Silva" or just "João Silva"
+ * Default: If it's a valid reservation structure but no name is provided, return a placeholder.
  */
-function extractGuestName(summary: string): string | null {
+function extractGuestName(summary: string, source: string): string | null {
   if (!summary) return null;
+  const upperSummary = summary.toUpperCase();
+  
+  // Handle specific "Not available" or generic "Reserved" cases as valid reservations
+  if (source === "booking" && upperSummary.includes("CLOSED - NOT AVAILABLE")) {
+    return "Hóspede Booking";
+  }
+  
+  if (source === "airbnb" && (upperSummary === "RESERVED" || upperSummary.includes("AIRBNB (NOT AVAILABLE)"))) {
+    return "Hóspede Airbnb";
+  }
+
   // Remove common prefixes
   const cleaned = summary
     .replace(/^(Reserved|Reservado|CLOSED|Blocked|Bloqueado|Not available)\s*[-–—:]\s*/i, "")
     .trim();
+    
   // If what remains looks like a name (not empty, not just "Airbnb" etc.)
   if (cleaned && !/^(airbnb|booking|not available|blocked|bloqueado)$/i.test(cleaned)) {
     return cleaned;
   }
+  
+  // Fallback placeholder based on source if it's a known valid pattern
+  if (source === "airbnb" && upperSummary.includes("RESERVED")) return "Hóspede Airbnb";
+  if (source === "booking" && upperSummary.includes("CLOSED")) return "Hóspede Booking";
+
   return null;
 }
 
@@ -282,7 +300,7 @@ Deno.serve(async (req) => {
           if (event.dtend < todayStr) continue;
           if (event.dtstart > limitStr) continue;
 
-          const guestName = extractGuestName(event.summary);
+          const guestName = extractGuestName(event.summary, source);
           const numGuests = extractNumGuests(event.description);
           const phone = extractPhone(event.description);
           const obsLines: string[] = [`[${source.toUpperCase()}] ${event.summary}`.trim()];
