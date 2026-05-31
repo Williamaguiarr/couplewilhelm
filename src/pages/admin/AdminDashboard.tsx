@@ -62,6 +62,8 @@ import {
   drawFooterAllPages, premiumTableStyles, genTimestamp,
 } from "@/lib/pdf/builder";
 
+import { calcularFinanceiroReserva, safeNum } from "@/lib/financeiro";
+
 interface Imovel {
   id: string;
   nome_imovel: string;
