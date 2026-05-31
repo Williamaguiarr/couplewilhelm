@@ -307,20 +307,28 @@ const AdminDashboard: React.FC = () => {
     const futureReservas = (reservasRes.data || []).filter(r => r.data_fim >= futureStart);
 
     const totaisReservas = currentReservas.reduce((acc, r) => {
-      const valorBruto = r.valor_bruto || 0;
-      const taxaLimpeza = r.taxa_limpeza || 0;
-      const comissaoPlataforma = (r as any).comissao_plataforma || 0;
-      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+      const bruto = Number(r.valor_bruto) || 0;
+      const limpeza = Number(r.taxa_limpeza) || 0;
+      const plataforma = Number((r as any).comissao_plataforma) || 0;
+      
       const rate = (r as any).taxa_comissao_reserva != null 
         ? (r as any).taxa_comissao_reserva / 100 
         : getOwnerRate((r as any).imovel_id);
-      const comissaoCW = valorLiquido * rate;
-      const valorProprietario = valorLiquido - comissaoCW;
+
+      const financeiro = calcularFinanceiroReserva({
+        bruto,
+        limpeza,
+        plataforma,
+        percentualAdm: rate
+      });
+
+      const { baseComissao, comissaoAdm, valorProprietario } = financeiro;
+
       return {
-        valorBruto: acc.valorBruto + valorBruto,
-        taxaLimpeza: acc.taxaLimpeza + taxaLimpeza,
-        valorLiquido: acc.valorLiquido + valorLiquido,
-        comissaoCW: acc.comissaoCW + comissaoCW,
+        valorBruto: acc.valorBruto + bruto,
+        taxaLimpeza: acc.taxaLimpeza + limpeza,
+        valorLiquido: acc.valorLiquido + baseComissao,
+        comissaoCW: acc.comissaoCW + comissaoAdm,
         valorProprietario: acc.valorProprietario + valorProprietario,
       };
     }, { valorBruto: 0, taxaLimpeza: 0, valorLiquido: 0, comissaoCW: 0, valorProprietario: 0 });
