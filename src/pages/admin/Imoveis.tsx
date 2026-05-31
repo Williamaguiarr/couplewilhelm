@@ -637,8 +637,73 @@ const Imoveis: React.FC = () => {
                         placeholder="Ex: 4"
                         className="bg-background text-sm"
                       />
-                    </div>
                   </div>
+                </div>
+
+                {/* Airbnb Ad Section */}
+                <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        ANÚNCIO AIRBNB
+                      </span>
+                    </div>
+                    {editId && form.airbnb_link && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 gap-1"
+                        onClick={() => handleAirbnbSync(editId)}
+                        disabled={syncingAirbnbId === editId}
+                      >
+                        <RefreshCw className={`h-3 w-3 ${syncingAirbnbId === editId ? "animate-spin" : ""}`} />
+                        Sincronizar
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Link do Anúncio Airbnb</Label>
+                    <Input
+                      value={form.airbnb_link}
+                      onChange={(e) => setForm({ ...form, airbnb_link: e.target.value })}
+                      placeholder="https://www.airbnb.com.br/rooms/..."
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Nome do Anúncio (Manual/Auto)</Label>
+                    <Input
+                      value={form.airbnb_title}
+                      onChange={(e) => setForm({ ...form, airbnb_title: e.target.value })}
+                      placeholder="Título que aparece no Airbnb"
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">URL da Foto de Capa (Manual/Auto)</Label>
+                    <Input
+                      value={form.airbnb_image_url}
+                      onChange={(e) => setForm({ ...form, airbnb_image_url: e.target.value })}
+                      placeholder="URL da imagem principal"
+                      className="bg-background text-sm"
+                    />
+                    {form.airbnb_image_url && (
+                      <div className="mt-2 rounded-md overflow-hidden border border-border h-24 w-full">
+                        <img 
+                          src={form.airbnb_image_url} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                   <div className="space-y-2">
                     <Label className="text-muted-foreground text-sm">Observações operacionais</Label>
                     <Textarea
