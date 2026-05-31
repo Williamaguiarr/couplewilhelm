@@ -451,12 +451,11 @@ const AdminDashboard: React.FC = () => {
       y += 4;
       y = drawSectionTitle(doc, "Detalhamento Financeiro", y, palette, pageW);
       const finData = [
-        ["Receita Bruta (Diárias)", fmt(financeiro.valorBruto), "Soma dos valores brutos das reservas"],
-        ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.valorLiquido), "Comissão das plataformas"],
-        ["= Base Comissão ADM", fmt(financeiro.valorLiquido), "Valor Bruto − Comissão OTA"],
+        ["Receita Bruta", fmt(financeiro.valorBruto), "Soma dos valores brutos das reservas"],
+        ["(−) Comissão OTA + Limpeza", fmt(financeiro.valorBruto - financeiro.valorLiquido), "Deduções obrigatórias"],
+        ["= Valor Líquido", fmt(financeiro.valorLiquido), "Base para cálculo da comissão ADM"],
         ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
-        ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Taxas de limpeza recolhidas"],
-        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Base ADM − Comissão ADM − Limpeza"],
+        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Valor Líquido − Comissão ADM"],
       ];
       autoTable(doc, { startY: y, head: [["Descrição", "Valor", "Observação"]], body: finData, ...premiumTableStyles(palette), columnStyles: { 1: { halign: "right", fontStyle: "bold" }, 2: { textColor: [130, 130, 130], fontSize: 7 } } });
       drawFooterAllPages(doc, palette, companyName, pageW, pageH);
@@ -645,17 +644,17 @@ const AdminDashboard: React.FC = () => {
           </Card>
           <Card className="spotlight-card group">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Base Comissão ADM</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Valor Líquido</CardTitle>
               <DollarSign className="h-3.5 w-3.5 text-primary opacity-60" />
             </CardHeader>
-            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.valorLiquido)}</p><p className="text-[11px] text-muted-foreground">Bruto - Comissão OTA</p></div>}</CardContent>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.valorLiquido)}</p><p className="text-[11px] text-muted-foreground">Bruto - Limpeza - OTA</p></div>}</CardContent>
           </Card>
           <Card className="spotlight-card group">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Comissão ADM</CardTitle>
               <Percent className="h-3.5 w-3.5 text-primary opacity-60" />
             </CardHeader>
-            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.comissaoCW)}</p><p className="text-[11px] text-muted-foreground">Sobre Base ADM</p></div>}</CardContent>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.comissaoCW)}</p><p className="text-[11px] text-muted-foreground">Sobre Valor Líquido</p></div>}</CardContent>
           </Card>
           <Card className="spotlight-card group">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -18,22 +18,22 @@ export interface ResultadoFinanceiro {
 
 /**
  * Calcula os valores financeiros seguindo as novas regras:
- * 1. Base Comissão ADM = Valor Bruto - Comissão OTA
- * 2. Comissão ADM = Base Comissão ADM × Percentual ADM (mínimo 0)
- * 3. Valor Proprietário = Valor Bruto - Comissão OTA - Comissão ADM - Taxa de Limpeza
+ * 1. Valor Líquido (Base Comissão ADM) = Valor Bruto - Taxa de Limpeza - Comissão OTA
+ * 2. Comissão ADM = Valor Líquido × Percentual ADM (mínimo 0)
+ * 3. Repasse ao Proprietário = Valor Líquido - Comissão ADM
  */
 export const calcularFinanceiroReserva = (data: FinanceiroReserva): ResultadoFinanceiro => {
   const { bruto, limpeza, plataforma, percentualAdm } = data;
   
-  // Base Comissão ADM = Valor Bruto - Comissão OTA
-  const baseComissao = bruto - plataforma;
+  // Valor Líquido = Valor Bruto - Taxa de Limpeza - Comissão OTA
+  const baseComissao = bruto - limpeza - plataforma;
   
-  // Comissão ADM = Base Comissão ADM * Percentual (Clamped to 0 if base is negative)
-  // A comissão ADM nunca deve ser calculada sobre a taxa de limpeza nem sobre valores negativos
+  // Comissão ADM = Valor Líquido * Percentual (Clamped to 0 if base is negative)
+  // A comissão ADM nunca deve ser calculada sobre a taxa de limpeza nem sobre a comissão OTA
   const comissaoAdm = Math.max(0, baseComissao) * percentualAdm;
   
-  // Valor Proprietário = Valor Bruto - Comissão OTA - Comissão ADM - Taxa de Limpeza
-  const valorProprietario = bruto - plataforma - comissaoAdm - limpeza;
+  // Repasse ao Proprietário = Valor Líquido - Comissão ADM
+  const valorProprietario = baseComissao - comissaoAdm;
   
   return {
     baseComissao,
