@@ -864,6 +864,19 @@ const Imoveis: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          {imovel.airbnb_link && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleAirbnbSync(imovel.id)}
+                              disabled={syncingAirbnbId === imovel.id}
+                              className="h-8 w-8 hover:text-primary"
+                              title="Atualizar dados do Airbnb"
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${syncingAirbnbId === imovel.id ? "animate-spin" : ""}`} />
+                            </Button>
+                          )}
+
                           {hasIcal && (
                             <Button
                               variant="ghost"
