@@ -1016,7 +1016,7 @@ const Reservas: React.FC = () => {
         await supabase.from("historico_auditoria").insert({
           reserva_id: r.id,
           usuario_id: user?.id,
-          valores_anteriores: r,
+          valores_anteriores: r as any,
           valores_congelados: {
             valor_bruto: r.valor_bruto,
             taxa_limpeza: r.taxa_limpeza,
@@ -1026,7 +1026,7 @@ const Reservas: React.FC = () => {
             valor_liquido_proprietario: repasseTotal,
             valor_base_comissao: valorLiquidoBase
           }
-        });
+        } as any);
       }
 
       toast({ title: isAuditing ? "Reserva auditada!" : "Auditoria removida." });
