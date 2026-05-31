@@ -19,6 +19,7 @@ import { getDaysOccupiedInMonth, computeOccupancy } from "@/lib/occupancy";
 interface Imovel {
   id: string;
   nome_imovel: string;
+  airbnb_title?: string | null;
   hora_checkin?: string | null;
   hora_checkout?: string | null;
 }
@@ -167,7 +168,7 @@ const Calendario: React.FC = () => {
     const lastDay = new Date(ano, mes + 1, 0).toISOString().split("T")[0];
 
     const [{ data: imoveisData }, { data: reservasData }] = await Promise.all([
-      supabase.from("imoveis").select("id, nome_imovel, hora_checkin, hora_checkout").order("nome_imovel"),
+      supabase.from("imoveis").select("id, nome_imovel, airbnb_title, hora_checkin, hora_checkout").order("nome_imovel"),
       supabase
         .from("reservas")
         .select("id, imovel_id, data_inicio, data_fim, valor_bruto, observacoes, hora_checkin_override, hora_checkout_override")
@@ -387,7 +388,7 @@ const Calendario: React.FC = () => {
                       style={{ backgroundColor: color?.hex }}
                     />
                     <span className="text-xs text-muted-foreground truncate max-w-[140px]">
-                      {im.nome_imovel}
+                      {im.airbnb_title || im.nome_imovel}
                     </span>
                   </div>
                 );
@@ -445,7 +446,7 @@ const Calendario: React.FC = () => {
                           "px-3 py-1.5 sticky left-0 z-10 text-xs font-medium text-foreground truncate max-w-[144px]",
                           rowIdx % 2 === 0 ? "bg-background" : "bg-muted/10"
                         )}>
-                          {im.nome_imovel}
+                          {im.airbnb_title || im.nome_imovel}
                         </td>
 
                         {/* Day cells */}

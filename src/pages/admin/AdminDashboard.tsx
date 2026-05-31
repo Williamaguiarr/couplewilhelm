@@ -421,7 +421,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const mesNome = mesSelecionado === -1 ? "Acumulado" : MESES[mesSelecionado];
       const periodoLabel = `${mesNome} / ${anoSelecionado === -1 ? "Todos os Anos" : anoSelecionado}`;
-      const imovel = filterImovel !== "todos" ? imoveis.find(i => i.id === filterImovel) : null;
+      const imovel = filtroImovel !== "todos" ? imoveis.find(i => i.id === filtroImovel) : null;
       const nomeProprietario = imovel ? (imovel.airbnb_title || imovel.nome_imovel) : (filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—");
       const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
       let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${periodoLabel}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
@@ -561,7 +561,7 @@ const AdminDashboard: React.FC = () => {
                   <SelectItem value="todos">Todos Imóveis</SelectItem>
                   {imoveis
                     .filter(im => filtroProprietario === "todos" || im.proprietario_id === filtroProprietario || im.proprietario_id_2 === filtroProprietario)
-                    .map(im => <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>)
+                    .map(im => <SelectItem key={im.id} value={im.id}>{im.airbnb_title || im.nome_imovel}</SelectItem>)
                   }
                 </SelectContent>
               </Select>
@@ -671,7 +671,12 @@ const AdminDashboard: React.FC = () => {
                 <TableBody>
                   {despesasFiltradas.map(d => (
                     <TableRow key={d.id}>
-                      <TableCell className="text-sm">{imoveis.find(i => i.id === d.imovel_id)?.nome_imovel || "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {(() => {
+                          const i = imoveis.find(i => i.id === d.imovel_id);
+                          return i ? (i.airbnb_title || i.nome_imovel) : "—";
+                        })()}
+                      </TableCell>
                       <TableCell className="text-sm">{d.descricao}</TableCell>
                       <TableCell className="text-sm text-right font-semibold">{fmt(d.valor)}</TableCell>
                       <TableCell><button onClick={() => handleDelete(d.id)} className="text-muted-foreground hover:text-destructive p-1.5"><Trash2 className="h-3.5 w-3.5" /></button></TableCell>
@@ -699,7 +704,7 @@ const AdminDashboard: React.FC = () => {
             <DialogHeader><DialogTitle>Nova Despesa Extra</DialogTitle></DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Imóvel</Label>
-                <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}><SelectTrigger><SelectValue placeholder="Selecionar imóvel…" /></SelectTrigger><SelectContent>{imoveis.map(im => <SelectItem key={im.id} value={im.id}>{im.nome_imovel}</SelectItem>)}</SelectContent></Select>
+                <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}><SelectTrigger><SelectValue placeholder="Selecionar imóvel…" /></SelectTrigger><SelectContent>{imoveis.map(im => <SelectItem key={im.id} value={im.id}>{im.airbnb_title || im.nome_imovel}</SelectItem>)}</SelectContent></Select>
               </div>
               <div className="space-y-1.5"><Label className="text-xs uppercase tracking-widest">Descrição</Label><Input value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} placeholder="Ex: Manutenção..." /></div>
               <div className="grid grid-cols-2 gap-3">

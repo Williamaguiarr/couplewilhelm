@@ -164,7 +164,7 @@ const ProprietarioDashboard: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
-  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string; taxa_comissao?: number | null }[]>([]);
+  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string; airbnb_title?: string | null; taxa_comissao?: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
@@ -207,10 +207,10 @@ const ProprietarioDashboard: React.FC = () => {
 
       const { data: imoveisData } = await supabase
         .from("imoveis")
-        .select("id, nome_imovel, admin_id, taxa_comissao")
+        .select("id, nome_imovel, airbnb_title, admin_id, taxa_comissao")
         .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
-      setImoveis((imoveisData || []).map(({ id, nome_imovel, taxa_comissao }) => ({ id, nome_imovel, taxa_comissao })));
+      setImoveis((imoveisData || []).map(({ id, nome_imovel, airbnb_title, taxa_comissao }) => ({ id, nome_imovel, airbnb_title, taxa_comissao })));
 
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
@@ -233,15 +233,15 @@ const ProprietarioDashboard: React.FC = () => {
       const [{ data: resData }, { data: despData }, { data: ganhosData }] = await Promise.all([
         supabase
           .from("reservas")
-          .select("*, imoveis(nome_imovel)")
+          .select("*, imoveis(nome_imovel, airbnb_title)")
           .order("data_inicio", { ascending: false }),
         supabase
           .from("despesas_extras" as any)
-          .select("*, imoveis(nome_imovel)")
+          .select("*, imoveis(nome_imovel, airbnb_title)")
           .order("data", { ascending: false }),
         supabase
           .from("ganhos_extras" as any)
-          .select("*, imoveis(nome_imovel), reservas(data_fim)")
+          .select("*, imoveis(nome_imovel, airbnb_title), reservas(data_fim)")
           .order("data", { ascending: false }),
       ]);
 
