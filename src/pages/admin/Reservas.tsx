@@ -512,9 +512,9 @@ const ReservaFormFields = ({
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Valor Base Líquido</Label>
+          <Label className="text-muted-foreground">Base Comissão ADM</Label>
           <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm">
-            {valorLiquido != null ? fmt(valorLiquido) : "—"}
+            {fmt(baseComissao)}
           </div>
         </div>
       </div>
@@ -522,7 +522,7 @@ const ReservaFormFields = ({
       <div className="space-y-2">
         <Label className="text-muted-foreground">Valor Comissão ADM ({pct}% sobre base)</Label>
         <div className="flex items-center h-10 px-3 rounded-md border border-border bg-muted/40 text-muted-foreground text-sm font-medium text-foreground">
-          {valorLiquido != null ? fmt(comissao) : "—"}
+          {fmt(comissaoAdm)}
         </div>
       </div>
 
