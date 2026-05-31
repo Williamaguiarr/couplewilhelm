@@ -320,8 +320,9 @@ export type Database = {
           created_at: string
           id: string
           imovel_id: string
+          mensagem_erro: string | null
           plataforma: string
-          reserva_id: string
+          reserva_id: string | null
           status: string
           updated_at: string
         }
@@ -329,8 +330,9 @@ export type Database = {
           created_at?: string
           id?: string
           imovel_id: string
+          mensagem_erro?: string | null
           plataforma: string
-          reserva_id: string
+          reserva_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -338,8 +340,9 @@ export type Database = {
           created_at?: string
           id?: string
           imovel_id?: string
+          mensagem_erro?: string | null
           plataforma?: string
-          reserva_id?: string
+          reserva_id?: string | null
           status?: string
           updated_at?: string
         }
