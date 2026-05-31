@@ -804,9 +804,36 @@ const Imoveis: React.FC = () => {
                   const hasIcal = !!(imovel.ical_url_airbnb || imovel.ical_url_booking);
                   return (
                     <TableRow key={imovel.id} className="border-border hover:bg-muted/30">
-                      <TableCell className="text-foreground font-medium">{imovel.nome_imovel}</TableCell>
-                      <TableCell className="text-muted-foreground">{imovel.endereco || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell>
+                        <div className="w-16 h-12 rounded overflow-hidden bg-muted border border-border">
+                          {imovel.airbnb_image_url ? (
+                            <img 
+                              src={imovel.airbnb_image_url} 
+                              alt="Capa" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=100&h=100&fit=crop';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-muted-foreground/30" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-foreground font-medium">{imovel.airbnb_title || imovel.nome_imovel}</span>
+                          {imovel.airbnb_title && (
+                            <span className="text-[10px] text-muted-foreground/60 font-mono truncate max-w-[200px]">
+                              {imovel.nome_imovel}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{imovel.endereco || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
                         {p1 && p2 ? (
                           <span>
                             {p1}{" "}
@@ -818,24 +845,22 @@ const Imoveis: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        {hasIcal ? (
-                          <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {imovel.ical_url_airbnb && (
-                              <Badge variant="secondary" className="text-xs w-fit">Airbnb</Badge>
+                              <Badge variant="outline" className="text-[10px] h-4 bg-rose-500/5 text-rose-600 border-rose-500/20">Airbnb</Badge>
                             )}
                             {imovel.ical_url_booking && (
-                              <Badge variant="secondary" className="text-xs w-fit">Booking</Badge>
-                            )}
-                            {imovel.ical_last_sync && (
-                              <span className="text-xs text-muted-foreground/60">
-                                Sync:{" "}
-                                {format(new Date(imovel.ical_last_sync), "dd/MM HH:mm", { locale: ptBR })}
-                              </span>
+                              <Badge variant="outline" className="text-[10px] h-4 bg-blue-500/5 text-blue-600 border-blue-500/20">Booking</Badge>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-xs">—</span>
-                        )}
+                          {imovel.ical_last_sync && (
+                            <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
+                              <RefreshCw className="h-2 w-2" />
+                              {format(new Date(imovel.ical_last_sync), "dd/MM HH:mm", { locale: ptBR })}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
