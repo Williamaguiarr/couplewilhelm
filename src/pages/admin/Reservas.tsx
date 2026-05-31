@@ -272,6 +272,7 @@ const ReservaFormFields = ({
   comissaoRate,
   reservas,
   editingId,
+  isAudited = false,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
@@ -279,6 +280,7 @@ const ReservaFormFields = ({
   comissaoRate: number;
   reservas: Reserva[];
   editingId?: string | null;
+  isAudited?: boolean;
 }) => {
   const conflitos = detectarConflitosReserva(form, imoveis, reservas, editingId);
   const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
