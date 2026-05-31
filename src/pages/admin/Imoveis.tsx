@@ -770,7 +770,8 @@ const Imoveis: React.FC = () => {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
