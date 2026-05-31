@@ -1678,6 +1678,66 @@ const Reservas: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Histórico Financeiro
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            {selectedReservaForLogs && (
+              <div className="bg-muted/30 rounded-lg p-3 border border-border">
+                <div className="text-sm font-medium">{selectedReservaForLogs.imovel?.nome_imovel}</div>
+                <div className="text-xs text-muted-foreground">
+                  Hóspede: {selectedReservaForLogs.nome_hospede || "—"} | {selectedReservaForLogs.data_inicio} a {selectedReservaForLogs.data_fim}
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-3">
+              {loadingLogs ? (
+                <div className="flex justify-center p-8">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : financialLogs.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground text-sm">
+                  Nenhuma alteração financeira registrada para esta reserva.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Usuário</TableHead>
+                      <TableHead>Campo</TableHead>
+                      <TableHead className="text-right">Anterior</TableHead>
+                      <TableHead className="text-right">Novo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {financialLogs.map((log) => (
+                      <TableRow key={log.id} className="text-xs">
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(log.created_at), "dd/MM/yy HH:mm")}
+                        </TableCell>
+                        <TableCell>{log.profiles?.nome || "Sistema"}</TableCell>
+                        <TableCell className="font-medium">{log.campo_alterado}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{fmt(log.valor_anterior)}</TableCell>
+                        <TableCell className="text-right text-foreground font-medium">{fmt(log.valor_novo)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setLogsOpen(false)}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 };
