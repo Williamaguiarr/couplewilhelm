@@ -71,7 +71,7 @@ interface Reserva {
   plataforma_origem?: string | null;
   hora_checkin_override: string | null;
   hora_checkout_override: string | null;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
   ganhos_extras?: any[];
   auditada: boolean;
   auditada_em?: string | null;
@@ -84,6 +84,7 @@ interface Reserva {
 interface Imovel {
   id: string;
   nome_imovel: string;
+  airbnb_title?: string | null;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
   taxa_comissao?: number | null;
@@ -602,9 +603,8 @@ const Reservas: React.FC = () => {
     try {
     const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
-    const imovelNome = filterImovel !== "all"
-      ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
-      : "Todos os imóveis";
+    const imovel = filterImovel !== "all" ? imoveis.find((i) => i.id === filterImovel) : null;
+    const imovelNome = imovel ? (imovel.airbnb_title || imovel.nome_imovel) : "Todos os imóveis";
     const periodoLabel = filterDe && filterAte
       ? `${format(filterDe, "dd/MM/yyyy")} a ${format(filterAte, "dd/MM/yyyy")}`
       : filterDe
@@ -709,7 +709,7 @@ const Reservas: React.FC = () => {
       const comissaoTotal = (liquido * rate) + comissaoGanhosExtras;
       const proprietarioTotal = valorPropBase + repasseGanhosExtras;
       return [
-        r.imovel?.nome_imovel || "—",
+        r.imovel?.airbnb_title || r.imovel?.nome_imovel || "—",
         (() => {
           const [y, m, d] = r.data_inicio.split("-").map(Number);
           return new Date(y, m - 1, d).toLocaleDateString("pt-BR");
@@ -765,10 +765,10 @@ const Reservas: React.FC = () => {
     const [{ data: reservasData }, { data: imoveisData }, { data: alertsData }, { data: ganhosData }] = await Promise.all([
       supabase
         .from("reservas")
-        .select("*, imoveis(nome_imovel)")
+        .select("*, imoveis(nome_imovel, airbnb_title)")
         .order("data_inicio", { ascending: false }),
-      supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao, hora_checkin, hora_checkout, tempo_limpeza_min").order("nome_imovel"),
-      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel)").eq("status", "pending"),
+      supabase.from("imoveis").select("id, nome_imovel, airbnb_title, proprietario_id, proprietario_id_2, taxa_comissao, hora_checkin, hora_checkout, tempo_limpeza_min").order("nome_imovel"),
+      supabase.from("ical_sync_alerts").select("*, reservas(nome_hospede, data_inicio, data_fim), imoveis(nome_imovel, airbnb_title)").eq("status", "pending"),
       supabase.from("ganhos_extras" as any).select("reserva_id, valor, regime_comissao, aplicar_comissao")
     ]);
 
@@ -1295,7 +1295,7 @@ const Reservas: React.FC = () => {
                   <SelectItem value="all" className="text-foreground">Todos os imóveis</SelectItem>
                   {imoveis.map((i) => (
                     <SelectItem key={i.id} value={i.id} className="text-foreground">
-                      {i.nome_imovel}
+                      {i.airbnb_title || i.nome_imovel}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1478,7 +1478,7 @@ const Reservas: React.FC = () => {
                       <TableCell className="text-foreground font-medium">
                         <div className="flex items-center gap-2 flex-wrap">
                           {r.auditada && <ShieldCheck className="h-4 w-4 text-primary shrink-0" />}
-                          {r.imovel?.nome_imovel || "—"}
+                          {r.imovel?.airbnb_title || r.imovel?.nome_imovel || "—"}
                           {aguardandoValidacao ? (
                             <Badge
                               className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20 text-xs font-medium gap-1"
@@ -1649,7 +1649,7 @@ const Reservas: React.FC = () => {
             {syncAlerts.map((alert) => (
               <div key={alert.id} className="p-3 border border-border rounded-lg bg-muted/20 flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <div className="font-medium text-foreground">{alert.imoveis?.nome_imovel}</div>
+                  <div className="font-medium text-foreground">{alert.imoveis?.airbnb_title || alert.imoveis?.nome_imovel}</div>
                   
                   {alert.reserva_id ? (
                     <div className="text-xs text-muted-foreground">

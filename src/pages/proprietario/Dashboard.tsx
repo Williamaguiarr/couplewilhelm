@@ -63,7 +63,7 @@ interface Reserva {
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
   taxa_comissao_reserva: number | null;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
   auditada?: boolean;
   valor_comissao_admin?: number | null;
   valor_base_comissao?: number | null;
@@ -76,7 +76,7 @@ interface DespesaExtra {
   valor: number;
   data: string;
   tipo: string;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
 }
 
 interface GanhoExtra {
@@ -89,7 +89,7 @@ interface GanhoExtra {
   tipo: string;
   regime_comissao?: string;
   aplicar_comissao: boolean;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
   reservas?: { data_fim: string } | null;
 }
 
@@ -164,7 +164,7 @@ const ProprietarioDashboard: React.FC = () => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [despesas, setDespesas] = useState<DespesaExtra[]>([]);
   const [ganhos, setGanhos] = useState<GanhoExtra[]>([]);
-  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string; taxa_comissao?: number | null }[]>([]);
+  const [imoveis, setImoveis] = useState<{ id: string; nome_imovel: string; airbnb_title?: string | null; taxa_comissao?: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
@@ -207,10 +207,10 @@ const ProprietarioDashboard: React.FC = () => {
 
       const { data: imoveisData } = await supabase
         .from("imoveis")
-        .select("id, nome_imovel, admin_id, taxa_comissao")
+        .select("id, nome_imovel, airbnb_title, admin_id, taxa_comissao")
         .or(`proprietario_id.eq.${user.id},proprietario_id_2.eq.${user.id}`);
 
-      setImoveis((imoveisData || []).map(({ id, nome_imovel, taxa_comissao }) => ({ id, nome_imovel, taxa_comissao })));
+      setImoveis((imoveisData || []).map(({ id, nome_imovel, airbnb_title, taxa_comissao }) => ({ id, nome_imovel, airbnb_title, taxa_comissao })));
 
       if (imoveisData && imoveisData.length === 1 && filterImovel === "todos") {
         setFilterImovel(imoveisData[0].id);
@@ -233,15 +233,15 @@ const ProprietarioDashboard: React.FC = () => {
       const [{ data: resData }, { data: despData }, { data: ganhosData }] = await Promise.all([
         supabase
           .from("reservas")
-          .select("*, imoveis(nome_imovel)")
+          .select("*, imoveis(nome_imovel, airbnb_title)")
           .order("data_inicio", { ascending: false }),
         supabase
           .from("despesas_extras" as any)
-          .select("*, imoveis(nome_imovel)")
+          .select("*, imoveis(nome_imovel, airbnb_title)")
           .order("data", { ascending: false }),
         supabase
           .from("ganhos_extras" as any)
-          .select("*, imoveis(nome_imovel), reservas(data_fim)")
+          .select("*, imoveis(nome_imovel, airbnb_title), reservas(data_fim)")
           .order("data", { ascending: false }),
       ]);
 
@@ -473,9 +473,8 @@ const ProprietarioDashboard: React.FC = () => {
     try {
     const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
-    const imovelNome = filterImovel !== "todos"
-      ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
-      : "Todos os imóveis";
+    const imovel = filterImovel !== "todos" ? imoveis.find((i) => i.id === filterImovel) : null;
+    const imovelNome = imovel ? (imovel.airbnb_title || imovel.nome_imovel) : "Todos os imóveis";
 
     // ── Header
     let y = drawHeader(doc, {
@@ -566,7 +565,7 @@ const ProprietarioDashboard: React.FC = () => {
             const com = regime === "com_comissao" ? g.valor * rate : 0;
             const rep = g.valor - com;
             return [
-              g.imovel?.nome_imovel || "—",
+              g.imovel?.airbnb_title || g.imovel?.nome_imovel || "—",
               g.descricao,
               g.tipo,
               (() => {
@@ -836,7 +835,7 @@ const ProprietarioDashboard: React.FC = () => {
                             const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
                             return (
                               <TableRow key={r.id} className="border-border hover:bg-muted/20">
-                                <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.nome_imovel ?? "—"}</TableCell>
+                                <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.airbnb_title || r.imovel?.nome_imovel || "—"}</TableCell>
                                 <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                                 <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                                 <TableCell className="text-muted-foreground text-sm text-right py-3 whitespace-nowrap">{fmt(f.bruto)}</TableCell>
@@ -1022,7 +1021,7 @@ const ProprietarioDashboard: React.FC = () => {
                         return (
                           <div key={r.id} className="border-t border-border pt-3 space-y-3">
                             <p className="text-foreground font-medium text-sm">
-                              {r.imovel?.nome_imovel}
+                              {r.imovel?.airbnb_title || r.imovel?.nome_imovel}
                             </p>
                             <div className="text-xs text-muted-foreground space-y-1">
                               <div className="flex justify-between">
