@@ -151,13 +151,21 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
 
     (reservas || []).forEach((r: any) => {
       const monthIdx = new Date(r.data_fim + "T12:00:00").getMonth();
-      const valorBruto = r.valor_bruto || 0;
-      const taxaLimpeza = r.taxa_limpeza || 0;
-      const comissaoPlataforma = r.comissao_plataforma || 0;
-      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+      const bruto = Number(r.valor_bruto) || 0;
+      const limpeza = Number(r.taxa_limpeza) || 0;
+      const plataforma = Number(r.comissao_plataforma) || 0;
+      
       const rate = getOwnerRate(r.imovel_id);
-      const comissaoCW = valorLiquido * rate;
-      const repasse = valorLiquido - comissaoCW;
+      
+      const financeiro = calcularFinanceiroReserva({
+        bruto,
+        limpeza,
+        plataforma,
+        percentualAdm: rate
+      });
+
+      const comissaoCW = financeiro.comissaoAdm;
+      const repasse = financeiro.valorProprietario;
 
       monthlyMap[monthIdx].valorBruto += valorBruto;
       monthlyMap[monthIdx].comissaoCW += comissaoCW;
