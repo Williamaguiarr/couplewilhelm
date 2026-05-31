@@ -1398,7 +1398,9 @@ const Reservas: React.FC = () => {
               <TableBody>
               {filteredReservas.map((r: any) => {
                   const rateDefault = getRateForImovel(r.imovel_id);
-                  const rateForRow = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+                  const rateForRow = r.percentual_comissao_aplicado != null 
+                    ? r.percentual_comissao_aplicado / 100 
+                    : (r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault);
                   
                   const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
                   
