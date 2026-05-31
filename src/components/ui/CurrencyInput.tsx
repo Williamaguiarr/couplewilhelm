@@ -17,18 +17,22 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   const formatCurrency = (val: string | number) => {
     if (val === "" || val === null || val === undefined) return "";
     
-    // If it's a number (initial state or external update), multiply by 100 and treat as cents
-    // but wait, if it's already "10.50", and I treat it as cents it becomes "1050" which is good.
-    let numericValue = String(val).replace(/\D/g, "");
+    let numericValue: string;
     
-    if (numericValue === "") {
-        // If val is a number like 10.5, it should be 1050
-        if (typeof val === "number") {
-            numericValue = Math.round(val * 100).toString();
-        } else {
-            return "";
-        }
+    if (typeof val === "number") {
+      // If it's a number, we expect it to be a float like 10.50
+      numericValue = Math.round(val * 100).toString();
+    } else {
+      // If it's a string, it might be a float string "10.50" or a raw digits string from input
+      // If it contains a dot, treat it as a float string
+      if (val.includes(".")) {
+        numericValue = Math.round(parseFloat(val) * 100).toString();
+      } else {
+        numericValue = val.replace(/\D/g, "");
+      }
     }
+    
+    if (numericValue === "" || numericValue === "NaN") return "";
     
     const floatValue = parseInt(numericValue, 10) / 100;
     
