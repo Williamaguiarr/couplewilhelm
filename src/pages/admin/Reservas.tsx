@@ -1281,6 +1281,19 @@ const Reservas: React.FC = () => {
               </Button>
             )}
 
+            {/* Ação em Massa: Auditar */}
+            {!loading && filteredReservas.some(r => !r.auditada && r.valor_bruto != null) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkAudit}
+                className="gap-1.5 self-end border-primary/50 text-primary hover:bg-primary/10"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Auditar pendentes ({filteredReservas.filter(r => !r.auditada && r.valor_bruto != null).length})
+              </Button>
+            )}
+
             {/* Contador de resultados */}
             <div className="ml-auto self-end">
               <span className="text-xs text-muted-foreground">
