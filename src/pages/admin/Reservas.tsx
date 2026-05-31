@@ -1327,8 +1327,9 @@ const Reservas: React.FC = () => {
                   <TableHead>Valor Bruto</TableHead>
                   <TableHead>Tx. Limpeza</TableHead>
                   <TableHead>Comissão ADM</TableHead>
-                  <TableHead>Proprietário</TableHead>
-                  <TableHead className="w-20"></TableHead>
+                   <TableHead>Proprietário</TableHead>
+                   <TableHead>Auditada</TableHead>
+                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
