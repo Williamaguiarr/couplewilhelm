@@ -22,15 +22,65 @@ async function fetchAirbnbMetadata(url: string) {
 
     const html = await response.text();
     
-    // Extract metadata using regex (simpler than parsing DOM in Deno without external libs)
-    const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i) || 
-                      html.match(/<title>([^<]+)<\/title>/i);
+    // 1. Try to extract from JSON-LD (most reliable)
+    let title = null;
+    const jsonLdMatches = html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi);
+    for (const match of jsonLdMatches) {
+      try {
+        const data = JSON.parse(match[1]);
+        if (data.name && typeof data.name === 'string') {
+          // Check if it's a descriptive SEO name or real name
+          // If it doesn't contain the " · " pattern often used in SEO titles, it's likely the real name
+          if (!data.name.includes(" · ")) {
+            title = data.name;
+            break;
+          }
+        }
+      } catch (e) {
+        // Skip invalid JSON
+      }
+    }
+
+    // 2. Try to extract from h1
+    if (!title) {
+      const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+      if (h1Match) {
+        title = h1Match[1].replace(/<[^>]*>?/gm, '').trim();
+      }
+    }
+
+    // 3. Try og:description (sometimes contains the actual name when og:title is SEO-optimized)
+    if (!title) {
+      const ogDescMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
+      const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i);
+      
+      const ogTitle = ogTitleMatch ? ogTitleMatch[1] : null;
+      const ogDesc = ogDescMatch ? ogDescMatch[1] : null;
+
+      if (ogTitle && (ogTitle.includes(" · ") || ogTitle.includes("★"))) {
+        // If og:title looks like SEO summary, try og:description or cleaned title
+        if (ogDesc && ogDesc.length > 5 && ogDesc.length < 100) {
+          title = ogDesc;
+        }
+      } else {
+        title = ogTitle;
+      }
+    }
+
+    // 4. Fallback to <title>
+    if (!title) {
+      const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+      if (titleMatch) {
+        title = titleMatch[1];
+        // Clean up: "Name - Property Type - ... - Airbnb"
+        title = title.split(" - ")[0].split(" | ")[0].trim();
+      }
+    }
+
+    // Extract image
     const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
-    
-    let title = titleMatch ? titleMatch[1] : null;
     let image = imageMatch ? imageMatch[1] : null;
 
-    // Clean up title if it contains Airbnb suffixes
     if (title) {
       title = title.replace(" - Airbnb", "").replace(" | Airbnb", "").trim();
     }
