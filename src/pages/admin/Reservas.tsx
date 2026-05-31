@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles, ShieldCheck, ShieldAlert, CheckCircle2 } from "lucide-react";
 import GanhosExtrasDialog from "@/components/reservas/GanhosExtrasDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -73,6 +73,11 @@ interface Reserva {
   hora_checkout_override: string | null;
   imovel?: { nome_imovel: string };
   ganhos_extras?: any[];
+  auditada: boolean;
+  auditada_em?: string | null;
+  auditada_por?: string | null;
+  valor_comissao_admin?: number | null;
+  valor_base_comissao?: number | null;
 }
 
 interface Imovel {
