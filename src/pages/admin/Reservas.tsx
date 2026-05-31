@@ -589,6 +589,10 @@ const Reservas: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [ganhosOpen, setGanhosOpen] = useState(false);
   const [selectedReservaForGanhos, setSelectedReservaForGanhos] = useState<{id: string, imovelId: string} | null>(null);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [selectedReservaForLogs, setSelectedReservaForLogs] = useState<Reserva | null>(null);
+  const [financialLogs, setFinancialLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [syncAlerts, setSyncAlerts] = useState<any[]>([]);
 
