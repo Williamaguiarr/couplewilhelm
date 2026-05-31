@@ -346,7 +346,10 @@ const ProprietarioDashboard: React.FC = () => {
         const matchMes = filterMes === -1 || fim.getMonth() === filterMes;
         return matchAno && matchMes;
       })
-      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+      .reduce((acc, r) => {
+        const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+        return acc + f.proprietario;
+      }, 0);
 
     const ganhosVal = ganhosImovelSelecionado
       .filter((g) => {
@@ -381,7 +384,10 @@ const ProprietarioDashboard: React.FC = () => {
         // De HOJE em diante até o limite
         return checkoutDate >= today && checkoutDate <= limitDate;
       })
-      .reduce((acc, r) => acc + (r.valor_liquido_proprietario ?? 0), 0);
+      .reduce((acc, r) => {
+        const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
+        return acc + f.proprietario;
+      }, 0);
   }, [reservasImovelSelecionado]);
 
   const occupiedDays = reservasImovelSelecionado.flatMap((r) =>
@@ -392,8 +398,7 @@ const ProprietarioDashboard: React.FC = () => {
     return reservasFiltradas.reduce(
       (acc, r) => {
         const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
-        // Usar o valor do banco se disponível, senão o calculado
-        const proprietario = r.valor_liquido_proprietario ?? f.proprietario;
+        const proprietario = f.proprietario;
         return {
           bruto: acc.bruto + f.bruto,
           limpeza: acc.limpeza + f.limpeza,
