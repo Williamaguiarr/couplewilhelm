@@ -167,7 +167,7 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
       const comissaoCW = financeiro.comissaoAdm;
       const repasse = financeiro.valorProprietario;
 
-      monthlyMap[monthIdx].valorBruto += valorBruto;
+      monthlyMap[monthIdx].valorBruto += bruto;
       monthlyMap[monthIdx].comissaoCW += comissaoCW;
       monthlyMap[monthIdx].repasseProprietario += repasse;
       monthlyMap[monthIdx].reservas += 1;
