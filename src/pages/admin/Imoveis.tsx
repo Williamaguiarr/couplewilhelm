@@ -54,6 +54,10 @@ interface Imovel {
   ical_url_airbnb: string | null;
   ical_url_booking: string | null;
   ical_last_sync: string | null;
+  airbnb_link: string | null;
+  airbnb_title: string | null;
+  airbnb_image_url: string | null;
+  last_airbnb_sync: string | null;
   taxa_comissao: number | null;
   hora_checkin: string | null;
   hora_checkout: string | null;
@@ -88,6 +92,9 @@ const Imoveis: React.FC = () => {
     proprietario_id_2: "",
     ical_url_airbnb: "",
     ical_url_booking: "",
+    airbnb_link: "",
+    airbnb_title: "",
+    airbnb_image_url: "",
     taxa_comissao: "",
     hora_checkin: "15:00",
     hora_checkout: "11:00",
@@ -98,6 +105,8 @@ const Imoveis: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncingAirbnbId, setSyncingAirbnbId] = useState<string | null>(null);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
   const [calendarLinkOpen, setCalendarLinkOpen] = useState<Imovel | null>(null);
   const [copied, setCopied] = useState<"airbnb" | "booking" | null>(null);
   const { toast } = useToast();
@@ -146,6 +155,9 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: "",
       ical_url_airbnb: "",
       ical_url_booking: "",
+      airbnb_link: "",
+      airbnb_title: "",
+      airbnb_image_url: "",
       taxa_comissao: "",
       hora_checkin: "15:00",
       hora_checkout: "11:00",
@@ -163,6 +175,9 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: imovel.proprietario_id_2 || "",
       ical_url_airbnb: imovel.ical_url_airbnb || "",
       ical_url_booking: imovel.ical_url_booking || "",
+      airbnb_link: imovel.airbnb_link || "",
+      airbnb_title: imovel.airbnb_title || "",
+      airbnb_image_url: imovel.airbnb_image_url || "",
       taxa_comissao: imovel.taxa_comissao?.toString() || "",
       hora_checkin: imovel.hora_checkin?.slice(0, 5) || "15:00",
       hora_checkout: imovel.hora_checkout?.slice(0, 5) || "11:00",
@@ -243,6 +258,9 @@ const Imoveis: React.FC = () => {
       proprietario_id_2: form.proprietario_id_2 || null,
       ical_url_airbnb: form.ical_url_airbnb || null,
       ical_url_booking: form.ical_url_booking || null,
+      airbnb_link: form.airbnb_link || null,
+      airbnb_title: form.airbnb_title || null,
+      airbnb_image_url: form.airbnb_image_url || null,
       taxa_comissao: form.taxa_comissao ? parseFloat(form.taxa_comissao.replace(",", ".")) : null,
       hora_checkin: form.hora_checkin || null,
       hora_checkout: form.hora_checkout || null,
@@ -290,6 +308,78 @@ const Imoveis: React.FC = () => {
     }
 
     setDeleteSubmitting(false);
+  };
+
+  const handleAirbnbSync = async (imovelId?: string, isBulk: boolean = false) => {
+    if (!isBulk && !imovelId) return;
+    
+    if (isBulk) setBulkSyncing(true);
+    else if (imovelId) setSyncingAirbnbId(imovelId);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/airbnb-sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({ 
+            imovel_id: isBulk ? undefined : imovelId,
+            bulk: isBulk 
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Erro ao sincronizar dados do Airbnb");
+      }
+
+      const successCount = result.results?.filter((r: any) => r.status === "success").length || 0;
+      const failedCount = result.results?.filter((r: any) => r.status === "failed" || r.status === "error").length || 0;
+
+      if (isBulk) {
+        toast({
+          title: "Sincronização em massa concluída",
+          description: `${successCount} anúncio(s) atualizado(s) com sucesso. ${failedCount > 0 ? `${failedCount} falha(s).` : ""}`,
+        });
+      } else {
+        const item = result.results?.[0];
+        if (item?.status === "success") {
+          toast({ title: "Dados do Airbnb atualizados!" });
+          // If we are editing, update the form
+          if (editId === imovelId) {
+            const { data: updated } = await supabase.from("imoveis").select("airbnb_title, airbnb_image_url").eq("id", imovelId).single();
+            if (updated) {
+              setForm(prev => ({
+                ...prev,
+                airbnb_title: updated.airbnb_title || prev.airbnb_title,
+                airbnb_image_url: updated.airbnb_image_url || prev.airbnb_image_url,
+              }));
+            }
+          }
+        } else {
+          toast({ 
+            title: "Falha na sincronização", 
+            description: item?.error || "Não foi possível obter os dados do Airbnb.",
+            variant: "destructive" 
+          });
+        }
+      }
+
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização Airbnb", description: err.message, variant: "destructive" });
+    } finally {
+      setBulkSyncing(false);
+      setSyncingAirbnbId(null);
+    }
   };
 
   const handleSync = async (imovel: Imovel) => {
@@ -371,21 +461,32 @@ const Imoveis: React.FC = () => {
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Imóveis</h1>
             <p className="text-muted-foreground mt-1 text-sm">Gerencie os imóveis da carteira</p>
           </div>
-          <Dialog
-            open={open}
-            onOpenChange={(v) => {
-              setOpen(v);
-              if (!v) {
-                setEditId(null);
-                resetForm();
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" /> Novo Imóvel
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAirbnbSync(undefined, true)}
+              disabled={bulkSyncing}
+              className="hidden sm:flex gap-2 h-10"
+            >
+              <RefreshCw className={`h-4 w-4 ${bulkSyncing ? "animate-spin" : ""}`} />
+              Sincronizar Airbnb
+            </Button>
+            <Dialog
+              open={open}
+              onOpenChange={(v) => {
+                setOpen(v);
+                if (!v) {
+                  setEditId(null);
+                  resetForm();
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button className="gap-2 h-10">
+                  <Plus className="h-4 w-4" /> Novo Imóvel
+                </Button>
+              </DialogTrigger>
             <DialogContent className="bg-card border-border max-w-xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">
@@ -547,8 +648,73 @@ const Imoveis: React.FC = () => {
                         placeholder="Ex: 4"
                         className="bg-background text-sm"
                       />
-                    </div>
                   </div>
+                </div>
+
+                {/* Airbnb Ad Section */}
+                <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        ANÚNCIO AIRBNB
+                      </span>
+                    </div>
+                    {editId && form.airbnb_link && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 gap-1"
+                        onClick={() => handleAirbnbSync(editId)}
+                        disabled={syncingAirbnbId === editId}
+                      >
+                        <RefreshCw className={`h-3 w-3 ${syncingAirbnbId === editId ? "animate-spin" : ""}`} />
+                        Sincronizar
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Link do Anúncio Airbnb</Label>
+                    <Input
+                      value={form.airbnb_link}
+                      onChange={(e) => setForm({ ...form, airbnb_link: e.target.value })}
+                      placeholder="https://www.airbnb.com.br/rooms/..."
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Nome do Anúncio (Manual/Auto)</Label>
+                    <Input
+                      value={form.airbnb_title}
+                      onChange={(e) => setForm({ ...form, airbnb_title: e.target.value })}
+                      placeholder="Título que aparece no Airbnb"
+                      className="bg-background text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">URL da Foto de Capa (Manual/Auto)</Label>
+                    <Input
+                      value={form.airbnb_image_url}
+                      onChange={(e) => setForm({ ...form, airbnb_image_url: e.target.value })}
+                      placeholder="URL da imagem principal"
+                      className="bg-background text-sm"
+                    />
+                    {form.airbnb_image_url && (
+                      <div className="mt-2 rounded-md overflow-hidden border border-border h-24 w-full">
+                        <img 
+                          src={form.airbnb_image_url} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                   <div className="space-y-2">
                     <Label className="text-muted-foreground text-sm">Observações operacionais</Label>
                     <Textarea
@@ -604,7 +770,8 @@ const Imoveis: React.FC = () => {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -622,10 +789,11 @@ const Imoveis: React.FC = () => {
             <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Imóvel</TableHead>
+                  <TableHead className="w-[100px]">Capa</TableHead>
+                  <TableHead>Anúncio Airbnb</TableHead>
                   <TableHead>Endereço</TableHead>
                   <TableHead>Proprietário(s)</TableHead>
-                  <TableHead>iCal</TableHead>
+                  <TableHead>Plataformas</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -636,9 +804,36 @@ const Imoveis: React.FC = () => {
                   const hasIcal = !!(imovel.ical_url_airbnb || imovel.ical_url_booking);
                   return (
                     <TableRow key={imovel.id} className="border-border hover:bg-muted/30">
-                      <TableCell className="text-foreground font-medium">{imovel.nome_imovel}</TableCell>
-                      <TableCell className="text-muted-foreground">{imovel.endereco || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell>
+                        <div className="w-16 h-12 rounded overflow-hidden bg-muted border border-border">
+                          {imovel.airbnb_image_url ? (
+                            <img 
+                              src={imovel.airbnb_image_url} 
+                              alt="Capa" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=100&h=100&fit=crop';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-muted-foreground/30" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-foreground font-medium">{imovel.airbnb_title || imovel.nome_imovel}</span>
+                          {imovel.airbnb_title && (
+                            <span className="text-[10px] text-muted-foreground/60 font-mono truncate max-w-[200px]">
+                              {imovel.nome_imovel}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{imovel.endereco || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
                         {p1 && p2 ? (
                           <span>
                             {p1}{" "}
@@ -650,27 +845,38 @@ const Imoveis: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        {hasIcal ? (
-                          <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {imovel.ical_url_airbnb && (
-                              <Badge variant="secondary" className="text-xs w-fit">Airbnb</Badge>
+                              <Badge variant="outline" className="text-[10px] h-4 bg-rose-500/5 text-rose-600 border-rose-500/20">Airbnb</Badge>
                             )}
                             {imovel.ical_url_booking && (
-                              <Badge variant="secondary" className="text-xs w-fit">Booking</Badge>
-                            )}
-                            {imovel.ical_last_sync && (
-                              <span className="text-xs text-muted-foreground/60">
-                                Sync:{" "}
-                                {format(new Date(imovel.ical_last_sync), "dd/MM HH:mm", { locale: ptBR })}
-                              </span>
+                              <Badge variant="outline" className="text-[10px] h-4 bg-blue-500/5 text-blue-600 border-blue-500/20">Booking</Badge>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-xs">—</span>
-                        )}
+                          {imovel.ical_last_sync && (
+                            <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
+                              <RefreshCw className="h-2 w-2" />
+                              {format(new Date(imovel.ical_last_sync), "dd/MM HH:mm", { locale: ptBR })}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          {imovel.airbnb_link && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleAirbnbSync(imovel.id)}
+                              disabled={syncingAirbnbId === imovel.id}
+                              className="h-8 w-8 hover:text-primary"
+                              title="Atualizar dados do Airbnb"
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${syncingAirbnbId === imovel.id ? "animate-spin" : ""}`} />
+                            </Button>
+                          )}
+
                           {hasIcal && (
                             <Button
                               variant="ghost"
