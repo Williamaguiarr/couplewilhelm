@@ -473,9 +473,8 @@ const ProprietarioDashboard: React.FC = () => {
     try {
     const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "landscape");
 
-    const imovelNome = filterImovel !== "todos"
-      ? imoveis.find((i) => i.id === filterImovel)?.nome_imovel ?? "Todos"
-      : "Todos os imóveis";
+    const imovel = filterImovel !== "todos" ? imoveis.find((i) => i.id === filterImovel) : null;
+    const imovelNome = imovel ? (imovel.airbnb_title || imovel.nome_imovel) : "Todos os imóveis";
 
     // ── Header
     let y = drawHeader(doc, {
@@ -566,7 +565,7 @@ const ProprietarioDashboard: React.FC = () => {
             const com = regime === "com_comissao" ? g.valor * rate : 0;
             const rep = g.valor - com;
             return [
-              g.imovel?.nome_imovel || "—",
+              g.imovel?.airbnb_title || g.imovel?.nome_imovel || "—",
               g.descricao,
               g.tipo,
               (() => {
@@ -1022,7 +1021,7 @@ const ProprietarioDashboard: React.FC = () => {
                         return (
                           <div key={r.id} className="border-t border-border pt-3 space-y-3">
                             <p className="text-foreground font-medium text-sm">
-                              {r.imovel?.nome_imovel}
+                              {r.imovel?.airbnb_title || r.imovel?.nome_imovel}
                             </p>
                             <div className="text-xs text-muted-foreground space-y-1">
                               <div className="flex justify-between">
