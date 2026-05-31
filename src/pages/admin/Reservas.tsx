@@ -849,15 +849,18 @@ const Reservas: React.FC = () => {
     const taxaComissaoReserva = form.taxa_comissao_reserva !== "" ? parseFloat(form.taxa_comissao_reserva) : null;
     const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
 
+    const valorBruto = safeNum(form.valor_bruto);
+    const taxaLimpeza = safeNum(form.taxa_limpeza);
+    const comissaoPlataforma = safeNum(form.comissao_plataforma);
+    
     const financeiro = calcularFinanceiroReserva({
-      bruto: safeNum(form.valor_bruto),
-      limpeza: safeNum(form.taxa_limpeza),
-      plataforma: safeNum(form.comissao_plataforma),
+      bruto: valorBruto,
+      limpeza: taxaLimpeza,
+      plataforma: comissaoPlataforma,
       percentualAdm: rate
     });
     
     const { valorProprietario } = financeiro;
-
     const numHospedes = form.num_hospedes ? parseInt(form.num_hospedes) : null;
 
     const { error } = await supabase.from("reservas").insert({
@@ -926,24 +929,22 @@ const Reservas: React.FC = () => {
 
     setEditSubmitting(true);
 
-    const isHistorical = editingReserva.percentual_comissao_aplicado == null;
+    const rateDefault = getRateForImovel(editForm.imovel_id);
     const taxaComissaoReserva = editForm.taxa_comissao_reserva !== "" ? parseFloat(editForm.taxa_comissao_reserva) : null;
-    
-    let rate: number;
-    if (taxaComissaoReserva !== null) {
-      rate = taxaComissaoReserva / 100;
-    } else if (isHistorical && editingReserva.valor_comissao_admin && editingReserva.valor_base_comissao) {
-      // Tenta inferir a taxa histórica para não usar a atual do imóvel
-      rate = editingReserva.valor_comissao_admin / editingReserva.valor_base_comissao;
-    } else {
-      rate = getRateForImovel(editForm.imovel_id);
-    }
+    const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
 
-    const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
-    const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
-    const comissaoPlataforma = editForm.comissao_plataforma ? parseFloat(editForm.comissao_plataforma) : null;
-    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido, rate);
+    const valorBruto = safeNum(editForm.valor_bruto);
+    const taxaLimpeza = safeNum(editForm.taxa_limpeza);
+    const comissaoPlataforma = safeNum(editForm.comissao_plataforma);
+
+    const financeiro = calcularFinanceiroReserva({
+      bruto: valorBruto,
+      limpeza: taxaLimpeza,
+      plataforma: comissaoPlataforma,
+      percentualAdm: rate
+    });
+
+    const { valorProprietario } = financeiro;
     const numHospedes = editForm.num_hospedes ? parseInt(editForm.num_hospedes) : null;
 
     const { error } = await supabase
