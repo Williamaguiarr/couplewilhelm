@@ -68,6 +68,7 @@ interface Proprietario {
   id: string;
   nome: string | null;
   email: string | null;
+  comissao_percentual?: number | null;
 }
 
 const NONE = "__none__";
@@ -123,7 +124,7 @@ const Imoveis: React.FC = () => {
     if (propIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, nome, email")
+        .select("id, nome, email, comissao_percentual")
         .in("id", propIds);
       setProprietarios(profiles || []);
     } else {
