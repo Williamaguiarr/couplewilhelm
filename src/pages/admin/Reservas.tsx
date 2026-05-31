@@ -1508,7 +1508,16 @@ const Reservas: React.FC = () => {
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           onClick={() => fetchLogs(r)} 
+                           className="h-8 w-8 hover:text-primary"
+                           title="Histórico Financeiro"
+                         >
+                           <History className="h-3.5 w-3.5" />
+                         </Button>
+                         <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="h-8 w-8 hover:text-destructive">
