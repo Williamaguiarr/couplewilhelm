@@ -1131,6 +1131,30 @@ const Reservas: React.FC = () => {
     setLoading(false);
   };
 
+  const fetchLogs = async (reserva: Reserva) => {
+    setLoadingLogs(true);
+    setSelectedReservaForLogs(reserva);
+    setLogsOpen(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("logs_financeiros_reservas")
+        .select(`
+          *,
+          profiles:usuario_id (nome)
+        `)
+        .eq("reserva_id", reserva.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setFinancialLogs(data || []);
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar logs", description: err.message, variant: "destructive" });
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   const semValoresCount = reservas.filter((r) => r.valor_bruto == null).length;
 
   const filteredReservas = reservas.filter((r) => {
