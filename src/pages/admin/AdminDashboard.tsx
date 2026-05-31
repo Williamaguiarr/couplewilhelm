@@ -65,6 +65,7 @@ import {
 interface Imovel {
   id: string;
   nome_imovel: string;
+  airbnb_title?: string | null;
   proprietario_id: string | null;
   proprietario_id_2: string | null;
   taxa_comissao: number | null;
@@ -386,12 +387,12 @@ const AdminDashboard: React.FC = () => {
   };
 
   const fetchDespesas = async () => {
-    const { data } = await supabase.from("despesas_extras" as any).select("*, imoveis(nome_imovel)").order("data", { ascending: false });
+    const { data } = await supabase.from("despesas_extras" as any).select("*, imoveis(nome_imovel, airbnb_title)").order("data", { ascending: false });
     setDespesas((data || []).map((d: any) => ({ ...d, imovel: Array.isArray(d.imoveis) ? d.imoveis[0] : d.imoveis })));
   };
 
   const fetchImoveis = async () => {
-    const { data } = await supabase.from("imoveis").select("id, nome_imovel, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel");
+    const { data } = await supabase.from("imoveis").select("id, nome_imovel, airbnb_title, proprietario_id, proprietario_id_2, taxa_comissao").order("nome_imovel");
     setImoveis(data || []);
   };
 
@@ -420,7 +421,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const mesNome = mesSelecionado === -1 ? "Acumulado" : MESES[mesSelecionado];
       const periodoLabel = `${mesNome} / ${anoSelecionado === -1 ? "Todos os Anos" : anoSelecionado}`;
-      const nomeProprietario = filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—";
+      const imovel = filterImovel !== "todos" ? imoveis.find(i => i.id === filterImovel) : null;
+      const nomeProprietario = imovel ? (imovel.airbnb_title || imovel.nome_imovel) : (filtroProprietario === "todos" ? "Todos os proprietários" : proprietarios.find(p => p.id === filtroProprietario)?.nome || "—");
       const { doc, palette, companyName, logoData, pageW, pageH } = await createPdfDoc(theme, "portrait");
       let y = drawHeader(doc, { title: "Visão Geral — Relatório Financeiro", subtitle: companyName, lines: [`Período: ${periodoLabel}`, `Proprietário: ${nomeProprietario}`, genTimestamp()], palette, logoData, companyName, pageW });
       y += 6;
