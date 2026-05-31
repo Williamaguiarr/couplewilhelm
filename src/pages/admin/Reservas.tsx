@@ -1117,7 +1117,8 @@ const Reservas: React.FC = () => {
             auditada_por: user?.id,
             valor_comissao_admin: comissaoTotal,
             valor_base_comissao: valorLiquidoBase,
-            valor_liquido_proprietario: repasseTotal
+            valor_liquido_proprietario: repasseTotal,
+            percentual_comissao_aplicado: (rate * 100)
           } as any)
           .eq("id", r.id);
         
