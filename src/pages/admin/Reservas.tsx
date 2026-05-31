@@ -1409,6 +1409,31 @@ const Reservas: React.FC = () => {
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(r.taxa_limpeza)}</TableCell>
                       <TableCell className="text-muted-foreground whitespace-nowrap">{fmt(comissaoTotal)}</TableCell>
                       <TableCell className="text-primary font-semibold whitespace-nowrap">{fmt(repasseTotal)}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAudit(r)}
+                          className={cn(
+                            "h-8 px-2 gap-1.5",
+                            r.auditada 
+                              ? "text-primary hover:text-primary hover:bg-primary/10" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {r.auditada ? (
+                            <>
+                              <ShieldCheck className="h-4 w-4" />
+                              <span className="text-[10px] font-medium uppercase tracking-wider">Sim</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShieldAlert className="h-4 w-4 opacity-50" />
+                              <span className="text-[10px] font-medium uppercase tracking-wider">Não</span>
+                            </>
+                          )}
+                        </Button>
+                      </TableCell>
                       <TableCell className="flex gap-1">
                         <Button 
                           variant="ghost" 
