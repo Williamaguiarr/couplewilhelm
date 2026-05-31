@@ -212,6 +212,27 @@ function extractTime(rawVal?: string): string | null {
   return null;
 }
 
+async function createSyncAlert(supabase: any, imovelId: string, plataforma: string, errorMsg: string) {
+  // Evitar duplicados recentes do mesmo erro
+  const { data: existing } = await supabase
+    .from("ical_sync_alerts")
+    .select("id")
+    .eq("imovel_id", imovelId)
+    .eq("plataforma", plataforma)
+    .is("reserva_id", null)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from("ical_sync_alerts").insert({
+      imovel_id: imovelId,
+      plataforma: plataforma,
+      mensagem_erro: errorMsg,
+      status: "pending"
+    });
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
