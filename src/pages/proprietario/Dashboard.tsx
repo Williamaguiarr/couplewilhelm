@@ -63,7 +63,7 @@ interface Reserva {
   valor_liquido_proprietario: number | null;
   observacoes: string | null;
   taxa_comissao_reserva: number | null;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
   auditada?: boolean;
   valor_comissao_admin?: number | null;
   valor_base_comissao?: number | null;
@@ -76,7 +76,7 @@ interface DespesaExtra {
   valor: number;
   data: string;
   tipo: string;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
 }
 
 interface GanhoExtra {
@@ -89,7 +89,7 @@ interface GanhoExtra {
   tipo: string;
   regime_comissao?: string;
   aplicar_comissao: boolean;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
   reservas?: { data_fim: string } | null;
 }
 
@@ -835,7 +835,7 @@ const ProprietarioDashboard: React.FC = () => {
                             const f = calcFinanceiro(r, comissaoRate, getRateForImovel);
                             return (
                               <TableRow key={r.id} className="border-border hover:bg-muted/20">
-                                <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.nome_imovel ?? "—"}</TableCell>
+                                <TableCell className="text-foreground font-medium text-sm py-3 whitespace-nowrap">{r.imovel?.airbnb_title || r.imovel?.nome_imovel || "—"}</TableCell>
                                 <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{new Date(r.data_inicio + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                                 <TableCell className="text-muted-foreground text-sm py-3 whitespace-nowrap">{new Date(r.data_fim + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
                                 <TableCell className="text-muted-foreground text-sm text-right py-3 whitespace-nowrap">{fmt(f.bruto)}</TableCell>

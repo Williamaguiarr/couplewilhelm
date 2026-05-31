@@ -84,7 +84,7 @@ interface DespesaExtra {
   valor: number;
   data: string;
   tipo: string;
-  imovel?: { nome_imovel: string };
+  imovel?: { nome_imovel: string, airbnb_title?: string | null };
 }
 
 const fmt = (v: number) =>
