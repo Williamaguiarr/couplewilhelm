@@ -1047,9 +1047,10 @@ const ProprietarioDashboard: React.FC = () => {
                             </div>
                             <div className="bg-muted/20 rounded-lg p-2.5 space-y-1.5 text-xs">
                               <FinRow label="Valor bruto" value={fmt(f.bruto)} />
-                              <FinRow label="Taxa de limpeza" value={`- ${fmt(f.limpeza)}`} />
+                              {f.limpeza > 0 && <FinRow label="Taxa de limpeza" value={`- ${fmt(f.limpeza)}`} />}
+                              {f.plataforma > 0 && <FinRow label="Comissão OTA" value={`- ${fmt(f.plataforma)}`} />}
                               <div className="border-t border-border pt-1.5">
-                                <FinRow label="Valor líquido" value={fmt(f.bruto - f.limpeza)} />
+                                <FinRow label="Valor líquido" value={fmt(f.liquido)} />
                               </div>
                               <FinRow label={`Comissão ${nomeAdmin} (${pctLabel})`} value={`- ${fmt(f.comissao)}`} />
                               <div className="border-t border-border pt-1.5">
