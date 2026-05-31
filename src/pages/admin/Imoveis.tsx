@@ -311,10 +311,12 @@ const Imoveis: React.FC = () => {
   };
 
   const handleAirbnbSync = async (imovelId?: string, isBulk: boolean = false) => {
-    if (!isBulk && !imovelId) return;
+    // If not bulk and no id, check if we have a link in the form (for preview)
+    if (!isBulk && !imovelId && !form.airbnb_link) return;
     
     if (isBulk) setBulkSyncing(true);
     else if (imovelId) setSyncingAirbnbId(imovelId);
+    else setSyncingAirbnbId("new"); // Indicates syncing for a new/unsaved property
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -330,6 +332,7 @@ const Imoveis: React.FC = () => {
           },
           body: JSON.stringify({ 
             imovel_id: isBulk ? undefined : imovelId,
+            airbnb_link: (!isBulk && !imovelId) ? form.airbnb_link : undefined,
             bulk: isBulk 
           }),
         }
@@ -352,18 +355,14 @@ const Imoveis: React.FC = () => {
       } else {
         const item = result.results?.[0];
         if (item?.status === "success") {
-          toast({ title: "Dados do Airbnb atualizados!" });
-          // If we are editing, update the form
-          if (editId === imovelId) {
-            const { data: updated } = await supabase.from("imoveis").select("airbnb_title, airbnb_image_url").eq("id", imovelId).single();
-            if (updated) {
-              setForm(prev => ({
-                ...prev,
-                airbnb_title: updated.airbnb_title || prev.airbnb_title,
-                airbnb_image_url: updated.airbnb_image_url || prev.airbnb_image_url,
-              }));
-            }
-          }
+          toast({ title: "Dados do Airbnb obtidos com sucesso!" });
+          
+          // Always update form state with the fetched data
+          setForm(prev => ({
+            ...prev,
+            airbnb_title: item.title || prev.airbnb_title,
+            airbnb_image_url: item.image || prev.airbnb_image_url,
+          }));
         } else {
           toast({ 
             title: "Falha na sincronização", 
@@ -373,7 +372,9 @@ const Imoveis: React.FC = () => {
         }
       }
 
-      fetchData();
+      if (imovelId || isBulk) {
+        fetchData();
+      }
     } catch (err: any) {
       toast({ title: "Erro na sincronização Airbnb", description: err.message, variant: "destructive" });
     } finally {
@@ -660,16 +661,16 @@ const Imoveis: React.FC = () => {
                         ANÚNCIO AIRBNB
                       </span>
                     </div>
-                    {editId && form.airbnb_link && (
+                    {form.airbnb_link && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="h-6 text-[10px] px-2 gap-1"
-                        onClick={() => handleAirbnbSync(editId)}
-                        disabled={syncingAirbnbId === editId}
+                        onClick={() => handleAirbnbSync(editId || undefined)}
+                        disabled={!!syncingAirbnbId}
                       >
-                        <RefreshCw className={`h-3 w-3 ${syncingAirbnbId === editId ? "animate-spin" : ""}`} />
+                        <RefreshCw className={`h-3 w-3 ${syncingAirbnbId ? "animate-spin" : ""}`} />
                         Sincronizar
                       </Button>
                     )}
