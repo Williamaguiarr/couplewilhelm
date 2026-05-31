@@ -849,11 +849,14 @@ const Reservas: React.FC = () => {
     const taxaComissaoReserva = form.taxa_comissao_reserva !== "" ? parseFloat(form.taxa_comissao_reserva) : null;
     const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
 
-    const valorBruto = form.valor_bruto ? parseFloat(form.valor_bruto) : null;
-    const taxaLimpeza = form.taxa_limpeza ? parseFloat(form.taxa_limpeza) : null;
-    const comissaoPlataforma = form.comissao_plataforma ? parseFloat(form.comissao_plataforma) : null;
-    const valorLiquido = calcValorLiquido(valorBruto, taxaLimpeza, comissaoPlataforma ?? 0);
-    const valorProprietario = calcValorProprietario(valorLiquido, rate);
+    const financeiro = calcularFinanceiroReserva({
+      bruto: safeNum(form.valor_bruto),
+      limpeza: safeNum(form.taxa_limpeza),
+      plataforma: safeNum(form.comissao_plataforma),
+      percentualAdm: rate
+    });
+    
+    const { valorProprietario } = financeiro;
 
     const numHospedes = form.num_hospedes ? parseInt(form.num_hospedes) : null;
 
