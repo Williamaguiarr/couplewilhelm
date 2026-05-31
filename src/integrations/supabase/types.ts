@@ -497,6 +497,7 @@ export type Database = {
       }
       reservas: {
         Row: {
+          codigo_reserva: string | null
           comissao_plataforma: number | null
           created_at: string | null
           data_fim: string
@@ -510,6 +511,8 @@ export type Database = {
           num_hospedes: number | null
           observacoes: string | null
           plataforma_origem: string | null
+          reserva_url: string | null
+          status_reserva: string | null
           taxa_comissao_reserva: number | null
           taxa_limpeza: number | null
           validada_financeiramente: boolean
@@ -517,6 +520,7 @@ export type Database = {
           valor_liquido_proprietario: number | null
         }
         Insert: {
+          codigo_reserva?: string | null
           comissao_plataforma?: number | null
           created_at?: string | null
           data_fim: string
@@ -530,6 +534,8 @@ export type Database = {
           num_hospedes?: number | null
           observacoes?: string | null
           plataforma_origem?: string | null
+          reserva_url?: string | null
+          status_reserva?: string | null
           taxa_comissao_reserva?: number | null
           taxa_limpeza?: number | null
           validada_financeiramente?: boolean
@@ -537,6 +543,7 @@ export type Database = {
           valor_liquido_proprietario?: number | null
         }
         Update: {
+          codigo_reserva?: string | null
           comissao_plataforma?: number | null
           created_at?: string | null
           data_fim?: string
@@ -550,6 +557,8 @@ export type Database = {
           num_hospedes?: number | null
           observacoes?: string | null
           plataforma_origem?: string | null
+          reserva_url?: string | null
+          status_reserva?: string | null
           taxa_comissao_reserva?: number | null
           taxa_limpeza?: number | null
           validada_financeiramente?: boolean
