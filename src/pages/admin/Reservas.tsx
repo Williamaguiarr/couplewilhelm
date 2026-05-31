@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles, ShieldCheck, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles, ShieldCheck, ShieldAlert, CheckCircle2, History } from "lucide-react";
 import GanhosExtrasDialog from "@/components/reservas/GanhosExtrasDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -78,6 +78,7 @@ interface Reserva {
   auditada_por?: string | null;
   valor_comissao_admin?: number | null;
   valor_base_comissao?: number | null;
+  percentual_comissao_aplicado?: number | null;
 }
 
 interface Imovel {
@@ -284,9 +285,12 @@ const ReservaFormFields = ({
 }) => {
   const conflitos = detectarConflitosReserva(form, imoveis, reservas, editingId);
   const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
+  
+  // No snapshot mode, we prefer the recorded rate if it exists
+  const snapshotRate = (form as any).percentual_comissao_aplicado;
   const comissaoEffective = comissaoPersonalizadaStr !== "" 
     ? parseFloat(comissaoPersonalizadaStr) / 100 
-    : comissaoRate;
+    : (snapshotRate != null ? snapshotRate / 100 : comissaoRate);
 
   const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
   const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
@@ -482,6 +486,16 @@ const ReservaFormFields = ({
             <Label className="text-muted-foreground">Comissão ADM (%)</Label>
             {(() => {
               const im = imoveis.find(i => i.id === form.imovel_id);
+              const snapshot = (form as any).percentual_comissao_aplicado;
+              
+              if (snapshot != null) {
+                return (
+                  <Badge variant="outline" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/30">
+                    {snapshot}% (Snapshot)
+                  </Badge>
+                );
+              }
+              
               if (form.taxa_comissao_reserva === "" && im) {
                 const source = im.taxa_comissao != null ? "imóvel" : "proprietário";
                 const rate = im.taxa_comissao != null ? im.taxa_comissao : (comissaoRate * 100);
@@ -893,7 +907,8 @@ const Reservas: React.FC = () => {
       num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
       hora_checkin_override: r.hora_checkin_override ? r.hora_checkin_override.slice(0, 5) : "",
       hora_checkout_override: r.hora_checkout_override ? r.hora_checkout_override.slice(0, 5) : "",
-    });
+      percentual_comissao_aplicado: r.percentual_comissao_aplicado,
+    } as any);
     setEditOpen(true);
   };
 
