@@ -784,12 +784,16 @@ const Reservas: React.FC = () => {
     setReservas(
       (reservasData || []).map((r: any) => ({ 
         ...r, 
-        imovel: r.imoveis,
+        imovel: Array.isArray(r.imoveis) ? r.imoveis[0] : r.imoveis,
         ganhos_extras: ganhosPorReserva[r.id] || []
       }))
     );
     setImoveis(imoveisData || []);
-    setSyncAlerts(alertsData || []);
+    setSyncAlerts((alertsData || []).map((a: any) => ({
+      ...a,
+      imoveis: Array.isArray(a.imoveis) ? a.imoveis[0] : a.imoveis,
+      reservas: Array.isArray(a.reservas) ? a.reservas[0] : a.reservas
+    })));
 
     // Buscar comissão do admin como fallback
     if (user) {
