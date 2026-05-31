@@ -1366,7 +1366,7 @@ const Reservas: React.FC = () => {
                     <TableRow key={r.id} className={cn("border-border hover:bg-muted/30", semValores && "bg-warning/5 hover:bg-warning/10")}>
                       <TableCell className="text-foreground font-medium">
                         <div className="flex items-center gap-2 flex-wrap">
-                          {r.auditada && <ShieldCheck className="h-4 w-4 text-primary shrink-0" title="Reserva Auditada e Congelada" />}
+                          {r.auditada && <ShieldCheck className="h-4 w-4 text-primary shrink-0" />}
                           {r.imovel?.nome_imovel || "—"}
                           {aguardandoValidacao ? (
                             <Badge
