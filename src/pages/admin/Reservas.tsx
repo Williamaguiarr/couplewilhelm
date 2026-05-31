@@ -296,6 +296,18 @@ const ReservaFormFields = ({
 
   return (
     <>
+      {isAudited && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 p-3 flex items-start gap-2.5 mb-2">
+          <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-primary">Reserva Auditada</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Esta reserva está congelada. Para alterar valores financeiros, você deve primeiro remover a auditoria na listagem.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label className="text-muted-foreground">Imóvel</Label>
         <Select value={form.imovel_id} onValueChange={(v) => setForm({ ...form, imovel_id: v })}>
@@ -320,6 +332,8 @@ const ReservaFormFields = ({
             value={form.data_inicio}
             onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
             required
+            disabled={isAudited}
+            disabled={isAudited}
             className="bg-background"
           />
         </div>
@@ -435,6 +449,8 @@ const ReservaFormFields = ({
           <CurrencyInput
             value={form.valor_bruto}
             onChange={(v) => setForm({ ...form, valor_bruto: v })}
+            disabled={isAudited}
+            disabled={isAudited}
             className="bg-background"
           />
         </div>
@@ -443,8 +459,9 @@ const ReservaFormFields = ({
           <CurrencyInput
             value={form.taxa_limpeza}
             onChange={(v) => setForm({ ...form, taxa_limpeza: v })}
-            className="bg-background"
-          />
+          disabled={isAudited}
+          className="bg-background"
+        />
         </div>
       </div>
 
@@ -494,6 +511,7 @@ const ReservaFormFields = ({
             value={form.taxa_comissao_reserva}
             onChange={(e) => setForm({ ...form, taxa_comissao_reserva: e.target.value })}
             placeholder="Padrão do imóvel/prop"
+            disabled={isAudited}
             className="bg-background"
           />
         </div>
