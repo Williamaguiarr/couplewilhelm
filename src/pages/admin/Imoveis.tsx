@@ -789,10 +789,11 @@ const Imoveis: React.FC = () => {
             <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Imóvel</TableHead>
+                  <TableHead className="w-[100px]">Capa</TableHead>
+                  <TableHead>Anúncio Airbnb</TableHead>
                   <TableHead>Endereço</TableHead>
                   <TableHead>Proprietário(s)</TableHead>
-                  <TableHead>iCal</TableHead>
+                  <TableHead>Plataformas</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
