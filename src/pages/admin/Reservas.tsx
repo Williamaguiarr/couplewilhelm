@@ -272,10 +272,14 @@ const ReservaFormFields = ({
     ? parseFloat(comissaoPersonalizadaStr) / 100 
     : (snapshotRate != null ? snapshotRate / 100 : comissaoRate);
 
-  const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
-  const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
-  const comissao = calcComissao(valorLiquido, comissaoEffective);
-  const valorProprietario = calcValorProprietario(valorLiquido, comissaoEffective);
+  const financeiro = calcularFinanceiroReserva({
+    bruto: safeNum(form.valor_bruto),
+    limpeza: safeNum(form.taxa_limpeza),
+    plataforma: safeNum(form.comissao_plataforma),
+    percentualAdm: comissaoEffective
+  });
+  
+  const { baseComissao, comissaoAdm, valorProprietario } = financeiro;
   const pct = Math.round(comissaoEffective * 100);
 
   return (
