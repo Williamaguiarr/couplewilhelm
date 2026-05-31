@@ -310,6 +310,78 @@ const Imoveis: React.FC = () => {
     setDeleteSubmitting(false);
   };
 
+  const handleAirbnbSync = async (imovelId?: string, isBulk: boolean = false) => {
+    if (!isBulk && !imovelId) return;
+    
+    if (isBulk) setBulkSyncing(true);
+    else if (imovelId) setSyncingAirbnbId(imovelId);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/airbnb-sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({ 
+            imovel_id: isBulk ? undefined : imovelId,
+            bulk: isBulk 
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Erro ao sincronizar dados do Airbnb");
+      }
+
+      const successCount = result.results?.filter((r: any) => r.status === "success").length || 0;
+      const failedCount = result.results?.filter((r: any) => r.status === "failed" || r.status === "error").length || 0;
+
+      if (isBulk) {
+        toast({
+          title: "Sincronização em massa concluída",
+          description: `${successCount} anúncio(s) atualizado(s) com sucesso. ${failedCount > 0 ? `${failedCount} falha(s).` : ""}`,
+        });
+      } else {
+        const item = result.results?.[0];
+        if (item?.status === "success") {
+          toast({ title: "Dados do Airbnb atualizados!" });
+          // If we are editing, update the form
+          if (editId === imovelId) {
+            const { data: updated } = await supabase.from("imoveis").select("airbnb_title, airbnb_image_url").eq("id", imovelId).single();
+            if (updated) {
+              setForm(prev => ({
+                ...prev,
+                airbnb_title: updated.airbnb_title || prev.airbnb_title,
+                airbnb_image_url: updated.airbnb_image_url || prev.airbnb_image_url,
+              }));
+            }
+          }
+        } else {
+          toast({ 
+            title: "Falha na sincronização", 
+            description: item?.error || "Não foi possível obter os dados do Airbnb.",
+            variant: "destructive" 
+          });
+        }
+      }
+
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro na sincronização Airbnb", description: err.message, variant: "destructive" });
+    } finally {
+      setBulkSyncing(false);
+      setSyncingAirbnbId(null);
+    }
+  };
+
   const handleSync = async (imovel: Imovel) => {
     if (!imovel.ical_url_airbnb && !imovel.ical_url_booking) {
       toast({ title: "Nenhuma URL iCal configurada", variant: "destructive" });
