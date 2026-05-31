@@ -456,7 +456,29 @@ const ReservaFormFields = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Comissão ADM (%)</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-muted-foreground">Comissão ADM (%)</Label>
+            {(() => {
+              const im = imoveis.find(i => i.id === form.imovel_id);
+              if (form.taxa_comissao_reserva === "" && im) {
+                const source = im.taxa_comissao != null ? "imóvel" : "proprietário";
+                const rate = im.taxa_comissao != null ? im.taxa_comissao : (comissaoRate * 100);
+                return (
+                  <Badge variant="outline" className="text-[10px] h-5 bg-primary/5 text-primary border-primary/20">
+                    {rate}% ({source})
+                  </Badge>
+                );
+              }
+              if (form.taxa_comissao_reserva !== "") {
+                return (
+                  <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/5 text-amber-600 border-amber-500/20">
+                    Personalizada
+                  </Badge>
+                );
+              }
+              return null;
+            })()}
+          </div>
           <Input
             type="number"
             step="0.1"
@@ -464,7 +486,7 @@ const ReservaFormFields = ({
             max="100"
             value={form.taxa_comissao_reserva}
             onChange={(e) => setForm({ ...form, taxa_comissao_reserva: e.target.value })}
-            placeholder="Comissão padrão"
+            placeholder="Padrão do imóvel/prop"
             className="bg-background"
           />
         </div>

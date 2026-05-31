@@ -68,6 +68,7 @@ interface Proprietario {
   id: string;
   nome: string | null;
   email: string | null;
+  comissao_percentual?: number | null;
 }
 
 const NONE = "__none__";
@@ -123,7 +124,7 @@ const Imoveis: React.FC = () => {
     if (propIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, nome, email")
+        .select("id, nome, email, comissao_percentual")
         .in("id", propIds);
       setProprietarios(profiles || []);
     } else {
@@ -403,7 +404,27 @@ const Imoveis: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Taxa de Comissão (%)</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-muted-foreground">Taxa de Comissão (%)</Label>
+                    {(() => {
+                      const prop = proprietarios.find(p => p.id === form.proprietario_id);
+                      if (form.taxa_comissao === "" && prop) {
+                        return (
+                          <Badge variant="outline" className="text-[10px] h-5 bg-primary/5 text-primary border-primary/20">
+                            Herdando {prop.comissao_percentual ?? 25}% do proprietário
+                          </Badge>
+                        );
+                      }
+                      if (form.taxa_comissao !== "" && prop) {
+                        return (
+                          <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/5 text-amber-600 border-amber-500/20">
+                            Exceção: usando {form.taxa_comissao}%
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                   <Input
                     type="number"
                     step="0.1"
@@ -411,9 +432,12 @@ const Imoveis: React.FC = () => {
                     max="100"
                     value={form.taxa_comissao}
                     onChange={(e) => setForm({ ...form, taxa_comissao: e.target.value })}
-                    placeholder="Ex: 25 (deixe vazio para usar a taxa do proprietário)"
+                    placeholder="Ex: 25 (deixe vazio para herdar)"
                     className="bg-background"
                   />
+                  <p className="text-[11px] text-muted-foreground">
+                    Se vazio, utiliza o percentual definido no cadastro do proprietário.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Endereço</Label>
