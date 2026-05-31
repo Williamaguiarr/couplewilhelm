@@ -936,9 +936,18 @@ const Reservas: React.FC = () => {
 
     setEditSubmitting(true);
 
-    const rateDefault = getRateForImovel(editForm.imovel_id);
+    const isHistorical = editingReserva.percentual_comissao_aplicado == null;
     const taxaComissaoReserva = editForm.taxa_comissao_reserva !== "" ? parseFloat(editForm.taxa_comissao_reserva) : null;
-    const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
+    
+    let rate: number;
+    if (taxaComissaoReserva !== null) {
+      rate = taxaComissaoReserva / 100;
+    } else if (isHistorical && editingReserva.valor_comissao_admin && editingReserva.valor_base_comissao) {
+      // Tenta inferir a taxa histórica para não usar a atual do imóvel
+      rate = editingReserva.valor_comissao_admin / editingReserva.valor_base_comissao;
+    } else {
+      rate = getRateForImovel(editForm.imovel_id);
+    }
 
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
