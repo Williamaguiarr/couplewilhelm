@@ -374,6 +374,7 @@ Deno.serve(async (req) => {
                 reserva_id: res.id,
                 imovel_id: imovel.id,
                 plataforma: source,
+                mensagem_erro: "Reserva futura não encontrada no iCal (possível cancelamento)",
                 status: "pending"
               });
             }
