@@ -1,75 +1,22 @@
-## Visão Operacional — Check-ins / Check-outs no Calendário
+# Gerar Relatório em Word e PDF para Download
 
-Adicionar uma nova visão dentro de `/admin/calendario` para a equipe de limpeza e logística, separada da visão atual de Ocupação.
+## Problema
+O relatório anterior foi criado apenas como `RELATORIO_DIAGNOSTICO_AUDITORIA.md` dentro do código-fonte do projeto, não como arquivo baixável. Por isso você não encontrou o arquivo.
 
-### Estrutura da página
+## O que vou fazer
+1. Gerar `RELATORIO_DIAGNOSTICO_AUDITORIA.docx` (Word) em `/mnt/documents/` usando a biblioteca `docx`, com formatação profissional (títulos, tabelas de prioridade/impacto, listas).
+2. Converter para `RELATORIO_DIAGNOSTICO_AUDITORIA.pdf` via LibreOffice, também em `/mnt/documents/`.
+3. Validar visualmente as páginas geradas (QA de layout, tabelas e quebras).
+4. Disponibilizar ambos os arquivos como artefatos clicáveis para download direto no chat.
 
-Tabs no topo:
-- **Ocupação** (atual, mantida intacta)
-- **Operacional** (nova)
+## Conteúdo
+Mesmo conteúdo já aprovado do `RELATORIO_DIAGNOSTICO_AUDITORIA.md`:
+- Sumário Executivo
+- Análise por Módulo (Reservas, Financeiro, Banco/Segurança)
+- Diagnóstico de Problemas e Riscos (tabelas com Prioridade e Impacto)
+- Recomendações de Curto e Longo Prazo
+- Conclusão
 
-### Banco de dados
-
-Adicionar tabela `limpezas` para rastrear status de limpeza por reserva (atrelada à data de checkout):
-
-```text
-limpezas
-- id
-- reserva_id (uuid)
-- imovel_id (uuid)
-- data_limpeza (date) — normalmente = data_fim da reserva
-- status (text: 'pendente' | 'concluida')
-- responsavel (text, nullable)
-- observacoes (text, nullable)
-- concluida_em (timestamptz, nullable)
-- created_at / updated_at
-```
-
-RLS:
-- Master: tudo
-- Admin (ativo): tudo nos imóveis dele
-- Proprietário: SELECT nos imóveis dele
-
-Índice em `(imovel_id, data_limpeza)`.
-
-### Visão Operacional — UI
-
-**Resumo do dia (cards no topo):**
-- Check-ins hoje
-- Check-outs hoje
-- Total de hóspedes do dia
-- Limpezas pendentes
-
-**Seletor de período:** Hoje | Amanhã | Próximos 7 dias | Data específica
-
-**Filtros:** Imóvel · Tipo (check-in/check-out) · Status da limpeza
-
-**Lista agrupada por dia**, cada card de evento mostra:
-- Imóvel · Hóspede · Nº hóspedes · Plataforma
-- Horário check-in/out (vem de `imoveis.checkin_horario`/`checkout_horario` se existir, senão padrão 15h/11h)
-- Badge de tipo: verde (check-in) / vermelho (check-out)
-- Badge de limpeza: amarelo (pendente) / azul (concluída) — só em check-outs
-- Indicador "muitos hóspedes" quando `num_hospedes >= 5`
-- Botões: Marcar limpeza concluída · Atribuir responsável · Adicionar observação (dialog)
-
-**Modo calendário compacto (toggle):** mini grid mensal com badges de entradas/saídas por dia e tooltip com detalhes.
-
-**Mobile:** lista vertical compacta, cards densos, ações em sheet.
-
-Visual seguindo o tema premium (Marinho/Dourado, Playfair/Inter), tokens semânticos apenas.
-
-### Arquivos
-
-- `supabase/migrations/...` — tabela `limpezas` + RLS + índice
-- `src/pages/admin/Calendario.tsx` — Tabs Ocupação / Operacional
-- `src/components/calendario/VisaoOperacional.tsx` — nova visão
-- `src/components/calendario/EventoCard.tsx` — card de evento
-- `src/components/calendario/LimpezaDialog.tsx` — editar limpeza
-- `src/components/calendario/ResumoDia.tsx` — cards de KPI
-- `src/components/calendario/MiniCalendario.tsx` — modo grid compacto
-
-### Notas técnicas
-
-- Limpezas são geradas/garantidas no carregamento via `upsert` por `reserva_id` para reservas com checkout no período visível (auto-criação preguiçosa, evita backfill pesado).
-- `num_hospedes` e `nome_hospede` vêm de `reservas`; já existem.
-- Plataforma detectada via `plataforma_origem` (preferencial) ou prefixo em `observacoes` (compatibilidade com lógica atual).
+## Fora do escopo
+- Nenhuma alteração no código do sistema, banco de dados ou regras de negócio.
+- Apenas geração de documento para estudo offline.
