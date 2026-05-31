@@ -333,7 +333,6 @@ const ReservaFormFields = ({
             onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
             required
             disabled={isAudited}
-            disabled={isAudited}
             className="bg-background"
           />
         </div>
@@ -449,7 +448,6 @@ const ReservaFormFields = ({
           <CurrencyInput
             value={form.valor_bruto}
             onChange={(v) => setForm({ ...form, valor_bruto: v })}
-            disabled={isAudited}
             disabled={isAudited}
             className="bg-background"
           />
