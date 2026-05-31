@@ -387,7 +387,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchDespesas = async () => {
     const { data } = await supabase.from("despesas_extras" as any).select("*, imoveis(nome_imovel)").order("data", { ascending: false });
-    setDespesas((data || []).map((d: any) => ({ ...d, imovel: d.imoveis })));
+    setDespesas((data || []).map((d: any) => ({ ...d, imovel: Array.isArray(d.imoveis) ? d.imoveis[0] : d.imoveis })));
   };
 
   const fetchImoveis = async () => {
