@@ -1470,27 +1470,36 @@ const Reservas: React.FC = () => {
                     ? r.percentual_comissao_aplicado / 100 
                     : (r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault);
                   
-                  const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+                  const financeiro = calcularFinanceiroReserva({
+                    bruto: safeNum(r.valor_bruto),
+                    limpeza: safeNum(r.taxa_limpeza),
+                    plataforma: safeNum(r.comissao_plataforma),
+                    percentualAdm: rateForRow
+                  });
                   
+                  // Se a reserva já estiver auditada, usamos os valores congelados do banco
+                  const isAuditada = !!r.auditada;
+                  const valorComissaoFinal = isAuditada ? (r.valor_comissao_admin ?? 0) : financeiro.comissaoAdm;
+                  const valorProprietarioFinal = isAuditada ? (r.valor_liquido_proprietario ?? 0) : financeiro.valorProprietario;
+
                   // Calcular valor dos ganhos extras vinculados
                   const totalGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => acc + (g.valor || 0), 0);
-                  const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+                  const repasseGanhosExtras = isAuditada ? 0 : (r.ganhos_extras || []).reduce((acc: number, g: any) => {
                     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
                     if (regime === "com_comissao") return acc + (g.valor * (1 - rateForRow));
                     if (regime === "sem_comissao") return acc + g.valor;
                     return acc; // exclusivo_adm = 0 repasse
                   }, 0);
 
-                  const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+                  const comissaoGanhosExtras = isAuditada ? 0 : (r.ganhos_extras || []).reduce((acc: number, g: any) => {
                     const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
                     if (regime === "com_comissao") return acc + (g.valor * rateForRow);
                     if (regime === "exclusivo_adm") return acc + g.valor;
                     return acc; // sem_comissao = 0 comissão
                   }, 0);
 
-                  const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rateForRow : 0) + comissaoGanhosExtras;
-                  const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rateForRow) : 0;
-                  const repasseTotal = valorPropBase + repasseGanhosExtras;
+                  const comissaoTotal = valorComissaoFinal + comissaoGanhosExtras;
+                  const repasseTotal = valorProprietarioFinal + repasseGanhosExtras;
                   
                   const semValores = r.valor_bruto == null;
                   const isIcal = r.plataforma_origem === "airbnb" || r.plataforma_origem === "booking";
