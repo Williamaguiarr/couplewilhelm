@@ -1014,38 +1014,59 @@ const Reservas: React.FC = () => {
     }
 
     try {
-      const rateDefault = getRateForImovel(r.imovel_id);
-      const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
-      
-      const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-      const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
-        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-        if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
-        if (regime === "exclusivo_adm") return acc + (g.valor || 0);
-        return acc;
-      }, 0);
+      const isHistorical = r.percentual_comissao_aplicado == null;
+      let updatePayload: any = {
+        auditada: isAuditing,
+        auditada_em: isAuditing ? new Date().toISOString() : null,
+        auditada_por: isAuditing ? user?.id : null,
+      };
 
-      const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
-      const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
-      const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
-        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-        if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
-        if (regime === "sem_comissao") return acc + (g.valor || 0);
-        return acc;
-      }, 0);
-      const repasseTotal = valorPropBase + repasseGanhosExtras;
+      if (isAuditing) {
+        if (isHistorical) {
+          // Para reservas históricas, congela exatamente o que já existe
+          updatePayload = {
+            ...updatePayload,
+            valor_comissao_admin: r.valor_comissao_admin,
+            valor_base_comissao: r.valor_base_comissao || (calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0)),
+            valor_liquido_proprietario: r.valor_liquido_proprietario,
+            percentual_comissao_aplicado: r.taxa_comissao_reserva || (r.valor_comissao_admin && r.valor_base_comissao ? (r.valor_comissao_admin / r.valor_base_comissao * 100) : 25)
+          };
+        } else {
+          // Para reservas com snapshot já existente ou novas, segue o cálculo padrão
+          const rateDefault = getRateForImovel(r.imovel_id);
+          const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+          const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+          
+          const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+            if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+            return acc;
+          }, 0);
+
+          const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+          const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+          const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+            if (regime === "sem_comissao") return acc + (g.valor || 0);
+            return acc;
+          }, 0);
+          const repasseTotal = valorPropBase + repasseGanhosExtras;
+
+          updatePayload = {
+            ...updatePayload,
+            valor_comissao_admin: comissaoTotal,
+            valor_base_comissao: valorLiquidoBase,
+            valor_liquido_proprietario: repasseTotal,
+            percentual_comissao_aplicado: (rate * 100)
+          };
+        }
+      }
 
       const { error } = await supabase
         .from("reservas")
-        .update({
-          auditada: isAuditing,
-          auditada_em: isAuditing ? new Date().toISOString() : null,
-          auditada_por: isAuditing ? user?.id : null,
-          valor_comissao_admin: isAuditing ? comissaoTotal : null,
-          valor_base_comissao: isAuditing ? valorLiquidoBase : null,
-          valor_liquido_proprietario: isAuditing ? repasseTotal : r.valor_liquido_proprietario,
-          percentual_comissao_aplicado: isAuditing ? (rate * 100) : null
-        } as any)
+        .update(updatePayload)
         .eq("id", r.id);
 
       if (error) throw error;
