@@ -461,21 +461,32 @@ const Imoveis: React.FC = () => {
             <h1 className="font-display text-2xl sm:text-3xl text-foreground">Imóveis</h1>
             <p className="text-muted-foreground mt-1 text-sm">Gerencie os imóveis da carteira</p>
           </div>
-          <Dialog
-            open={open}
-            onOpenChange={(v) => {
-              setOpen(v);
-              if (!v) {
-                setEditId(null);
-                resetForm();
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" /> Novo Imóvel
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAirbnbSync(undefined, true)}
+              disabled={bulkSyncing}
+              className="hidden sm:flex gap-2 h-10"
+            >
+              <RefreshCw className={`h-4 w-4 ${bulkSyncing ? "animate-spin" : ""}`} />
+              Sincronizar Airbnb
+            </Button>
+            <Dialog
+              open={open}
+              onOpenChange={(v) => {
+                setOpen(v);
+                if (!v) {
+                  setEditId(null);
+                  resetForm();
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button className="gap-2 h-10">
+                  <Plus className="h-4 w-4" /> Novo Imóvel
+                </Button>
+              </DialogTrigger>
             <DialogContent className="bg-card border-border max-w-xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-xl text-foreground">
