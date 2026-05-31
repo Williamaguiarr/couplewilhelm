@@ -423,12 +423,15 @@ Deno.serve(async (req) => {
           // Tentar encontrar por ical_uid primeiro (mais preciso)
           const { data: existingByUid } = await supabase
             .from("reservas")
-            .select("id, data_inicio, data_fim, nome_hospede, num_hospedes, codigo_reserva, reserva_url")
+            .select("id, data_inicio, data_fim, nome_hospede, num_hospedes, codigo_reserva, reserva_url, auditada")
             .eq("imovel_id", imovel.id)
             .eq("ical_uid", event.uid)
             .maybeSingle();
 
           if (existingByUid) {
+            // Se já está auditada, não alteramos NADA via iCal (nem financeiro nem datas/nomes)
+            if (existingByUid.auditada) continue;
+
             // Verificar se houve mudanças reais
             const hasChanged = 
               existingByUid.data_inicio !== event.dtstart || 
@@ -454,7 +457,7 @@ Deno.serve(async (req) => {
             // Fallback por datas se não tiver UID (retrocompatibilidade ou mudança de UID)
             const { data: existingByDates } = await supabase
               .from("reservas")
-              .select("id")
+              .select("id, auditada")
               .eq("imovel_id", imovel.id)
               .eq("data_inicio", event.dtstart)
               .eq("data_fim", event.dtend)
@@ -468,8 +471,10 @@ Deno.serve(async (req) => {
                 result.synced++;
               }
             } else {
-              // Se achou por data mas não tinha UID, atualiza com o UID
-              await supabase.from("reservas").update({ ical_uid: event.uid }).eq("id", existingByDates.id);
+              // Se achou por data mas não tinha UID, atualiza com o UID (se não estiver auditada)
+              if (!existingByDates.auditada) {
+                await supabase.from("reservas").update({ ical_uid: event.uid }).eq("id", existingByDates.id);
+              }
             }
           }
         }
