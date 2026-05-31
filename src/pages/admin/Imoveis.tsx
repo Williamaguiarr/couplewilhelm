@@ -54,6 +54,10 @@ interface Imovel {
   ical_url_airbnb: string | null;
   ical_url_booking: string | null;
   ical_last_sync: string | null;
+  airbnb_link: string | null;
+  airbnb_title: string | null;
+  airbnb_image_url: string | null;
+  last_airbnb_sync: string | null;
   taxa_comissao: number | null;
   hora_checkin: string | null;
   hora_checkout: string | null;
