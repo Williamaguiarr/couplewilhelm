@@ -12,6 +12,8 @@ interface ICalEvent {
   dtend: string;
   summary: string;
   description: string;
+  raw_dtstart?: string;
+  raw_dtend?: string;
 }
 
 // Parse iCal text and return array of events
@@ -55,8 +57,14 @@ function parseICal(text: string): ICalEvent[] {
       const propName = propFull.split(";")[0];
 
       if (propName === "UID") current.uid = value;
-      else if (propName === "DTSTART") current.dtstart = parseICalDate(value);
-      else if (propName === "DTEND") current.dtend = parseICalDate(value);
+      else if (propName === "DTSTART") {
+        current.raw_dtstart = value;
+        current.dtstart = parseICalDate(value);
+      }
+      else if (propName === "DTEND") {
+        current.raw_dtend = value;
+        current.dtend = parseICalDate(value);
+      }
       else if (propName === "SUMMARY") current.summary = value;
       else if (propName === "DESCRIPTION") current.description = value;
     }
@@ -143,8 +151,51 @@ function extractNumGuests(description: string): number | null {
 function extractPhone(description: string): string | null {
   if (!description) return null;
   const text = description.replace(/\\n/g, "\n");
-  const match = text.match(/(?:phone|telefone|tel)\s*[:=]\s*([+\d\s()-]{8,20})/i);
+  const match = text.match(/(?:phone|telefone|tel|contato)\s*[:=]\s*([+\d\s()-]{8,20})/i);
   return match ? match[1].trim() : null;
+}
+
+/**
+ * Extract Reservation Code from SUMMARY or DESCRIPTION.
+ */
+function extractReservationCode(summary: string, description: string): string | null {
+  // Airbnb pattern: URL ending with the code
+  const airbnbMatch = description.match(/reservations\/details\/([A-Z0-9]+)/);
+  if (airbnbMatch) return airbnbMatch[1];
+
+  // Generic patterns (e.g., Booking often has it in summary or a specific line)
+  const codePatterns = [
+    /(?:conf|code|código|reserva|id)\s*[:#]\s*([A-Z0-9]{8,})/i,
+    /([A-Z0-9]{10,})/ // Long alphanumeric string
+  ];
+
+  for (const p of codePatterns) {
+    const match = description.match(p) || summary.match(p);
+    if (match) return match[1];
+  }
+
+  return null;
+}
+
+/**
+ * Extract Reservation URL.
+ */
+function extractReservationUrl(description: string): string | null {
+  const match = description.match(/(https?:\/\/[^\s]+)/);
+  return match ? match[1].replace(/\\/g, '') : null;
+}
+
+/**
+ * Extract specific time if available in raw date string.
+ * Example: 20231025T150000Z -> 15:00
+ */
+function extractTime(rawVal?: string): string | null {
+  if (!rawVal || !rawVal.includes("T")) return null;
+  const timePart = rawVal.split("T")[1];
+  if (timePart.length >= 4) {
+    return `${timePart.slice(0, 2)}:${timePart.slice(2, 4)}`;
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -303,12 +354,18 @@ Deno.serve(async (req) => {
           const guestName = extractGuestName(event.summary, source);
           const numGuests = extractNumGuests(event.description);
           const phone = extractPhone(event.description);
+          const resCode = extractReservationCode(event.summary, event.description);
+          const resUrl = extractReservationUrl(event.description);
+          const checkinTime = extractTime(event.raw_dtstart);
+          const checkoutTime = extractTime(event.raw_dtend);
+          
           const obsLines: string[] = [`[${source.toUpperCase()}] ${event.summary}`.trim()];
           if (phone) obsLines.push(`Tel: ${phone}`);
+          if (resCode) obsLines.push(`Cod: ${resCode}`);
           if (event.description) {
             const descClean = event.description.replace(/\\n/g, " | ").replace(/\\,/g, ",");
             if (descClean.length > 0) {
-              obsLines.push(descClean.length > 300 ? descClean.slice(0, 300) + "..." : descClean);
+              obsLines.push(descClean.length > 500 ? descClean.slice(0, 500) + "..." : descClean);
             }
           }
 
@@ -321,12 +378,17 @@ Deno.serve(async (req) => {
             plataforma_origem: source,
             num_hospedes: numGuests,
             ical_uid: event.uid,
+            codigo_reserva: resCode,
+            reserva_url: resUrl,
+            status_reserva: event.summary.toUpperCase().includes("CANCEL") ? "cancelada" : "confirmada",
+            hora_checkin_override: checkinTime,
+            hora_checkout_override: checkoutTime,
           };
 
           // Tentar encontrar por ical_uid primeiro (mais preciso)
           const { data: existingByUid } = await supabase
             .from("reservas")
-            .select("id, data_inicio, data_fim, nome_hospede, num_hospedes")
+            .select("id, data_inicio, data_fim, nome_hospede, num_hospedes, codigo_reserva, reserva_url")
             .eq("imovel_id", imovel.id)
             .eq("ical_uid", event.uid)
             .maybeSingle();
@@ -337,7 +399,9 @@ Deno.serve(async (req) => {
               existingByUid.data_inicio !== event.dtstart || 
               existingByUid.data_fim !== event.dtend ||
               existingByUid.nome_hospede !== guestName ||
-              existingByUid.num_hospedes !== numGuests;
+              existingByUid.num_hospedes !== numGuests ||
+              (existingByUid as any).codigo_reserva !== resCode ||
+              (existingByUid as any).reserva_url !== resUrl;
 
             if (hasChanged) {
               const { error: updateError } = await supabase
