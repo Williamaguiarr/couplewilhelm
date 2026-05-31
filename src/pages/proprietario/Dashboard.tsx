@@ -124,7 +124,7 @@ const calcFinanceiro = (r: Reserva, defaultRate: number, getRateForImovel: (id: 
       bruto: r.valor_bruto ?? 0,
       limpeza: r.taxa_limpeza ?? 0,
       plataforma: r.comissao_plataforma ?? 0,
-      liquido: r.valor_base_comissao ?? ((r.valor_bruto ?? 0) - (r.taxa_limpeza ?? 0) - (r.comissao_plataforma ?? 0)),
+      liquido: r.valor_base_comissao ?? ((r.valor_bruto ?? 0) - (r.comissao_plataforma ?? 0)),
       comissao: r.valor_comissao_admin,
       proprietario: r.valor_liquido_proprietario
     };
@@ -139,10 +139,21 @@ const calcFinanceiro = (r: Reserva, defaultRate: number, getRateForImovel: (id: 
     ? r.taxa_comissao_reserva / 100 
     : getRateForImovel(r.imovel_id);
     
-  const liquido = bruto - limpeza - plataforma;
-  const comissao = liquido * rate;
-  const proprietario = liquido - comissao;
-  return { bruto, limpeza, plataforma, liquido, comissao, proprietario };
+  const financeiro = calcularFinanceiroReserva({
+    bruto,
+    limpeza,
+    plataforma,
+    percentualAdm: rate
+  });
+
+  return { 
+    bruto, 
+    limpeza, 
+    plataforma, 
+    liquido: financeiro.baseComissao, 
+    comissao: financeiro.comissaoAdm, 
+    proprietario: financeiro.valorProprietario 
+  };
 };
 
 const TIPO_LABELS: Record<string, string> = {
