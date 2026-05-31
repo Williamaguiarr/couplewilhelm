@@ -524,6 +524,44 @@ export type Database = {
         }
         Relationships: []
       }
+      logs_financeiros_reservas: {
+        Row: {
+          campo_alterado: string
+          created_at: string
+          id: string
+          reserva_id: string
+          usuario_id: string | null
+          valor_anterior: number | null
+          valor_novo: number | null
+        }
+        Insert: {
+          campo_alterado: string
+          created_at?: string
+          id?: string
+          reserva_id: string
+          usuario_id?: string | null
+          valor_anterior?: number | null
+          valor_novo?: number | null
+        }
+        Update: {
+          campo_alterado?: string
+          created_at?: string
+          id?: string
+          reserva_id?: string
+          usuario_id?: string | null
+          valor_anterior?: number | null
+          valor_novo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logs_financeiros_reservas_reserva_id_fkey"
+            columns: ["reserva_id"]
+            isOneToOne: false
+            referencedRelation: "reservas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           comissao_percentual: number | null
@@ -566,6 +604,7 @@ export type Database = {
           nome_hospede: string | null
           num_hospedes: number | null
           observacoes: string | null
+          percentual_comissao_aplicado: number | null
           plataforma_origem: string | null
           reserva_url: string | null
           status_reserva: string | null
@@ -594,6 +633,7 @@ export type Database = {
           nome_hospede?: string | null
           num_hospedes?: number | null
           observacoes?: string | null
+          percentual_comissao_aplicado?: number | null
           plataforma_origem?: string | null
           reserva_url?: string | null
           status_reserva?: string | null
@@ -622,6 +662,7 @@ export type Database = {
           nome_hospede?: string | null
           num_hospedes?: number | null
           observacoes?: string | null
+          percentual_comissao_aplicado?: number | null
           plataforma_origem?: string | null
           reserva_url?: string | null
           status_reserva?: string | null

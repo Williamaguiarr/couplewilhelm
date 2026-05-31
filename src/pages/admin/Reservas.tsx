@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles, ShieldCheck, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Plus, CalendarDays, Trash2, Pencil, FileText, X, AlertCircle, Sparkles, ShieldCheck, ShieldAlert, CheckCircle2, History } from "lucide-react";
 import GanhosExtrasDialog from "@/components/reservas/GanhosExtrasDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -78,6 +78,7 @@ interface Reserva {
   auditada_por?: string | null;
   valor_comissao_admin?: number | null;
   valor_base_comissao?: number | null;
+  percentual_comissao_aplicado?: number | null;
 }
 
 interface Imovel {
@@ -284,9 +285,12 @@ const ReservaFormFields = ({
 }) => {
   const conflitos = detectarConflitosReserva(form, imoveis, reservas, editingId);
   const comissaoPersonalizadaStr = form.taxa_comissao_reserva;
+  
+  // No snapshot mode, we prefer the recorded rate if it exists
+  const snapshotRate = (form as any).percentual_comissao_aplicado;
   const comissaoEffective = comissaoPersonalizadaStr !== "" 
     ? parseFloat(comissaoPersonalizadaStr) / 100 
-    : comissaoRate;
+    : (snapshotRate != null ? snapshotRate / 100 : comissaoRate);
 
   const comissaoPlataforma = toNum(form.comissao_plataforma) ?? 0;
   const valorLiquido = calcValorLiquido(form.valor_bruto, form.taxa_limpeza, comissaoPlataforma);
@@ -482,6 +486,16 @@ const ReservaFormFields = ({
             <Label className="text-muted-foreground">Comissão ADM (%)</Label>
             {(() => {
               const im = imoveis.find(i => i.id === form.imovel_id);
+              const snapshot = (form as any).percentual_comissao_aplicado;
+              
+              if (snapshot != null) {
+                return (
+                  <Badge variant="outline" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/30">
+                    {snapshot}% (Snapshot)
+                  </Badge>
+                );
+              }
+              
               if (form.taxa_comissao_reserva === "" && im) {
                 const source = im.taxa_comissao != null ? "imóvel" : "proprietário";
                 const rate = im.taxa_comissao != null ? im.taxa_comissao : (comissaoRate * 100);
@@ -575,6 +589,10 @@ const Reservas: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [ganhosOpen, setGanhosOpen] = useState(false);
   const [selectedReservaForGanhos, setSelectedReservaForGanhos] = useState<{id: string, imovelId: string} | null>(null);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [selectedReservaForLogs, setSelectedReservaForLogs] = useState<Reserva | null>(null);
+  const [financialLogs, setFinancialLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [syncAlerts, setSyncAlerts] = useState<any[]>([]);
 
@@ -893,7 +911,8 @@ const Reservas: React.FC = () => {
       num_hospedes: r.num_hospedes != null ? String(r.num_hospedes) : "",
       hora_checkin_override: r.hora_checkin_override ? r.hora_checkin_override.slice(0, 5) : "",
       hora_checkout_override: r.hora_checkout_override ? r.hora_checkout_override.slice(0, 5) : "",
-    });
+      percentual_comissao_aplicado: r.percentual_comissao_aplicado,
+    } as any);
     setEditOpen(true);
   };
 
@@ -1024,7 +1043,8 @@ const Reservas: React.FC = () => {
           auditada_por: isAuditing ? user?.id : null,
           valor_comissao_admin: isAuditing ? comissaoTotal : null,
           valor_base_comissao: isAuditing ? valorLiquidoBase : null,
-          valor_liquido_proprietario: isAuditing ? repasseTotal : r.valor_liquido_proprietario
+          valor_liquido_proprietario: isAuditing ? repasseTotal : r.valor_liquido_proprietario,
+          percentual_comissao_aplicado: isAuditing ? (rate * 100) : null
         } as any)
         .eq("id", r.id);
 
@@ -1097,7 +1117,8 @@ const Reservas: React.FC = () => {
             auditada_por: user?.id,
             valor_comissao_admin: comissaoTotal,
             valor_base_comissao: valorLiquidoBase,
-            valor_liquido_proprietario: repasseTotal
+            valor_liquido_proprietario: repasseTotal,
+            percentual_comissao_aplicado: (rate * 100)
           } as any)
           .eq("id", r.id);
         
@@ -1110,6 +1131,30 @@ const Reservas: React.FC = () => {
     toast({ title: "Auditoria em massa concluída", description: `${successCount} reservas foram auditadas.` });
     fetchData();
     setLoading(false);
+  };
+
+  const fetchLogs = async (reserva: Reserva) => {
+    setLoadingLogs(true);
+    setSelectedReservaForLogs(reserva);
+    setLogsOpen(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("logs_financeiros_reservas")
+        .select(`
+          *,
+          profiles:usuario_id (nome)
+        `)
+        .eq("reserva_id", reserva.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setFinancialLogs(data || []);
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar logs", description: err.message, variant: "destructive" });
+    } finally {
+      setLoadingLogs(false);
+    }
   };
 
   const semValoresCount = reservas.filter((r) => r.valor_bruto == null).length;
@@ -1353,7 +1398,9 @@ const Reservas: React.FC = () => {
               <TableBody>
               {filteredReservas.map((r: any) => {
                   const rateDefault = getRateForImovel(r.imovel_id);
-                  const rateForRow = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+                  const rateForRow = r.percentual_comissao_aplicado != null 
+                    ? r.percentual_comissao_aplicado / 100 
+                    : (r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault);
                   
                   const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
                   
@@ -1465,7 +1512,16 @@ const Reservas: React.FC = () => {
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           onClick={() => fetchLogs(r)} 
+                           className="h-8 w-8 hover:text-primary"
+                           title="Histórico Financeiro"
+                         >
+                           <History className="h-3.5 w-3.5" />
+                         </Button>
+                         <Button variant="ghost" size="icon" onClick={() => openEdit(r)} className="h-8 w-8 hover:text-primary">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="h-8 w-8 hover:text-destructive">
@@ -1623,6 +1679,66 @@ const Reservas: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl text-foreground flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Histórico Financeiro
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            {selectedReservaForLogs && (
+              <div className="bg-muted/30 rounded-lg p-3 border border-border">
+                <div className="text-sm font-medium">{selectedReservaForLogs.imovel?.nome_imovel}</div>
+                <div className="text-xs text-muted-foreground">
+                  Hóspede: {selectedReservaForLogs.nome_hospede || "—"} | {selectedReservaForLogs.data_inicio} a {selectedReservaForLogs.data_fim}
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-3">
+              {loadingLogs ? (
+                <div className="flex justify-center p-8">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : financialLogs.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground text-sm">
+                  Nenhuma alteração financeira registrada para esta reserva.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Usuário</TableHead>
+                      <TableHead>Campo</TableHead>
+                      <TableHead className="text-right">Anterior</TableHead>
+                      <TableHead className="text-right">Novo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {financialLogs.map((log) => (
+                      <TableRow key={log.id} className="text-xs">
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(log.created_at), "dd/MM/yy HH:mm")}
+                        </TableCell>
+                        <TableCell>{log.profiles?.nome || "Sistema"}</TableCell>
+                        <TableCell className="font-medium">{log.campo_alterado}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{fmt(log.valor_anterior)}</TableCell>
+                        <TableCell className="text-right text-foreground font-medium">{fmt(log.valor_novo)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setLogsOpen(false)}>Fechar</Button>
           </div>
         </DialogContent>
       </Dialog>
