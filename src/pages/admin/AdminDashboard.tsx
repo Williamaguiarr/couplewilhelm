@@ -451,12 +451,12 @@ const AdminDashboard: React.FC = () => {
       y += 4;
       y = drawSectionTitle(doc, "Detalhamento Financeiro", y, palette, pageW);
       const finData = [
-        ["Receita Bruta", fmt(financeiro.valorBruto), "Total das receitas sem deduções"],
-        ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Dedução do valor bruto"],
-        ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.taxaLimpeza - financeiro.valorLiquido), "Comissão da plataforma"],
-        ["= Receita Líquida", fmt(financeiro.valorLiquido), "Bruto − Limpeza − OTA"],
+        ["Receita Bruta (Diárias)", fmt(financeiro.valorBruto), "Soma dos valores brutos das reservas"],
+        ["(−) Comissão OTA", fmt(financeiro.valorBruto - financeiro.valorLiquido), "Comissão das plataformas"],
+        ["= Base Comissão ADM", fmt(financeiro.valorLiquido), "Valor Bruto − Comissão OTA"],
         ["(−) Comissão ADM", fmt(financeiro.comissaoCW), "Comissão de gestão"],
-        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Líquido − Comissão ADM"],
+        ["(−) Taxa de Limpeza", fmt(financeiro.taxaLimpeza), "Taxas de limpeza recolhidas"],
+        ["= Repasse ao Proprietário", fmt(financeiro.valorProprietario), "Base ADM − Comissão ADM − Limpeza"],
       ];
       autoTable(doc, { startY: y, head: [["Descrição", "Valor", "Observação"]], body: finData, ...premiumTableStyles(palette), columnStyles: { 1: { halign: "right", fontStyle: "bold" }, 2: { textColor: [130, 130, 130], fontSize: 7 } } });
       drawFooterAllPages(doc, palette, companyName, pageW, pageH);
