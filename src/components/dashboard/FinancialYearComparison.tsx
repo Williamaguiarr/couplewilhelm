@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { calcularFinanceiroReserva } from "@/lib/financeiro";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -150,15 +151,23 @@ const FinancialYearComparison: React.FC<Props> = ({ imovelIds, imoveis }) => {
 
     (reservas || []).forEach((r: any) => {
       const monthIdx = new Date(r.data_fim + "T12:00:00").getMonth();
-      const valorBruto = r.valor_bruto || 0;
-      const taxaLimpeza = r.taxa_limpeza || 0;
-      const comissaoPlataforma = r.comissao_plataforma || 0;
-      const valorLiquido = valorBruto - taxaLimpeza - comissaoPlataforma;
+      const bruto = Number(r.valor_bruto) || 0;
+      const limpeza = Number(r.taxa_limpeza) || 0;
+      const plataforma = Number(r.comissao_plataforma) || 0;
+      
       const rate = getOwnerRate(r.imovel_id);
-      const comissaoCW = valorLiquido * rate;
-      const repasse = valorLiquido - comissaoCW;
+      
+      const financeiro = calcularFinanceiroReserva({
+        bruto,
+        limpeza,
+        plataforma,
+        percentualAdm: rate
+      });
 
-      monthlyMap[monthIdx].valorBruto += valorBruto;
+      const comissaoCW = financeiro.comissaoAdm;
+      const repasse = financeiro.valorProprietario;
+
+      monthlyMap[monthIdx].valorBruto += bruto;
       monthlyMap[monthIdx].comissaoCW += comissaoCW;
       monthlyMap[monthIdx].repasseProprietario += repasse;
       monthlyMap[monthIdx].reservas += 1;
