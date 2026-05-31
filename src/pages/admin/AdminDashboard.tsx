@@ -654,7 +654,7 @@ const AdminDashboard: React.FC = () => {
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Comissão ADM</CardTitle>
               <Percent className="h-3.5 w-3.5 text-primary opacity-60" />
             </CardHeader>
-            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.comissaoCW)}</p><p className="text-[11px] text-muted-foreground">Sobre Base ADM</p></div>}</CardContent>
+            <CardContent>{loading ? <div className="h-7 w-20 bg-muted animate-pulse rounded-lg" /> : <div className="space-y-1"><p className="font-display text-lg text-foreground">{fmt(financeiro.comissaoCW)}</p><p className="text-[11px] text-muted-foreground">Sobre Valor Líquido</p></div>}</CardContent>
           </Card>
           <Card className="spotlight-card group">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
