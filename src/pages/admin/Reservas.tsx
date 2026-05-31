@@ -1490,12 +1490,12 @@ const Reservas: React.FC = () => {
             <DialogTitle className="font-display text-xl text-foreground">Editar Reserva</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 mt-2">
-            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} reservas={reservas} editingId={editingReserva?.id ?? null} />
+            <ReservaFormFields form={editForm} setForm={setEditForm} imoveis={imoveis} comissaoRate={getRateForImovel(editForm.imovel_id)} reservas={reservas} editingId={editingReserva?.id ?? null} isAudited={editingReserva?.auditada} />
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id} className="flex-1">
+              <Button type="submit" disabled={editSubmitting || !editForm.imovel_id || editingReserva?.auditada} className="flex-1">
                 {editSubmitting ? "Salvando..." : "Salvar alterações"}
               </Button>
             </div>
