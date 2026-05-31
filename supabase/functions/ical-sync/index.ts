@@ -330,7 +330,9 @@ Deno.serve(async (req) => {
         });
 
         if (!response.ok) {
-          result.errors.push(`HTTP ${response.status} fetching iCal`);
+          const msg = `HTTP ${response.status} fetching iCal`;
+          result.errors.push(msg);
+          await createSyncAlert(supabase, imovel.id, source, msg);
           results.push(result);
           continue;
         }
@@ -471,7 +473,9 @@ Deno.serve(async (req) => {
           }
         }
       } catch (err) {
-        result.errors.push(String(err));
+        const msg = String(err);
+        result.errors.push(msg);
+        await createSyncAlert(supabase, imovel.id, source, msg);
       }
 
       results.push(result);
