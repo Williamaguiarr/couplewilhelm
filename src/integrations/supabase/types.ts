@@ -366,6 +366,9 @@ export type Database = {
       imoveis: {
         Row: {
           admin_id: string | null
+          airbnb_image_url: string | null
+          airbnb_link: string | null
+          airbnb_title: string | null
           created_at: string | null
           endereco: string | null
           hora_checkin: string | null
@@ -374,6 +377,7 @@ export type Database = {
           ical_url_airbnb: string | null
           ical_url_booking: string | null
           id: string
+          last_airbnb_sync: string | null
           max_hospedes: number | null
           nome_imovel: string
           observacoes_operacionais: string | null
@@ -384,6 +388,9 @@ export type Database = {
         }
         Insert: {
           admin_id?: string | null
+          airbnb_image_url?: string | null
+          airbnb_link?: string | null
+          airbnb_title?: string | null
           created_at?: string | null
           endereco?: string | null
           hora_checkin?: string | null
@@ -392,6 +399,7 @@ export type Database = {
           ical_url_airbnb?: string | null
           ical_url_booking?: string | null
           id?: string
+          last_airbnb_sync?: string | null
           max_hospedes?: number | null
           nome_imovel: string
           observacoes_operacionais?: string | null
@@ -402,6 +410,9 @@ export type Database = {
         }
         Update: {
           admin_id?: string | null
+          airbnb_image_url?: string | null
+          airbnb_link?: string | null
+          airbnb_title?: string | null
           created_at?: string | null
           endereco?: string | null
           hora_checkin?: string | null
@@ -410,6 +421,7 @@ export type Database = {
           ical_url_airbnb?: string | null
           ical_url_booking?: string | null
           id?: string
+          last_airbnb_sync?: string | null
           max_hospedes?: number | null
           nome_imovel?: string
           observacoes_operacionais?: string | null
