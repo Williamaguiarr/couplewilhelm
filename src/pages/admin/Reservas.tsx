@@ -784,7 +784,7 @@ const Reservas: React.FC = () => {
     setReservas(
       (reservasData || []).map((r: any) => ({ 
         ...r, 
-        imovel: r.imoveis,
+        imovel: Array.isArray(r.imoveis) ? r.imoveis[0] : r.imoveis,
         ganhos_extras: ganhosPorReserva[r.id] || []
       }))
     );
