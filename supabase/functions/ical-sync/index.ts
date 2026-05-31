@@ -320,22 +320,20 @@ Deno.serve(async (req) => {
         // 1. Coletar todos os UIDs de eventos ativos no iCal para este imóvel/fonte
         const currentEventUids = new Set(events.map(e => e.uid));
 
-        // Janela: somente eventos dos próximos 3 meses (a partir de hoje)
+        // Janela: Sincronizamos tudo que não terminou no passado.
         const today = new Date();
         const todayStr = today.toISOString().split("T")[0];
-        const limitDate = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
-        const limitStr = limitDate.toISOString().split("T")[0];
 
-        // 2. Detectar cancelamentos: reservas locais com ical_uid que não estão mais no iCal
-        // Buscamos apenas reservas que estão dentro da nossa janela de interesse (hoje até 3 meses)
+        // 2. Detectar cancelamentos: apenas para reservas FUTURAS (não iniciadas hoje)
+        // Se uma reserva futura no portal sumir do iCal, geramos um alerta.
         const { data: localReservas } = await supabase
           .from("reservas")
           .select("id, ical_uid, data_inicio")
           .eq("imovel_id", imovel.id)
           .eq("plataforma_origem", source)
           .not("ical_uid", "is", null)
-          .gte("data_fim", todayStr)
-          .lte("data_inicio", limitStr);
+          .eq("status_reserva", "confirmada") // Apenas alertar se ainda estava confirmada
+          .gt("data_inicio", todayStr); // Apenas futuras (não iniciadas hoje)
 
         for (const res of localReservas ?? []) {
           if (!currentEventUids.has(res.ical_uid!)) {
@@ -361,9 +359,8 @@ Deno.serve(async (req) => {
 
         // 3. Processar/Sincronizar eventos do iCal
         for (const event of events) {
-          // Pula eventos fora da janela: já passaram (data_fim < hoje) ou começam após o limite
+          // Pula eventos que já terminaram no passado
           if (event.dtend < todayStr) continue;
-          if (event.dtstart > limitStr) continue;
 
           const guestName = extractGuestName(event.summary, event.description, source);
           const numGuests = extractNumGuests(event.description);
