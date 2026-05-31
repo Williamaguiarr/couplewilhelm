@@ -105,6 +105,8 @@ const Imoveis: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncingAirbnbId, setSyncingAirbnbId] = useState<string | null>(null);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
   const [calendarLinkOpen, setCalendarLinkOpen] = useState<Imovel | null>(null);
   const [copied, setCopied] = useState<"airbnb" | "booking" | null>(null);
   const { toast } = useToast();
