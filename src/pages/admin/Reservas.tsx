@@ -952,6 +952,148 @@ const Reservas: React.FC = () => {
     setDeleteId(null);
   };
 
+  const handleToggleAudit = async (r: Reserva) => {
+    const isAuditing = !r.auditada;
+    
+    if (isAuditing) {
+      if (r.valor_bruto == null) {
+        toast({ 
+          title: "Não é possível auditar", 
+          description: "Preencha o valor bruto antes de auditar.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      const confirm = window.confirm(
+        "Deseja marcar esta reserva como AUDITADA? \n\nIsso irá congelar os valores financeiros e impedir alterações automáticas pelo sistema. O proprietário verá esses valores exatamente como estão agora."
+      );
+      if (!confirm) return;
+    } else {
+      const confirm = window.confirm(
+        "Deseja remover a auditoria? \n\nA reserva voltará a permitir alterações e recálculos automáticos."
+      );
+      if (!confirm) return;
+    }
+
+    try {
+      const rateDefault = getRateForImovel(r.imovel_id);
+      const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+      
+      const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+      const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+        if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+        if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+        return acc;
+      }, 0);
+
+      const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+      const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+      const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+        if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+        if (regime === "sem_comissao") return acc + (g.valor || 0);
+        return acc;
+      }, 0);
+      const repasseTotal = valorPropBase + repasseGanhosExtras;
+
+      const { error } = await supabase
+        .from("reservas")
+        .update({
+          auditada: isAuditing,
+          auditada_em: isAuditing ? new Date().toISOString() : null,
+          auditada_por: isAuditing ? user?.id : null,
+          valor_comissao_admin: isAuditing ? comissaoTotal : null,
+          valor_base_comissao: isAuditing ? valorLiquidoBase : null,
+          valor_liquido_proprietario: isAuditing ? repasseTotal : r.valor_liquido_proprietario
+        } as any)
+        .eq("id", r.id);
+
+      if (error) throw error;
+
+      if (isAuditing) {
+        await supabase.from("historico_auditoria").insert({
+          reserva_id: r.id,
+          usuario_id: user?.id,
+          valores_anteriores: r,
+          valores_congelados: {
+            valor_bruto: r.valor_bruto,
+            taxa_limpeza: r.taxa_limpeza,
+            comissao_plataforma: r.comissao_plataforma,
+            taxa_comissao_reserva: r.taxa_comissao_reserva,
+            valor_comissao_admin: comissaoTotal,
+            valor_liquido_proprietario: repasseTotal,
+            valor_base_comissao: valorLiquidoBase
+          }
+        });
+      }
+
+      toast({ title: isAuditing ? "Reserva auditada!" : "Auditoria removida." });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Erro ao atualizar auditoria", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkAudit = async () => {
+    const pendentes = filteredReservas.filter(r => !r.auditada && r.valor_bruto != null);
+    if (pendentes.length === 0) {
+      toast({ title: "Nenhuma reserva para auditar", description: "Apenas reservas com valor bruto preenchido podem ser auditadas." });
+      return;
+    }
+
+    const confirm = window.confirm(
+      `Deseja auditar em massa ${pendentes.length} reservas? \n\nIsso congelará os valores financeiros de todas elas.`
+    );
+    if (!confirm) return;
+
+    setLoading(true);
+    let successCount = 0;
+    for (const r of pendentes) {
+      try {
+        const rateDefault = getRateForImovel(r.imovel_id);
+        const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+        const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+        const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+          if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+          if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+          return acc;
+        }, 0);
+        const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+        const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+        const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+          if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+          if (regime === "sem_comissao") return acc + (g.valor || 0);
+          return acc;
+        }, 0);
+        const repasseTotal = valorPropBase + repasseGanhosExtras;
+
+        await supabase
+          .from("reservas")
+          .update({
+            auditada: true,
+            auditada_em: new Date().toISOString(),
+            auditada_por: user?.id,
+            valor_comissao_admin: comissaoTotal,
+            valor_base_comissao: valorLiquidoBase,
+            valor_liquido_proprietario: repasseTotal
+          } as any)
+          .eq("id", r.id);
+        
+        successCount++;
+      } catch (e) {
+        console.error("Erro ao auditar reserva", r.id, e);
+      }
+    }
+
+    toast({ title: "Auditoria em massa concluída", description: `${successCount} reservas foram auditadas.` });
+    fetchData();
+    setLoading(false);
+  };
+
   const semValoresCount = reservas.filter((r) => r.valor_bruto == null).length;
 
   const filteredReservas = reservas.filter((r) => {
