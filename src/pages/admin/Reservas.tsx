@@ -936,9 +936,18 @@ const Reservas: React.FC = () => {
 
     setEditSubmitting(true);
 
-    const rateDefault = getRateForImovel(editForm.imovel_id);
+    const isHistorical = editingReserva.percentual_comissao_aplicado == null;
     const taxaComissaoReserva = editForm.taxa_comissao_reserva !== "" ? parseFloat(editForm.taxa_comissao_reserva) : null;
-    const rate = taxaComissaoReserva !== null ? taxaComissaoReserva / 100 : rateDefault;
+    
+    let rate: number;
+    if (taxaComissaoReserva !== null) {
+      rate = taxaComissaoReserva / 100;
+    } else if (isHistorical && editingReserva.valor_comissao_admin && editingReserva.valor_base_comissao) {
+      // Tenta inferir a taxa histórica para não usar a atual do imóvel
+      rate = editingReserva.valor_comissao_admin / editingReserva.valor_base_comissao;
+    } else {
+      rate = getRateForImovel(editForm.imovel_id);
+    }
 
     const valorBruto = editForm.valor_bruto ? parseFloat(editForm.valor_bruto) : null;
     const taxaLimpeza = editForm.taxa_limpeza ? parseFloat(editForm.taxa_limpeza) : null;
@@ -1014,26 +1023,43 @@ const Reservas: React.FC = () => {
     }
 
     try {
-      const rateDefault = getRateForImovel(r.imovel_id);
-      const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
-      
-      const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-      const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
-        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-        if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
-        if (regime === "exclusivo_adm") return acc + (g.valor || 0);
-        return acc;
-      }, 0);
+      const isHistorical = r.percentual_comissao_aplicado == null;
+      let finalComissaoAdmin: number | null = null;
+      let finalBaseComissao: number | null = null;
+      let finalLiquidoProp: number | null = null;
+      let finalPercentual: number | null = null;
 
-      const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
-      const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
-      const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
-        const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-        if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
-        if (regime === "sem_comissao") return acc + (g.valor || 0);
-        return acc;
-      }, 0);
-      const repasseTotal = valorPropBase + repasseGanhosExtras;
+      if (isAuditing) {
+        if (isHistorical) {
+          finalComissaoAdmin = r.valor_comissao_admin;
+          finalBaseComissao = r.valor_base_comissao || (calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0));
+          finalLiquidoProp = r.valor_liquido_proprietario;
+          finalPercentual = r.taxa_comissao_reserva || (r.valor_comissao_admin && r.valor_base_comissao ? (r.valor_comissao_admin / r.valor_base_comissao * 100) : 25);
+        } else {
+          const rateDefault = getRateForImovel(r.imovel_id);
+          const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+          const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+          
+          const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+            if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+            return acc;
+          }, 0);
+
+          finalComissaoAdmin = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+          finalBaseComissao = valorLiquidoBase;
+          const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+          const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+            if (regime === "sem_comissao") return acc + (g.valor || 0);
+            return acc;
+          }, 0);
+          finalLiquidoProp = valorPropBase + repasseGanhosExtras;
+          finalPercentual = rate * 100;
+        }
+      }
 
       const { error } = await supabase
         .from("reservas")
@@ -1041,10 +1067,10 @@ const Reservas: React.FC = () => {
           auditada: isAuditing,
           auditada_em: isAuditing ? new Date().toISOString() : null,
           auditada_por: isAuditing ? user?.id : null,
-          valor_comissao_admin: isAuditing ? comissaoTotal : null,
-          valor_base_comissao: isAuditing ? valorLiquidoBase : null,
-          valor_liquido_proprietario: isAuditing ? repasseTotal : r.valor_liquido_proprietario,
-          percentual_comissao_aplicado: isAuditing ? (rate * 100) : null
+          valor_comissao_admin: isAuditing ? finalComissaoAdmin : null,
+          valor_base_comissao: isAuditing ? finalBaseComissao : null,
+          valor_liquido_proprietario: isAuditing ? finalLiquidoProp : r.valor_liquido_proprietario,
+          percentual_comissao_aplicado: isAuditing ? finalPercentual : null
         } as any)
         .eq("id", r.id);
 
@@ -1060,9 +1086,10 @@ const Reservas: React.FC = () => {
             taxa_limpeza: r.taxa_limpeza,
             comissao_plataforma: r.comissao_plataforma,
             taxa_comissao_reserva: r.taxa_comissao_reserva,
-            valor_comissao_admin: comissaoTotal,
-            valor_liquido_proprietario: repasseTotal,
-            valor_base_comissao: valorLiquidoBase
+            valor_comissao_admin: finalComissaoAdmin,
+            valor_liquido_proprietario: finalLiquidoProp,
+            valor_base_comissao: finalBaseComissao,
+            percentual_comissao_aplicado: finalPercentual
           }
         } as any);
       }
@@ -1090,24 +1117,39 @@ const Reservas: React.FC = () => {
     let successCount = 0;
     for (const r of pendentes) {
       try {
-        const rateDefault = getRateForImovel(r.imovel_id);
-        const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
-        const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
-        const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
-          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-          if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
-          if (regime === "exclusivo_adm") return acc + (g.valor || 0);
-          return acc;
-        }, 0);
-        const comissaoTotal = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
-        const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
-        const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
-          const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
-          if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
-          if (regime === "sem_comissao") return acc + (g.valor || 0);
-          return acc;
-        }, 0);
-        const repasseTotal = valorPropBase + repasseGanhosExtras;
+        const isHistorical = r.percentual_comissao_aplicado == null;
+        let finalComissaoAdmin: number | null = null;
+        let finalBaseComissao: number | null = null;
+        let finalLiquidoProp: number | null = null;
+        let finalPercentual: number | null = null;
+
+        if (isHistorical) {
+          finalComissaoAdmin = r.valor_comissao_admin;
+          finalBaseComissao = r.valor_base_comissao || (calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0));
+          finalLiquidoProp = r.valor_liquido_proprietario;
+          finalPercentual = r.taxa_comissao_reserva || (r.valor_comissao_admin && r.valor_base_comissao ? (r.valor_comissao_admin / r.valor_base_comissao * 100) : 25);
+        } else {
+          const rateDefault = getRateForImovel(r.imovel_id);
+          const rate = r.taxa_comissao_reserva != null ? r.taxa_comissao_reserva / 100 : rateDefault;
+          const valorLiquidoBase = calcValorLiquido(r.valor_bruto, r.taxa_limpeza, r.comissao_plataforma ?? 0);
+          const comissaoGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            if (regime === "com_comissao") return acc + ((g.valor || 0) * rate);
+            if (regime === "exclusivo_adm") return acc + (g.valor || 0);
+            return acc;
+          }, 0);
+          finalComissaoAdmin = (valorLiquidoBase != null ? valorLiquidoBase * rate : 0) + comissaoGanhosExtras;
+          finalBaseComissao = valorLiquidoBase;
+          const valorPropBase = valorLiquidoBase != null ? valorLiquidoBase * (1 - rate) : 0;
+          const repasseGanhosExtras = (r.ganhos_extras || []).reduce((acc: number, g: any) => {
+            const regime = g.regime_comissao || (g.aplicar_comissao ? "com_comissao" : "sem_comissao");
+            if (regime === "com_comissao") return acc + ((g.valor || 0) * (1 - rate));
+            if (regime === "sem_comissao") return acc + (g.valor || 0);
+            return acc;
+          }, 0);
+          finalLiquidoProp = valorPropBase + repasseGanhosExtras;
+          finalPercentual = rate * 100;
+        }
 
         await supabase
           .from("reservas")
@@ -1115,10 +1157,10 @@ const Reservas: React.FC = () => {
             auditada: true,
             auditada_em: new Date().toISOString(),
             auditada_por: user?.id,
-            valor_comissao_admin: comissaoTotal,
-            valor_base_comissao: valorLiquidoBase,
-            valor_liquido_proprietario: repasseTotal,
-            percentual_comissao_aplicado: (rate * 100)
+            valor_comissao_admin: finalComissaoAdmin,
+            valor_base_comissao: finalBaseComissao,
+            valor_liquido_proprietario: finalLiquidoProp,
+            percentual_comissao_aplicado: finalPercentual
           } as any)
           .eq("id", r.id);
         
