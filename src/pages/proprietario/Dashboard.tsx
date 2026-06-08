@@ -246,6 +246,7 @@ const ProprietarioDashboard: React.FC = () => {
         supabase
           .from("reservas")
           .select("*, imoveis(nome_imovel, airbnb_title)")
+          .eq("auditada", true)
           .order("data_inicio", { ascending: false }),
         supabase
           .from("despesas_extras" as any)
