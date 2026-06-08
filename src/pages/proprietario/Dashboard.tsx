@@ -965,6 +965,7 @@ const ProprietarioDashboard: React.FC = () => {
               mes={filterMes}
               ano={filterAno}
               imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
+              onlyAudited
             />
           </div>
 
