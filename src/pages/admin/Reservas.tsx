@@ -305,7 +305,7 @@ const ReservaFormFields = ({
           <SelectContent className="bg-card border-border">
             {imoveis.map((i) => (
               <SelectItem key={i.id} value={i.id} className="text-foreground">
-                {i.nome_imovel}
+                {i.airbnb_title || i.nome_imovel}
               </SelectItem>
             ))}
           </SelectContent>
