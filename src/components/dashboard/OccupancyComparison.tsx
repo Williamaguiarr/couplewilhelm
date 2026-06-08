@@ -317,7 +317,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       setLoading(false);
     };
     load();
-  }, [ano, imovelIds?.join(",")]);
+  }, [ano, imovelIds?.join(","), onlyAudited]);
 
   const filteredMonths = React.useMemo(() => {
     if (loading || monthsData.length === 0) return [];
