@@ -17,24 +17,11 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   const formatCurrency = (val: string | number) => {
     if (val === "" || val === null || val === undefined) return "";
     
-    let numericValue: string;
-    
-    if (typeof val === "number") {
-      // If it's a number, we expect it to be a float like 10.50
-      numericValue = Math.round(val * 100).toString();
-    } else {
-      // If it's a string, it might be a float string "10.50" or a raw digits string from input
-      // If it contains a dot, treat it as a float string
-      if (val.includes(".")) {
-        numericValue = Math.round(parseFloat(val) * 100).toString();
-      } else {
-        numericValue = val.replace(/\D/g, "");
-      }
-    }
-    
-    if (numericValue === "" || numericValue === "NaN") return "";
-    
-    const floatValue = parseInt(numericValue, 10) / 100;
+    // The value prop always represents a numeric amount (e.g. 110 = R$ 110,00).
+    // Never treat it as raw digits — that's only for the typing handler below.
+    const floatValue = typeof val === "number" ? val : parseFloat(String(val).replace(",", "."));
+
+    if (isNaN(floatValue)) return "";
     
     return new Intl.NumberFormat("pt-BR", {
       minimumFractionDigits: 2,
