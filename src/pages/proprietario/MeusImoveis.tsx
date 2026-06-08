@@ -33,6 +33,7 @@ const MeusImoveis: React.FC = () => {
             const { count } = await supabase
               .from("reservas")
               .select("*", { count: "exact", head: true })
+              .eq("auditada", true)
               .eq("imovel_id", imovel.id);
             return { ...imovel, reservas_count: count || 0 };
           })

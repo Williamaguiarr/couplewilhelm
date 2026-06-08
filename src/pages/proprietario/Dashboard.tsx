@@ -246,6 +246,7 @@ const ProprietarioDashboard: React.FC = () => {
         supabase
           .from("reservas")
           .select("*, imoveis(nome_imovel, airbnb_title)")
+          .eq("auditada", true)
           .order("data_inicio", { ascending: false }),
         supabase
           .from("despesas_extras" as any)
@@ -964,6 +965,7 @@ const ProprietarioDashboard: React.FC = () => {
               mes={filterMes}
               ano={filterAno}
               imovelIds={filterImovel !== "todos" ? [filterImovel] : imoveis.map(i => i.id)}
+              onlyAudited
             />
           </div>
 

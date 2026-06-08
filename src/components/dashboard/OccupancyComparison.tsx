@@ -47,6 +47,7 @@ interface OccupancyComparisonProps {
   mes: number;
   ano: number;
   imovelIds?: string[] | null;
+  onlyAudited?: boolean;
 }
 
 interface ImovelBreakdown {
@@ -265,6 +266,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
   mes,
   ano,
   imovelIds,
+  onlyAudited = false,
 }) => {
   const [monthsData, setMonthsData] = useState<MonthData[]>([]);
   const [allData, setAllData] = useState<{ prior: any[]; current: any[]; next: any[] }>({ prior: [], current: [], next: [] });
@@ -284,8 +286,11 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       const firstDayTotal = `${startYear}-01-01`;
       const lastDayTotal = `${endYear}-12-31`;
 
+      let reservasQuery = supabase.from("reservas").select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, auditada, ganhos_extras(valor, regime_comissao, aplicar_comissao)").lte("data_inicio", lastDayTotal).gt("data_fim", firstDayTotal);
+      if (onlyAudited) reservasQuery = reservasQuery.eq("auditada", true);
+
       const [{ data: allReservas }, { data: imoveisData }, { data: allGanhosAvulsos }] = await Promise.all([
-        supabase.from("reservas").select("data_inicio, data_fim, valor_bruto, taxa_limpeza, imovel_id, validada_financeiramente, ganhos_extras(valor, regime_comissao, aplicar_comissao)").lte("data_inicio", lastDayTotal).gt("data_fim", firstDayTotal),
+        reservasQuery,
         supabase.from("imoveis").select("id, nome_imovel"),
         supabase.from("ganhos_extras").select("valor, regime_comissao, aplicar_comissao, imovel_id, data").is("reserva_id", null).gte("data", firstDayTotal).lte("data", lastDayTotal)
       ]);
@@ -312,7 +317,7 @@ const OccupancyComparison: React.FC<OccupancyComparisonProps> = ({
       setLoading(false);
     };
     load();
-  }, [ano, imovelIds?.join(",")]);
+  }, [ano, imovelIds?.join(","), onlyAudited]);
 
   const filteredMonths = React.useMemo(() => {
     if (loading || monthsData.length === 0) return [];
