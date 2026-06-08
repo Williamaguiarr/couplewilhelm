@@ -47,6 +47,7 @@ interface OccupancyComparisonProps {
   mes: number;
   ano: number;
   imovelIds?: string[] | null;
+  onlyAudited?: boolean;
 }
 
 interface ImovelBreakdown {
